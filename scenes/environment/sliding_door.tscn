@@ -1,0 +1,45 @@
+[gd_scene load_steps=5 format=3 uid="uid://bqn7gxm5h8yxp"]
+
+[ext_resource type="Script" path="res://scripts/environment/sliding_door.gd" id="1_door"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_door"]
+albedo_color = Color(0.3, 0.4, 0.5, 1)
+metallic = 0.8
+roughness = 0.3
+emission_enabled = true
+emission = Color(0.1, 0.3, 0.5, 1)
+emission_energy_multiplier = 0.3
+
+[sub_resource type="BoxMesh" id="BoxMesh_door"]
+material = SubResource("StandardMaterial3D_door")
+size = Vector3(3, 3, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_door"]
+size = Vector3(3, 3, 0.2)
+
+[node name="SlidingDoor" type="StaticBody3D"]
+collision_layer = 2
+script = ExtResource("1_door")
+slide_distance = 3.5
+door_name = "Security Door"
+
+[node name="DoorMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+mesh = SubResource("BoxMesh_door")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape3D_door")
+
+[node name="DoorFrame" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+[node name="FrameOuter" type="CSGBox3D" parent="DoorFrame"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+size = Vector3(3.6, 3.6, 0.4)
+material = SubResource("StandardMaterial3D_door")
+
+[node name="FrameInner" type="CSGBox3D" parent="DoorFrame"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+operation = 2
+size = Vector3(3, 3, 0.6)
