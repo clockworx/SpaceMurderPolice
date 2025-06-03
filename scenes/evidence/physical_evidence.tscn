@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3 uid="uid://c4xh5rd7yfh8n"]
+
+[ext_resource type="Script" path="res://scripts/evidence/physical_evidence.gd" id="1_physical"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_evidence"]
+size = Vector3(0.3, 0.3, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_evidence"]
+albedo_color = Color(0.8, 0.8, 0.8, 1)
+metallic = 0.2
+roughness = 0.8
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_evidence"]
+size = Vector3(0.3, 0.3, 0.3)
+
+[node name="PhysicalEvidence" type="StaticBody3D"]
+script = ExtResource("1_physical")
+evidence_name = "Suspicious Object"
+description = "A small metallic object with unusual markings"
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_evidence")
+surface_material_override/0 = SubResource("StandardMaterial3D_evidence")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_evidence")

@@ -1,18 +1,25 @@
 extends StaticBody3D
-class_name EvidenceBase
+class_name DigitalEvidence
 
 @export_group("Evidence Properties")
 @export var evidence_name: String = "Unknown Evidence"
-@export var evidence_type: String = "Physical"
+@export var evidence_type: String = "Digital"
 @export var description: String = "A piece of evidence"
 @export var case_relevant: bool = true
 @export var requires_analysis: bool = false
+
+@export_group("Digital Properties")
+@export var device_type: String = "Data Pad"
+@export var encrypted: bool = false
+@export var corrupted: bool = false
+@export var access_logs: Array[String] = []
+@export var file_count: int = 0
 
 @export_group("Visual Properties")
 @export var hover_amplitude: float = 0.1
 @export var hover_speed: float = 2.0
 @export var rotation_speed: float = 1.0
-@export var emission_color: Color = Color(0.5, 0.8, 1.0)
+@export var emission_color: Color = Color(0.2, 1.0, 0.4)
 @export var emission_strength: float = 2.0
 
 var initial_position: Vector3
@@ -24,6 +31,7 @@ var original_material: Material
 signal evidence_collected(evidence)
 
 func _ready():
+	add_to_group("evidence")
 	collision_layer = 2  # Interactable layer
 	collision_mask = 1   # Collide with environment
 	
@@ -84,5 +92,10 @@ func get_evidence_data() -> Dictionary:
 		"description": description,
 		"case_relevant": case_relevant,
 		"requires_analysis": requires_analysis,
-		"collected_time": Time.get_unix_time_from_system()
+		"collected_time": Time.get_unix_time_from_system(),
+		"device_type": device_type,
+		"encrypted": encrypted,
+		"corrupted": corrupted,
+		"access_logs": access_logs,
+		"file_count": file_count
 	}

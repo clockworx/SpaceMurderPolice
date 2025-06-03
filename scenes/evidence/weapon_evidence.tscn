@@ -1,0 +1,39 @@
+[gd_scene load_steps=5 format=3 uid="uid://d4xh5rd7yfh8n"]
+
+[ext_resource type="Script" path="res://scripts/evidence/physical_evidence.gd" id="1_weapon"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_weapon"]
+top_radius = 0.05
+bottom_radius = 0.05
+height = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_weapon"]
+albedo_color = Color(0.3, 0.3, 0.4, 1)
+metallic = 0.9
+roughness = 0.2
+emission_enabled = true
+emission = Color(1, 0.2, 0.2, 1)
+emission_energy_multiplier = 0.3
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_weapon"]
+radius = 0.05
+height = 0.4
+
+[node name="WeaponEvidence" type="StaticBody3D"]
+script = ExtResource("1_weapon")
+evidence_name = "Energy Baton"
+evidence_type = "Weapon"
+description = "A standard-issue security energy baton. Shows signs of recent use."
+emission_color = Color(1, 0.2, 0.2, 1)
+material_type = "Durasteel Alloy"
+has_fingerprints = true
+has_dna = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0)
+mesh = SubResource("CylinderMesh_weapon")
+surface_material_override/0 = SubResource("StandardMaterial3D_weapon")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0)
+shape = SubResource("CylinderShape3D_weapon")

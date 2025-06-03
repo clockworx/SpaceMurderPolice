@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://spawn_point_001"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_spawn"]
+radius = 0.15
+height = 0.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spawn"]
+albedo_color = Color(1, 1, 0, 0.3)
+transparency = 1
+
+[node name="EvidenceSpawnPoint" type="Node3D" groups=["evidence_spawn_point"]]
+
+[node name="DebugMesh" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("SphereMesh_spawn")
+surface_material_override/0 = SubResource("StandardMaterial3D_spawn")]

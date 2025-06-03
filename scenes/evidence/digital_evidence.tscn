@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3 uid="uid://b4xh5rd7yfh8n"]
+
+[ext_resource type="Script" path="res://scripts/evidence/digital_evidence.gd" id="1_digital"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_evidence"]
+top_radius = 0.15
+bottom_radius = 0.15
+height = 0.05
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_evidence"]
+albedo_color = Color(0.1, 0.1, 0.2, 1)
+metallic = 0.9
+roughness = 0.1
+emission_enabled = true
+emission = Color(0, 0.8, 1, 1)
+emission_energy_multiplier = 0.5
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_evidence"]
+radius = 0.15
+height = 0.05
+
+[node name="DigitalEvidence" type="StaticBody3D"]
+script = ExtResource("1_digital")
+evidence_name = "Data Disk"
+description = "A portable data storage device"
+device_type = "Data Disk"
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_evidence")
+surface_material_override/0 = SubResource("StandardMaterial3D_evidence")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape3D_evidence")

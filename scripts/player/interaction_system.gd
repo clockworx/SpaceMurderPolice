@@ -26,6 +26,7 @@ func check_interaction():
 				interactable_lost.emit()
 			
 			current_interactable = collider
+			print("InteractionSystem: Hit ", collider.name, " - has interact: ", collider.has_method("interact"))
 			if collider.has_method("interact"):
 				interactable_detected.emit(collider)
 	else:

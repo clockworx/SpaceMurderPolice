@@ -41,11 +41,11 @@ func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
 	
-	var input_dir = Vector2()
+	var input_dir = Vector3()
 	if Input.is_action_pressed("move_forward"):
-		input_dir.y -= 1
+		input_dir.z -= 1
 	if Input.is_action_pressed("move_backward"):
-		input_dir.y += 1
+		input_dir.z += 1
 	if Input.is_action_pressed("move_left"):
 		input_dir.x -= 1
 	if Input.is_action_pressed("move_right"):
@@ -53,7 +53,7 @@ func _physics_process(delta):
 	
 	input_dir = input_dir.normalized()
 	
-	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var direction = (transform.basis * input_dir).normalized()
 	
 	if direction:
 		velocity.x = direction.x * WALK_SPEED
@@ -67,7 +67,9 @@ func _physics_process(delta):
 	interaction_system.check_interaction()
 
 func _on_interactable_detected(interactable):
+	print("Player: Interactable detected - ", interactable.name if interactable else "null")
 	interactable_detected.emit(interactable)
 
 func _on_interactable_lost():
+	print("Player: Interactable lost")
 	interactable_lost.emit()

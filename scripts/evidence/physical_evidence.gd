@@ -1,5 +1,5 @@
 extends StaticBody3D
-class_name EvidenceBase
+class_name PhysicalEvidence
 
 @export_group("Evidence Properties")
 @export var evidence_name: String = "Unknown Evidence"
@@ -7,6 +7,13 @@ class_name EvidenceBase
 @export var description: String = "A piece of evidence"
 @export var case_relevant: bool = true
 @export var requires_analysis: bool = false
+
+@export_group("Physical Properties")
+@export var weight: float = 0.1  # in kg
+@export var material_type: String = "Unknown"
+@export var has_fingerprints: bool = false
+@export var has_dna: bool = false
+@export var has_trace_elements: bool = false
 
 @export_group("Visual Properties")
 @export var hover_amplitude: float = 0.1
@@ -24,6 +31,7 @@ var original_material: Material
 signal evidence_collected(evidence)
 
 func _ready():
+	add_to_group("evidence")
 	collision_layer = 2  # Interactable layer
 	collision_mask = 1   # Collide with environment
 	
@@ -84,5 +92,12 @@ func get_evidence_data() -> Dictionary:
 		"description": description,
 		"case_relevant": case_relevant,
 		"requires_analysis": requires_analysis,
-		"collected_time": Time.get_unix_time_from_system()
+		"collected_time": Time.get_unix_time_from_system(),
+		"weight": weight,
+		"material_type": material_type,
+		"forensics": {
+			"fingerprints": has_fingerprints,
+			"dna": has_dna,
+			"trace_elements": has_trace_elements
+		}
 	}
