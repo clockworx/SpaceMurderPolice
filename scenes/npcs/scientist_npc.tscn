@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://dr5nk7m8qhx5p"]
+
+[ext_resource type="PackedScene" uid="uid://bx8nr7h4qld5m" path="res://scenes/npcs/npc_base.tscn" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_scientist"]
+albedo_color = Color(0.9, 0.9, 0.9, 1)
+
+[node name="ScientistNPC" instance=ExtResource("1_base")]
+npc_name = "Dr. Sarah Chen"
+role = "Research Scientist"
+initial_dialogue_id = "scientist_greeting"
+
+[node name="MeshInstance3D" parent="." index="0"]
+surface_material_override/0 = SubResource("StandardMaterial3D_scientist")
+
+[node name="NameLabel" parent="Head" index="0"]
+text = "Dr. Sarah Chen"
+
+[node name="RoleLabel" parent="Head" index="1"]
+text = "Research Scientist"

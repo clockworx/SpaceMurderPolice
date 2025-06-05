@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://c5h3m8q2nwkp7"]
+
+[ext_resource type="PackedScene" uid="uid://bx8nr7h4qld5m" path="res://scenes/npcs/npc_base.tscn" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_medical"]
+albedo_color = Color(0.8, 0.2, 0.2, 1)
+
+[node name="MedicalOfficerNPC" instance=ExtResource("1_base")]
+npc_name = "Dr. Sarah Chen"
+role = "Medical Officer"
+initial_dialogue_id = "medical_greeting"
+spawn_location = "Medical Bay"
+wander_radius = 4.0
+
+[node name="MeshInstance3D" parent="." index="0"]
+surface_material_override/0 = SubResource("StandardMaterial3D_medical")
+
+[node name="NameLabel" parent="Head" index="0"]
+text = "Dr. Sarah Chen"
+
+[node name="RoleLabel" parent="Head" index="1"]
+text = "Medical Officer"

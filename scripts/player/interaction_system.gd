@@ -22,15 +22,23 @@ func check_interaction():
 	if interaction_ray.is_colliding():
 		var collider = interaction_ray.get_collider()
 		if collider != current_interactable:
+			# Handle previous interactable
 			if current_interactable:
+				if current_interactable.has_method("on_hover_end"):
+					current_interactable.on_hover_end()
 				interactable_lost.emit()
 			
+			# Handle new interactable
 			current_interactable = collider
 			print("InteractionSystem: Hit ", collider.name, " - has interact: ", collider.has_method("interact"))
 			if collider.has_method("interact"):
+				if collider.has_method("on_hover_start"):
+					collider.on_hover_start()
 				interactable_detected.emit(collider)
 	else:
 		if current_interactable:
+			if current_interactable.has_method("on_hover_end"):
+				current_interactable.on_hover_end()
 			current_interactable = null
 			interactable_lost.emit()
 

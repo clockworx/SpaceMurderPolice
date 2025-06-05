@@ -1,0 +1,48 @@
+[gd_scene load_steps=5 format=3 uid="uid://t1123c66yy5h"]
+
+[ext_resource type="Script" path="res://scripts/environment/hiding_spot.gd" id="1_desk"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_desk_top"]
+size = Vector3(2, 0.1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_desk"]
+albedo_color = Color(0.4, 0.3, 0.2, 1)
+roughness = 0.7
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_desk"]
+size = Vector3(2, 0.8, 1)
+
+[node name="Desk" type="StaticBody3D"]
+collision_layer = 2
+script = ExtResource("1_desk")
+hiding_type = "desk"
+visibility_reduction = 0.7
+noise_when_entering = 3.0
+noise_when_exiting = 2.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("BoxShape3D_desk")
+
+[node name="DeskTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+mesh = SubResource("BoxMesh_desk_top")
+surface_material_override/0 = SubResource("StandardMaterial3D_desk")
+
+[node name="LeftLeg" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 0.4, -0.4)
+use_collision = false
+size = Vector3(0.1, 0.8, 0.1)
+material = SubResource("StandardMaterial3D_desk")
+
+[node name="RightLeg" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 0.4, -0.4)
+use_collision = false
+size = Vector3(0.1, 0.8, 0.1)
+material = SubResource("StandardMaterial3D_desk")
+
+[node name="BackPanel" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, -0.45)
+use_collision = false
+size = Vector3(1.8, 0.7, 0.05)
+material = SubResource("StandardMaterial3D_desk")

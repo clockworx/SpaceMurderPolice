@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://b8xn5q7y8vkxd"]
+[gd_scene load_steps=7 format=3 uid="uid://b8xn5q7y8vkxd"]
 
 [ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_8xnkd"]
 [ext_resource type="PackedScene" uid="uid://cm8kv3r1n5x6p" path="res://scenes/ui/player_ui.tscn" id="2_player"]
 [ext_resource type="PackedScene" uid="uid://c1xh5rd7yfh8n" path="res://scenes/ui/evidence_ui.tscn" id="3_evidence"]
+[ext_resource type="PackedScene" uid="uid://b7xv8hm4qnkp8" path="res://scenes/ui/dialogue_ui.tscn" id="4_dialogue"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g8x7m"]
 height = 1.8
@@ -38,5 +39,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 
 [node name="EvidenceUI" parent="UILayer" instance=ExtResource("3_evidence")]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="DialogueUI" parent="UILayer" instance=ExtResource("4_dialogue")]
 anchor_right = 1.0
 anchor_bottom = 1.0

@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=3 uid="uid://bxr3dmy6ody3d"]
+
+[ext_resource type="Script" path="res://scripts/environment/hiding_spot.gd" id="1_vent"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_vent"]
+size = Vector3(1.5, 0.6, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vent"]
+albedo_color = Color(0.25, 0.25, 0.3, 1)
+metallic = 0.9
+roughness = 0.3
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_vent"]
+size = Vector3(1.5, 0.6, 0.6)
+
+[node name="Vent" type="StaticBody3D"]
+collision_layer = 2
+script = ExtResource("1_vent")
+hiding_type = "vent"
+can_move_while_hidden = true
+visibility_reduction = 0.8
+noise_when_entering = 8.0
+noise_when_exiting = 6.0
+
+[node name="VentMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_vent")
+surface_material_override/0 = SubResource("StandardMaterial3D_vent")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_vent")
+
+[node name="Grate" type="CSGCombiner3D" parent="."]
+use_collision = false
+
+[node name="Frame" type="CSGBox3D" parent="Grate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.31)
+size = Vector3(1.4, 0.5, 0.05)
+
+[node name="Cutout" type="CSGBox3D" parent="Grate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.31)
+operation = 2
+size = Vector3(1.2, 0.3, 0.1)
+
+[node name="Bar1" type="CSGBox3D" parent="Grate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0, 0.31)
+size = Vector3(0.05, 0.5, 0.05)
+
+[node name="Bar2" type="CSGBox3D" parent="Grate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.31)
+size = Vector3(0.05, 0.5, 0.05)
+
+[node name="Bar3" type="CSGBox3D" parent="Grate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0, 0.31)
+size = Vector3(0.05, 0.5, 0.05)

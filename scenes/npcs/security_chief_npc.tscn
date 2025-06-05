@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3 uid="uid://c2n6m8r5swkq0"]
+
+[ext_resource type="PackedScene" uid="uid://bx8nr7h4qld5m" path="res://scenes/npcs/npc_base.tscn" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_security_chief"]
+albedo_color = Color(0.3, 0.3, 0.5, 1)
+
+[node name="SecurityChiefNPC" instance=ExtResource("1_base")]
+npc_name = "Jake Torres"
+role = "Security Chief"
+initial_dialogue_id = "security_chief_greeting"
+spawn_location = "Security Office"
+wander_radius = 4.0
+is_suspicious = false
+has_alibi = true
+
+[node name="MeshInstance3D" parent="." index="0"]
+surface_material_override/0 = SubResource("StandardMaterial3D_security_chief")
+
+[node name="NameLabel" parent="Head" index="0"]
+text = "Jake Torres"
+
+[node name="RoleLabel" parent="Head" index="1"]
+text = "Security Chief"

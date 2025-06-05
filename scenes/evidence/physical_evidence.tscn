@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://c4xh5rd7yfh8n"]
 
-[ext_resource type="Script" path="res://scripts/evidence/physical_evidence.gd" id="1_physical"]
+[ext_resource type="Script" uid="uid://dha5ryn38pgx" path="res://scripts/evidence/physical_evidence.gd" id="1_physical"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_evidence"]
 size = Vector3(0.3, 0.3, 0.3)
@@ -14,6 +14,7 @@ roughness = 0.8
 size = Vector3(0.3, 0.3, 0.3)
 
 [node name="PhysicalEvidence" type="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.492234, 0)
 script = ExtResource("1_physical")
 evidence_name = "Suspicious Object"
 description = "A small metallic object with unusual markings"

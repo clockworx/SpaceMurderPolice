@@ -1,0 +1,61 @@
+[gd_scene load_steps=2 format=3 uid="uid://b7xv8hm4qnkp8"]
+
+[ext_resource type="Script" path="res://scripts/ui/dialogue_ui.gd" id="1_dialogue"]
+
+[node name="DialogueUI" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_dialogue")
+
+[node name="DialoguePanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 100.0
+offset_top = -300.0
+offset_right = -100.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="DialoguePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SpeakerLabel" type="Label" parent="DialoguePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Speaker Name"
+
+[node name="HSeparator" type="HSeparator" parent="DialoguePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="DialogueText" type="RichTextLabel" parent="DialoguePanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 18
+text = "This is the dialogue text that will appear here."
+fit_content = true
+
+[node name="HSeparator2" type="HSeparator" parent="DialoguePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="OptionsContainer" type="VBoxContainer" parent="DialoguePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5

@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://d1k5m7p4rwkqa"]
+
+[ext_resource type="PackedScene" uid="uid://bx8nr7h4qld5m" path="res://scenes/npcs/npc_base.tscn" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ai_specialist"]
+albedo_color = Color(0.5, 0.2, 0.8, 1)
+
+[node name="AISpecialistNPC" instance=ExtResource("1_base")]
+npc_name = "Dr. Zara Okafor"
+role = "Ship AI Specialist"
+initial_dialogue_id = "ai_specialist_greeting"
+spawn_location = "Engineering"
+wander_radius = 3.5
+
+[node name="MeshInstance3D" parent="." index="0"]
+surface_material_override/0 = SubResource("StandardMaterial3D_ai_specialist")
+
+[node name="NameLabel" parent="Head" index="0"]
+text = "Dr. Zara Okafor"
+
+[node name="RoleLabel" parent="Head" index="1"]
+text = "Ship AI Specialist"

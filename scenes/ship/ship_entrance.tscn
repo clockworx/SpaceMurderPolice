@@ -1,0 +1,62 @@
+[gd_scene load_steps=8 format=3 uid="uid://cuux2i45fb4x5"]
+
+[ext_resource type="Script" uid="uid://c313k2ygyxopk" path="res://scripts/ship/ship_entrance.gd" id="1_entrance"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_entrance"]
+albedo_color = Color(0.2, 0.5, 0.8, 1)
+metallic = 0.8
+emission_enabled = true
+emission = Color(0.1, 0.3, 0.5, 1)
+emission_energy_multiplier = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_entrance"]
+material = SubResource("StandardMaterial3D_entrance")
+size = Vector3(3, 3, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_entrance"]
+size = Vector3(3, 3, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
+size = Vector3(4, 3, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_glow"]
+albedo_color = Color(0.3, 0.6, 0.9, 1)
+emission_enabled = true
+emission = Color(0.2, 0.5, 0.8, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_light"]
+material = SubResource("StandardMaterial3D_glow")
+height = 0.5
+radial_segments = 16
+
+[node name="ShipEntrance" type="StaticBody3D"]
+collision_layer = 2
+script = ExtResource("1_entrance")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_entrance")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_entrance")
+
+[node name="InteractionArea" type="Area3D" parent="."]
+collision_layer = 2
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
+shape = SubResource("BoxShape3D_trigger")
+
+[node name="AccessLight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0.3)
+mesh = SubResource("SphereMesh_light")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+light_color = Color(0.3, 0.6, 0.9, 1)
+light_energy = 2.0
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0.6)
+text = "THE DEDUCTION"
+outline_size = 10

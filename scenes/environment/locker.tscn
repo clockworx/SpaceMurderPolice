@@ -1,0 +1,41 @@
+[gd_scene load_steps=5 format=3 uid="uid://b43814pwlj4ah"]
+
+[ext_resource type="Script" path="res://scripts/environment/hiding_spot.gd" id="1_locker"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_locker"]
+size = Vector3(0.8, 2, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_locker"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+metallic = 0.8
+roughness = 0.2
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_locker"]
+size = Vector3(0.8, 2, 0.6)
+
+[node name="Locker" type="StaticBody3D"]
+collision_layer = 2
+script = ExtResource("1_locker")
+hiding_type = "locker"
+noise_when_entering = 5.0
+noise_when_exiting = 3.0
+
+[node name="LockerMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("BoxMesh_locker")
+surface_material_override/0 = SubResource("StandardMaterial3D_locker")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_locker")
+
+[node name="Door" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0.31)
+mesh = SubResource("BoxMesh_locker")
+skeleton = NodePath("../LockerMesh")
+surface_material_override/0 = SubResource("StandardMaterial3D_locker")
+
+[node name="Handle" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 1, 0.35)
+use_collision = false
+size = Vector3(0.1, 0.3, 0.05)

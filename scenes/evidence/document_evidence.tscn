@@ -1,14 +1,12 @@
-[gd_scene load_steps=5 format=3 uid="uid://document_001"]
+[gd_scene load_steps=5 format=3 uid="uid://km6u1ynire8"]
 
-[ext_resource type="Script" path="res://scripts/evidence/physical_evidence.gd" id="1_document"]
+[ext_resource type="Script" uid="uid://dha5ryn38pgx" path="res://scripts/evidence/physical_evidence.gd" id="1_document"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_document"]
 size = Vector3(0.21, 0.002, 0.297)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_document"]
 albedo_color = Color(0.9, 0.9, 0.8, 1)
-metallic = 0.0
-roughness = 1.0
 emission_enabled = true
 emission = Color(0.8, 0.8, 0.9, 1)
 emission_energy_multiplier = 0.3
@@ -17,12 +15,12 @@ emission_energy_multiplier = 0.3
 size = Vector3(0.21, 0.002, 0.297)
 
 [node name="DocumentEvidence" type="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.534399, 0)
 script = ExtResource("1_document")
+weight = 0.005
+material_type = "Paper"
 evidence_name = "Suspicious Document"
 description = "A printed report with several sections redacted."
-emission_color = Color(0.8, 0.8, 0.9, 1)
-material_type = "Paper"
-weight = 0.005
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("BoxMesh_document")

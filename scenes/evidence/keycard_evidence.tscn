@@ -1,6 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://keycard_001"]
+[gd_scene load_steps=5 format=3 uid="uid://dq431f482mbx8"]
 
-[ext_resource type="Script" path="res://scripts/evidence/physical_evidence.gd" id="1_keycard"]
+[ext_resource type="Script" uid="uid://dha5ryn38pgx" path="res://scripts/evidence/physical_evidence.gd" id="1_keycard"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_keycard"]
 size = Vector3(0.08, 0.005, 0.05)
@@ -17,12 +17,12 @@ emission_energy_multiplier = 0.5
 size = Vector3(0.08, 0.005, 0.05)
 
 [node name="KeycardEvidence" type="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.654491, 0)
 script = ExtResource("1_keycard")
-evidence_name = "Security Keycard"
-description = "High-level access keycard. Last used 2 hours ago."
-emission_color = Color(1, 1, 0.2, 1)
 material_type = "Plastic Composite"
 has_fingerprints = true
+evidence_name = "Security Keycard"
+description = "High-level access keycard. Last used 2 hours ago."
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("BoxMesh_keycard")

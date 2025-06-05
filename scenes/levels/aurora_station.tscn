@@ -1,16 +1,28 @@
-[gd_scene load_steps=16 format=3 uid="uid://c8xh5rd7yfh8n"]
+[gd_scene load_steps=31 format=3 uid="uid://c8xh5rd7yfh8n"]
 
 [ext_resource type="PackedScene" uid="uid://bqn7gxm5h8yxp" path="res://scenes/environment/sliding_door.tscn" id="4_station"]
 [ext_resource type="PackedScene" uid="uid://b8xn5q7y8vkxd" path="res://scenes/player/player.tscn" id="5_player"]
-[ext_resource type="Script" uid="uid://bv23mjkre0qts" path="res://scripts/managers/aurora_game_manager.gd" id="6_manager"]
+[ext_resource type="Script" uid="uid://bkioapmcqybq8" path="res://scripts/managers/aurora_game_manager.gd" id="6_manager"]
 [ext_resource type="Script" uid="uid://klgt26o5w4jk" path="res://scripts/managers/evidence_manager.gd" id="7_evidence"]
 [ext_resource type="PackedScene" uid="uid://c4xh5rd7yfh8n" path="res://scenes/evidence/physical_evidence.tscn" id="8_physical"]
 [ext_resource type="PackedScene" uid="uid://b4xh5rd7yfh8n" path="res://scenes/evidence/digital_evidence.tscn" id="9_digital"]
 [ext_resource type="PackedScene" uid="uid://jmkpgye7mhv" path="res://scenes/evidence/weapon_evidence.tscn" id="10_weapon"]
-[ext_resource type="Script" uid="uid://cd0bsvy2o14l0" path="res://scripts/managers/evidence_spawn_manager.gd" id="11_spawn"]
-[ext_resource type="PackedScene" path="res://scenes/evidence/evidence_spawn_point.tscn" id="12_spawn_point"]
-[ext_resource type="PackedScene" path="res://scenes/evidence/keycard_evidence.tscn" id="13_keycard"]
-[ext_resource type="PackedScene" path="res://scenes/evidence/document_evidence.tscn" id="14_document"]
+[ext_resource type="PackedScene" uid="uid://c1vk4777gkcwh" path="res://scenes/evidence/evidence_spawn_point.tscn" id="12_spawn_point"]
+[ext_resource type="PackedScene" uid="uid://dq431f482mbx8" path="res://scenes/evidence/keycard_evidence.tscn" id="13_keycard"]
+[ext_resource type="PackedScene" uid="uid://km6u1ynire8" path="res://scenes/evidence/document_evidence.tscn" id="14_document"]
+[ext_resource type="PackedScene" uid="uid://dr5nk7m8qhx5p" path="res://scenes/npcs/scientist_npc.tscn" id="15_scientist"]
+[ext_resource type="PackedScene" uid="uid://cg8xj5nqm7wkp" path="res://scenes/npcs/security_npc.tscn" id="16_security"]
+[ext_resource type="PackedScene" uid="uid://b3x5hm7qnkp8w" path="res://scenes/npcs/engineer_npc.tscn" id="17_engineer"]
+[ext_resource type="Script" uid="uid://dmffme0wbf7uo" path="res://scripts/managers/day_night_manager.gd" id="18_daynight"]
+[ext_resource type="Script" uid="uid://y5i8p3qi8ycn" path="res://scripts/environment/crime_scene_body.gd" id="20_body"]
+[ext_resource type="PackedScene" uid="uid://b43814pwlj4ah" path="res://scenes/environment/locker.tscn" id="21_locker"]
+[ext_resource type="PackedScene" uid="uid://bxr3dmy6ody3d" path="res://scenes/environment/vent.tscn" id="22_vent"]
+[ext_resource type="PackedScene" uid="uid://t1123c66yy5h" path="res://scenes/environment/desk.tscn" id="23_desk"]
+[ext_resource type="PackedScene" uid="uid://c5h3m8q2nwkp7" path="res://scenes/npcs/medical_officer_npc.tscn" id="24_medical"]
+[ext_resource type="PackedScene" uid="uid://b7j4nan3qwkp8" path="res://scenes/npcs/chief_scientist_npc.tscn" id="25_chief_scientist"]
+[ext_resource type="PackedScene" uid="uid://d1k5m7p4rwkqa" path="res://scenes/npcs/ai_specialist_npc.tscn" id="26_ai_specialist"]
+[ext_resource type="PackedScene" uid="uid://c2n6m8r5swkq0" path="res://scenes/npcs/security_chief_npc.tscn" id="27_security_chief"]
+[ext_resource type="PackedScene" uid="uid://cuux2i45fb4x5" path="res://scenes/ship/ship_entrance.tscn" id="28_ship_entrance"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.4, 0.4, 0.45, 1)
@@ -30,6 +42,18 @@ albedo_color = Color(0.7, 0.75, 0.8, 1)
 metallic = 0.8
 roughness = 0.2
 
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.3
+height = 1.7
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.3
+height = 1.7
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blood"]
+albedo_color = Color(0.5, 0, 0, 0.8)
+roughness = 0.1
+
 [sub_resource type="Environment" id="Environment_station"]
 background_mode = 1
 background_color = Color(0.2, 0.2, 0.3, 1)
@@ -45,30 +69,30 @@ ambient_light_energy = 2.5
 use_collision = true
 
 [node name="Floor" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
-size = Vector3(6, 0.2, 50)
+size = Vector3(6, 0.2, 60)
 material = SubResource("StandardMaterial3D_floor")
 
 [node name="Ceiling" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
-size = Vector3(6, 0.2, 50)
+size = Vector3(6, 0.2, 60)
 material = SubResource("StandardMaterial3D_ceiling")
 
 [node name="LeftWall" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 2, 0)
-size = Vector3(0.2, 4, 50)
+size = Vector3(0.2, 4, 60)
 material = SubResource("StandardMaterial3D_wall")
 
 [node name="RightWall" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 2, 0)
-size = Vector3(0.2, 4, 50)
+size = Vector3(0.2, 4, 60)
 material = SubResource("StandardMaterial3D_wall")
 
 [node name="BackWall" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -30)
 size = Vector3(6, 4, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="CaptainDoorCutout" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
+[node name="Laboratory3DoorCutout" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1.5, 10)
 operation = 2
 size = Vector3(0.4, 3, 2)
@@ -83,8 +107,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1.5, -5)
 operation = 2
 size = Vector3(0.4, 3, 2)
 
-[node name="ResearchDoorCutout" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
+[node name="EngineeringDoorCutout" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1.5, -10)
+operation = 2
+size = Vector3(0.4, 3, 2)
+
+[node name="CrewQuartersDoorCutout" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1.5, -15)
+operation = 2
+size = Vector3(0.4, 3, 2)
+
+[node name="CafeteriaDoorCutout" type="CSGBox3D" parent="MainHallway/HallwayCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1.5, -20)
 operation = 2
 size = Vector3(0.4, 3, 2)
 
@@ -109,72 +143,90 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.2, 20)
 
 [node name="Rooms" type="Node3D" parent="."]
 
-[node name="CaptainRoom" type="Node3D" parent="Rooms"]
+[node name="Laboratory3" type="Node3D" parent="Rooms"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 10)
 
-[node name="RoomCombiner" type="CSGCombiner3D" parent="Rooms/CaptainRoom"]
+[node name="RoomCombiner" type="CSGCombiner3D" parent="Rooms/Laboratory3"]
 use_collision = true
 
-[node name="Floor" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="Floor" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 size = Vector3(8, 0.2, 8)
 material = SubResource("StandardMaterial3D_floor")
 
-[node name="Ceiling" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="Ceiling" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
 size = Vector3(8, 0.2, 8)
 material = SubResource("StandardMaterial3D_ceiling")
 
-[node name="LeftWall" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="LeftWall" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 0)
 size = Vector3(0.2, 4, 8)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="BackWall" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="BackWall" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -4)
 size = Vector3(8, 4, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="FrontWall" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="FrontWall" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 4)
 size = Vector3(8, 4, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="RightWallLeft" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="RightWallLeft" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, -2)
 size = Vector3(0.2, 4, 4)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="RightWallRight" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="RightWallRight" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 2)
 size = Vector3(0.2, 4, 4)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="RightWallTop" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="RightWallTop" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3.5, 0)
 size = Vector3(0.2, 1, 2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="DoorCutout" type="CSGBox3D" parent="Rooms/CaptainRoom/RoomCombiner"]
+[node name="DoorCutout" type="CSGBox3D" parent="Rooms/Laboratory3/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.5, 0)
 operation = 2
 size = Vector3(0.4, 3, 2)
 
-[node name="Desk" type="CSGBox3D" parent="Rooms/CaptainRoom"]
+[node name="LabBench" type="CSGBox3D" parent="Rooms/Laboratory3"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 use_collision = true
 size = Vector3(3, 0.8, 1.5)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="SpawnPoints" type="Node3D" parent="Rooms/CaptainRoom"]
+[node name="SpawnPoints" type="Node3D" parent="Rooms/Laboratory3"]
 
-[node name="SpawnPoint1" parent="Rooms/CaptainRoom/SpawnPoints" instance=ExtResource("12_spawn_point")]
+[node name="SpawnPoint1" parent="Rooms/Laboratory3/SpawnPoints" instance=ExtResource("12_spawn_point")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.9, -0.3)
 
-[node name="SpawnPoint2" parent="Rooms/CaptainRoom/SpawnPoints" instance=ExtResource("12_spawn_point")]
+[node name="SpawnPoint2" parent="Rooms/Laboratory3/SpawnPoints" instance=ExtResource("12_spawn_point")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.9, 1.5)
 
-[node name="SpawnPoint3" parent="Rooms/CaptainRoom/SpawnPoints" instance=ExtResource("12_spawn_point")]
+[node name="SpawnPoint3" parent="Rooms/Laboratory3/SpawnPoints" instance=ExtResource("12_spawn_point")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.9, 0)
+
+[node name="CrimeSceneBody" type="StaticBody3D" parent="Rooms/Laboratory3"]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 0, 0.1, -2)
+collision_layer = 2
+script = ExtResource("20_body")
+
+[node name="BodyMesh" type="MeshInstance3D" parent="Rooms/Laboratory3/CrimeSceneBody"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.5, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Rooms/Laboratory3/CrimeSceneBody"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.5, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="BloodDecal" type="CSGBox3D" parent="Rooms/Laboratory3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -2)
+size = Vector3(3, 0.02, 2)
+material = SubResource("StandardMaterial3D_blood")
 
 [node name="MedicalBay" type="Node3D" parent="Rooms"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 5)
@@ -307,71 +359,211 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.9, -1)
 [node name="SpawnPoint2" parent="Rooms/SecurityOffice/SpawnPoints" instance=ExtResource("12_spawn_point")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.2, 2)
 
-[node name="ResearchLab" type="Node3D" parent="Rooms"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -10)
+[node name="CrewQuarters" type="Node3D" parent="Rooms"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -15)
 
-[node name="RoomCombiner" type="CSGCombiner3D" parent="Rooms/ResearchLab"]
+[node name="RoomCombiner" type="CSGCombiner3D" parent="Rooms/CrewQuarters"]
 use_collision = true
 
-[node name="Floor" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="Floor" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+size = Vector3(10, 0.2, 8)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="Ceiling" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+size = Vector3(10, 0.2, 8)
+material = SubResource("StandardMaterial3D_ceiling")
+
+[node name="LeftWall" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 2, 0)
+size = Vector3(0.2, 4, 8)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="BackWall" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -4)
+size = Vector3(10, 4, 0.2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="FrontWall" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 4)
+size = Vector3(10, 4, 0.2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="RightWallFront" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.9008, 2, 2)
+size = Vector3(0.2, 4, 4)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="RightWallBack" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.9008, 2, -2)
+size = Vector3(0.2, 4, 4)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="RightWallTop" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.9008, 3.5, 0)
+size = Vector3(0.2, 1, 2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="DoorCutout" type="CSGBox3D" parent="Rooms/CrewQuarters/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.5, 0)
+operation = 2
+size = Vector3(0.4, 3, 2)
+
+[node name="Bed1" type="CSGBox3D" parent="Rooms/CrewQuarters"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.3, -1.5)
+use_collision = true
+size = Vector3(1.5, 0.6, 2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="Bed2" type="CSGBox3D" parent="Rooms/CrewQuarters"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.3, -1.5)
+use_collision = true
+size = Vector3(1.5, 0.6, 2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="SpawnPoints" type="Node3D" parent="Rooms/CrewQuarters"]
+
+[node name="SpawnPoint1" parent="Rooms/CrewQuarters/SpawnPoints" instance=ExtResource("12_spawn_point")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 1)
+
+[node name="SpawnPoint2" parent="Rooms/CrewQuarters/SpawnPoints" instance=ExtResource("12_spawn_point")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.2, 0)
+
+[node name="Cafeteria" type="Node3D" parent="Rooms"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -20)
+
+[node name="RoomCombiner" type="CSGCombiner3D" parent="Rooms/Cafeteria"]
+use_collision = true
+
+[node name="Floor" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+size = Vector3(10, 0.2, 10)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="Ceiling" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+size = Vector3(10, 0.2, 10)
+material = SubResource("StandardMaterial3D_ceiling")
+
+[node name="RightWall" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 2, 0)
+size = Vector3(0.2, 4, 10)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="BackWall" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -5)
+size = Vector3(10, 4, 0.2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="FrontWall" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 5)
+size = Vector3(10, 4, 0.2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="LeftWallFront" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.62935, 2, 3)
+size = Vector3(0.2, 4, 4)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="LeftWallBack" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.62935, 2, -3)
+size = Vector3(0.2, 4, 4)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="LeftWallTop" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.62935, 3.5, 0)
+size = Vector3(0.2, 1, 2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="DoorCutout" type="CSGBox3D" parent="Rooms/Cafeteria/RoomCombiner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.5, 0)
+operation = 2
+size = Vector3(0.4, 3, 2)
+
+[node name="Table1" type="CSGBox3D" parent="Rooms/Cafeteria"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.4, -1.5)
+use_collision = true
+size = Vector3(2, 0.8, 3)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="Table2" type="CSGBox3D" parent="Rooms/Cafeteria"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.4, 1.5)
+use_collision = true
+size = Vector3(2, 0.8, 3)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="SpawnPoints" type="Node3D" parent="Rooms/Cafeteria"]
+
+[node name="SpawnPoint1" parent="Rooms/Cafeteria/SpawnPoints" instance=ExtResource("12_spawn_point")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+
+[node name="SpawnPoint2" parent="Rooms/Cafeteria/SpawnPoints" instance=ExtResource("12_spawn_point")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.2, -2)
+
+[node name="Engineering" type="Node3D" parent="Rooms"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -10)
+
+[node name="RoomCombiner" type="CSGCombiner3D" parent="Rooms/Engineering"]
+use_collision = true
+
+[node name="Floor" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 size = Vector3(8, 0.2, 10)
 material = SubResource("StandardMaterial3D_floor")
 
-[node name="Ceiling" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="Ceiling" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
 size = Vector3(8, 0.2, 10)
 material = SubResource("StandardMaterial3D_ceiling")
 
-[node name="RightWall" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="RightWall" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 0)
 size = Vector3(0.2, 4, 10)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="BackWall" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="BackWall" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -5)
 size = Vector3(8, 4, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="FrontWall" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="FrontWall" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 5)
 size = Vector3(8, 4, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="LeftWallFront" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="LeftWallFront" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 3)
 size = Vector3(0.2, 4, 4)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="LeftWallBack" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="LeftWallBack" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, -3)
 size = Vector3(0.2, 4, 4)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="LeftWallTop" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="LeftWallTop" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3.5, 0)
 size = Vector3(0.2, 1, 2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="DoorCutout" type="CSGBox3D" parent="Rooms/ResearchLab/RoomCombiner"]
+[node name="DoorCutout" type="CSGBox3D" parent="Rooms/Engineering/RoomCombiner"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.5, 0)
 operation = 2
 size = Vector3(0.4, 3, 2)
 
-[node name="LabBench" type="CSGBox3D" parent="Rooms/ResearchLab"]
+[node name="Console" type="CSGBox3D" parent="Rooms/Engineering"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 use_collision = true
 size = Vector3(4, 1, 2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="SpawnPoints" type="Node3D" parent="Rooms/ResearchLab"]
+[node name="SpawnPoints" type="Node3D" parent="Rooms/Engineering"]
 
-[node name="SpawnPoint1" parent="Rooms/ResearchLab/SpawnPoints" instance=ExtResource("12_spawn_point")]
+[node name="SpawnPoint1" parent="Rooms/Engineering/SpawnPoints" instance=ExtResource("12_spawn_point")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1.1, 0)
 
-[node name="SpawnPoint2" parent="Rooms/ResearchLab/SpawnPoints" instance=ExtResource("12_spawn_point")]
+[node name="SpawnPoint2" parent="Rooms/Engineering/SpawnPoints" instance=ExtResource("12_spawn_point")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.1, -1)
 
-[node name="SpawnPoint3" parent="Rooms/ResearchLab/SpawnPoints" instance=ExtResource("12_spawn_point")]
+[node name="SpawnPoint3" parent="Rooms/Engineering/SpawnPoints" instance=ExtResource("12_spawn_point")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 3)
 
 [node name="DockingArea" type="Node3D" parent="."]
@@ -405,13 +597,13 @@ size = Vector3(20, 6, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
 [node name="FrontWallLeft" type="CSGBox3D" parent="DockingArea/DockingCombiner"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 3, -7.5)
-size = Vector3(7, 6, 0.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.75049, 3, -7.5)
+size = Vector3(8.49902, 6, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
 [node name="FrontWallRight" type="CSGBox3D" parent="DockingArea/DockingCombiner"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 3, -7.5)
-size = Vector3(7, 6, 0.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.75366, 3, -7.5)
+size = Vector3(8.49268, 6, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
 [node name="FrontWallTop" type="CSGBox3D" parent="DockingArea/DockingCombiner"]
@@ -426,24 +618,32 @@ size = Vector3(3, 3, 0.4)
 
 [node name="Doors" type="Node3D" parent="."]
 
-[node name="CaptainDoor" parent="Doors" instance=ExtResource("4_station")]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -3, 0.1, 10)
-door_name = "Captain's Office"
+[node name="Laboratory3Door" parent="Doors" instance=ExtResource("4_station")]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -2.71659, 0.1, 10)
+door_name = "Laboratory 3"
 
 [node name="MedicalDoor" parent="Doors" instance=ExtResource("4_station")]
-transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 3, 0.1, 5)
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 2.72255, 0.0916761, 5)
 door_name = "Medical Bay"
 
 [node name="SecurityDoor" parent="Doors" instance=ExtResource("4_station")]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -3, 0.1, -5)
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -2.95736, 0.0526657, -5)
 door_name = "Security Office"
 
-[node name="ResearchDoor" parent="Doors" instance=ExtResource("4_station")]
-transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 3, 0.1, -10)
-door_name = "Research Lab"
+[node name="EngineeringDoor" parent="Doors" instance=ExtResource("4_station")]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 2.728, 0.1, -10)
+door_name = "Engineering"
+
+[node name="CrewQuartersDoor" parent="Doors" instance=ExtResource("4_station")]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -2.6883, 0.0832578, -15)
+door_name = "Crew Quarters"
+
+[node name="CafeteriaDoor" parent="Doors" instance=ExtResource("4_station")]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 2.69228, 0.1, -20)
+door_name = "Cafeteria"
 
 [node name="DockingDoor" parent="Doors" instance=ExtResource("4_station")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0921234, 22.5028)
 door_name = "Docking Bay"
 
 [node name="Labels" type="Node3D" parent="."]
@@ -455,10 +655,10 @@ text = "MAIN CORRIDOR"
 font_size = 48
 outline_size = 10
 
-[node name="CaptainLabel" type="Label3D" parent="Labels"]
+[node name="Laboratory3Label" type="Label3D" parent="Labels"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 3.5, 10)
 billboard = 1
-text = "CAPTAIN'S OFFICE"
+text = "LABORATORY 3"
 outline_size = 8
 
 [node name="MedicalLabel" type="Label3D" parent="Labels"]
@@ -473,10 +673,22 @@ billboard = 1
 text = "SECURITY"
 outline_size = 8
 
-[node name="ResearchLabel" type="Label3D" parent="Labels"]
+[node name="EngineeringLabel" type="Label3D" parent="Labels"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 3.5, -10)
 billboard = 1
-text = "RESEARCH LAB"
+text = "ENGINEERING"
+outline_size = 8
+
+[node name="CrewQuartersLabel" type="Label3D" parent="Labels"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 3.5, -15)
+billboard = 1
+text = "CREW QUARTERS"
+outline_size = 8
+
+[node name="CafeteriaLabel" type="Label3D" parent="Labels"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 3.5, -20)
+billboard = 1
+text = "CAFETERIA"
 outline_size = 8
 
 [node name="DockingLabel" type="Label3D" parent="Labels"]
@@ -541,9 +753,9 @@ directional_shadow_max_distance = 11.8
 directional_shadow_pancake_size = 3.7
 
 [node name="Player" parent="." instance=ExtResource("5_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 32.0812)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.52725, 32.0812)
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." groups=["world_environment"]]
 environment = SubResource("Environment_station")
 
 [node name="GameManager" type="Node" parent="."]
@@ -552,12 +764,8 @@ script = ExtResource("6_manager")
 [node name="EvidenceManager" type="Node" parent="."]
 script = ExtResource("7_evidence")
 
-[node name="EvidenceSpawnManager" type="Node" parent="."]
-script = ExtResource("11_spawn")
-evidence_scenes = [ExtResource("8_physical"), ExtResource("9_digital"), ExtResource("10_weapon"), ExtResource("13_keycard"), ExtResource("14_document")]
-spawn_count_min = 6
-spawn_count_max = 10
-guaranteed_evidence_types = ["weapon", "digital", "keycard"]
+[node name="DayNightManager" type="Node" parent="."]
+script = ExtResource("18_daynight")
 
 [node name="RoomLights" type="Node3D" parent="."]
 
@@ -576,7 +784,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 15)
 light_energy = 2.0
 omni_range = 15.0
 
-[node name="CaptainLight" type="OmniLight3D" parent="RoomLights"]
+[node name="Laboratory3Light" type="OmniLight3D" parent="RoomLights"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 3, 10)
 light_energy = 1.5
 omni_range = 8.0
@@ -591,12 +799,133 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 3, -5)
 light_energy = 1.5
 omni_range = 8.0
 
-[node name="ResearchLight" type="OmniLight3D" parent="RoomLights"]
+[node name="EngineeringLight" type="OmniLight3D" parent="RoomLights"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 3, -10)
 light_energy = 1.5
 omni_range = 8.0
+
+[node name="CrewQuartersLight" type="OmniLight3D" parent="RoomLights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 3, -15)
+light_energy = 1.5
+omni_range = 10.0
+
+[node name="CafeteriaLight" type="OmniLight3D" parent="RoomLights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 3, -20)
+light_energy = 1.5
+omni_range = 10.0
 
 [node name="DockingLight" type="OmniLight3D" parent="RoomLights"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 30)
 light_energy = 2.0
 omni_range = 20.0
+
+[node name="NPCs" type="Node3D" parent="."]
+
+[node name="ScientistNPC" parent="NPCs" instance=ExtResource("15_scientist")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -12)
+npc_name = "Dr. Marcus Webb"
+role = "Senior Researcher"
+initial_dialogue_id = "webb_intro"
+
+[node name="SecurityNPC" parent="NPCs" instance=ExtResource("16_security")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.1, -3)
+npc_name = "Jake Torres"
+initial_dialogue_id = "jake_intro"
+is_suspicious = false
+has_alibi = true
+
+[node name="EngineerNPC" parent="NPCs" instance=ExtResource("17_engineer")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 10)
+npc_name = "Riley Kim"
+role = "Tech Specialist"
+initial_dialogue_id = "riley_intro"
+is_suspicious = true
+wander_radius = 8.0
+
+[node name="MedicalOfficerNPC" parent="NPCs" instance=ExtResource("24_medical")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, 5)
+
+[node name="ChiefScientistNPC" parent="NPCs" instance=ExtResource("25_chief_scientist")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.1, 10)
+
+[node name="AISpecialistNPC" parent="NPCs" instance=ExtResource("26_ai_specialist")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -10)
+
+[node name="SecurityChiefNPC" parent="NPCs" instance=ExtResource("27_security_chief")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.1, -5)
+
+[node name="ShipEntrance" parent="." instance=ExtResource("28_ship_entrance")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 30)
+entrance_name = "The Deduction Docking Port"
+
+[node name="Evidence" type="Node3D" parent="."]
+
+[node name="WeaponEvidence" parent="Evidence" instance=ExtResource("10_weapon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.11283, 10)
+evidence_name = "Plasma Cutter"
+description = "High-voltage plasma cutter with blood traces"
+
+[node name="DigitalEvidence1" parent="Evidence" instance=ExtResource("9_digital")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.835976, -5)
+evidence_name = "Security Logs"
+description = "Security logs showing deleted keycard access records"
+
+[node name="PhysicalEvidence1" parent="Evidence" instance=ExtResource("8_physical")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1.5, -20)
+evidence_name = "Captain's Datapad"
+description = "Captain's personal datapad with threatening messages"
+
+[node name="DocumentEvidence" parent="Evidence" instance=ExtResource("14_document")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1.03912, -10)
+evidence_name = "System Diagnostics"
+description = "Sabotaged life support system diagnostics"
+
+[node name="KeycardEvidence" parent="Evidence" instance=ExtResource("13_keycard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.110025, -15)
+evidence_name = "Riley's Keycard"
+description = "Riley's engineering keycard found outside quarters"
+
+[node name="PhysicalEvidence2" parent="Evidence" instance=ExtResource("8_physical")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -10)
+evidence_name = "Bloody Footprints"
+description = "Bloody footprints leading from Lab 3 to Engineering"
+
+[node name="HidingSpots" type="Node3D" parent="."]
+
+[node name="SecurityLockers" type="Node3D" parent="HidingSpots"]
+
+[node name="Locker1" parent="HidingSpots/SecurityLockers" instance=ExtResource("21_locker")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 0.1, -5)
+
+[node name="Locker2" parent="HidingSpots/SecurityLockers" instance=ExtResource("21_locker")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 0.1, -3)
+
+[node name="CrewQuartersLockers" type="Node3D" parent="HidingSpots"]
+
+[node name="Locker3" parent="HidingSpots/CrewQuartersLockers" instance=ExtResource("21_locker")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -11.5, 0.1, -14)
+
+[node name="Locker4" parent="HidingSpots/CrewQuartersLockers" instance=ExtResource("21_locker")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -11.5, 0.1, -16)
+
+[node name="MainHallwayVents" type="Node3D" parent="HidingSpots"]
+
+[node name="Vent1" parent="HidingSpots/MainHallwayVents" instance=ExtResource("22_vent")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 5)
+
+[node name="Vent2" parent="HidingSpots/MainHallwayVents" instance=ExtResource("22_vent")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -8)
+
+[node name="Vent3" parent="HidingSpots/MainHallwayVents" instance=ExtResource("22_vent")]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, -2.8, 0.3, -20)
+
+[node name="RoomDesks" type="Node3D" parent="HidingSpots"]
+
+[node name="SecurityDesk" parent="HidingSpots/RoomDesks" instance=ExtResource("23_desk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.1, -7)
+
+[node name="EngineeringDesk" parent="HidingSpots/RoomDesks" instance=ExtResource("23_desk")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 9, 0.1, -12)
+
+[node name="MedicalVent" parent="HidingSpots" instance=ExtResource("22_vent")]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 10.8, 0.3, 5)
