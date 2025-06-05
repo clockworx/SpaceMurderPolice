@@ -90,12 +90,13 @@ func _on_evidence_spawned(count: int):
 func add_clue(clue_id: String, clue_data: Dictionary):
     # Add a clue that isn't a physical evidence item
     var clue = {
-        "name": clue_id,
-        "type": "clue",
-        "data": clue_data,
+        "name": clue_data.get("name", clue_id),
+        "type": clue_data.get("type", "clue"),
+        "description": clue_data.get("description", ""),
+        "details": clue_data.get("details", {}),
         "case_relevant": true,
         "collected_time": Time.get_ticks_msec()
     }
     collected_evidence.append(clue)
     evidence_collected.emit(clue)
-    print("Clue added: ", clue_id)
+    print("Clue added: ", clue_data.get("name", clue_id))

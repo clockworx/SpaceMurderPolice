@@ -1,0 +1,109 @@
+[gd_scene load_steps=4 format=3 uid="uid://byah2m4qnkp3s"]
+
+[ext_resource type="Script" path="res://scripts/ui/terminal_ui.gd" id="1_terminal"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_terminal_bg"]
+bg_color = Color(0, 0.1, 0, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 1, 0, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(0, 0.2, 0, 0.7)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.8, 0, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="TerminalUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+script = ExtResource("1_terminal")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.5)
+
+[node name="TerminalPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = 300.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_terminal_bg")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TerminalPanel"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="TerminalPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_font_sizes/font_size = 20
+text = "AURORA STATION TERMINAL"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TerminalName" type="Label" parent="TerminalPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 1, 0.7, 1)
+theme_override_font_sizes/font_size = 16
+text = "System Terminal"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="TerminalPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ContentArea" type="TabContainer" parent="TerminalPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SystemLogs" type="ScrollContainer" parent="TerminalPanel/VBoxContainer/ContentArea"]
+layout_mode = 2
+metadata/_tab_name = "System Logs"
+
+[node name="LogsList" type="VBoxContainer" parent="TerminalPanel/VBoxContainer/ContentArea/SystemLogs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Files" type="ScrollContainer" parent="TerminalPanel/VBoxContainer/ContentArea"]
+layout_mode = 2
+visible = false
+metadata/_tab_name = "Files"
+
+[node name="FilesList" type="VBoxContainer" parent="TerminalPanel/VBoxContainer/ContentArea/Files"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSeparator2" type="HSeparator" parent="TerminalPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ButtonContainer" type="HBoxContainer" parent="TerminalPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="CloseButton" type="Button" parent="TerminalPanel/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Close Terminal"

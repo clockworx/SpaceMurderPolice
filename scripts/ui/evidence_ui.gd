@@ -1,18 +1,14 @@
 extends Control
+class_name EvidenceUI
 
 @onready var evidence_list = $Panel/VBoxContainer/ScrollContainer/EvidenceList
 @onready var evidence_count_label = $Panel/VBoxContainer/HeaderPanel/CountLabel
 @onready var panel = $Panel
 
 var evidence_manager: EvidenceManager
-var day_night_manager: DayNightManager
-var night_progress_label: Label
 
 func _ready():
     visible = false
-    
-    # Create night progress indicator
-    _create_night_progress_indicator()
     
     # Find evidence manager (may not exist in ship scenes)
     evidence_manager = get_node_or_null("/root/AuroraStation/EvidenceManager")
@@ -28,11 +24,6 @@ func _ready():
             print("Evidence UI: Found Evidence Manager via group")
         else:
             print("Evidence UI: No Evidence Manager found (normal for ship scenes)")
-        
-        # Find day/night manager
-        day_night_manager = get_tree().get_first_node_in_group("day_night_manager")
-        if day_night_manager:
-            day_night_manager.night_started.connect(_on_night_started)
 
 func _input(event):
     if event.is_action_pressed("toggle_evidence"):
@@ -42,9 +33,15 @@ func toggle_visibility():
     visible = !visible
     if visible:
         update_evidence_display()
-        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+        # Register with UIManager when opened
+        var ui_manager = UIManager.get_instance()
+        if ui_manager:
+            ui_manager.register_ui_screen(self)
     else:
-        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+        # Unregister when closed
+        var ui_manager = UIManager.get_instance()
+        if ui_manager:
+            ui_manager.unregister_ui_screen(self)
 
 func _on_evidence_collected(evidence_data: Dictionary):
     print("Evidence UI: Evidence collected signal received - ", evidence_data.get("name", "Unknown"))
@@ -53,19 +50,6 @@ func _on_evidence_collected(evidence_data: Dictionary):
     else:
         # Flash a notification or something to indicate collection
         print("Evidence collected: ", evidence_data.get("name", "Unknown"))
-    
-    # Update night progress
-    if day_night_manager and day_night_manager.is_day_time() and night_progress_label:
-        var progress = day_night_manager.get_evidence_progress()
-        var collected = day_night_manager.evidence_collected
-        var threshold = day_night_manager.evidence_threshold
-        night_progress_label.text = "Evidence Progress: " + str(collected) + "/" + str(threshold)
-        
-        # Change color as approaching night
-        if progress >= 0.8:
-            night_progress_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
-        elif progress >= 0.6:
-            night_progress_label.add_theme_color_override("font_color", Color(1, 0.6, 0.3))
 
 func update_evidence_display():
     # Clear existing items
@@ -89,12 +73,8 @@ func update_evidence_display():
             print("Evidence UI: No evidence source available")
             return
     
-    var total = 6  # Default total evidence count
-    if evidence_manager:
-        total = evidence_manager.total_evidence_count
-    
-    evidence_count_label.text = "Evidence: " + str(collected) + "/" + str(total)
-    print("Evidence UI: Displaying ", collected, " of ", total, " evidence items")
+    evidence_count_label.text = "CASE EVIDENCE (" + str(collected) + ")"
+    print("Evidence UI: Displaying ", collected, " evidence items")
     
     # Add evidence items
     for evidence in evidence_data:
@@ -135,19 +115,10 @@ func create_evidence_item(evidence_data: Dictionary) -> Control:
     
     return container
 
-func _create_night_progress_indicator():
-    night_progress_label = Label.new()
-    night_progress_label.text = "Evidence Progress: 0/6"
-    night_progress_label.add_theme_font_size_override("font_size", 18)
-    night_progress_label.add_theme_color_override("font_color", Color(1, 0.8, 0.3))
-    night_progress_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
-    night_progress_label.add_theme_constant_override("shadow_offset_x", 2)
-    night_progress_label.add_theme_constant_override("shadow_offset_y", 2)
-    night_progress_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-    night_progress_label.position.x -= 200
-    night_progress_label.position.y += 20
-    add_child(night_progress_label)
-
-func _on_night_started():
-    if night_progress_label:
-        night_progress_label.visible = false
+func close_ui():
+    visible = false
+    
+    # Unregister with UIManager
+    var ui_manager = UIManager.get_instance()
+    if ui_manager:
+        ui_manager.unregister_ui_screen(self)

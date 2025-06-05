@@ -10,12 +10,12 @@ var current_interactable = null
 signal interactable_detected(interactable)
 signal interactable_lost
 
-func setup(ray: RayCast3D):
+func setup(ray: RayCast3D) -> void:
 	interaction_ray = ray
 	interaction_ray.target_position = Vector3(0, 0, -interaction_range)
 	interaction_ray.collision_mask = interaction_layer
 
-func check_interaction():
+func check_interaction() -> void:
 	if not interaction_ray:
 		return
 		
@@ -42,6 +42,6 @@ func check_interaction():
 			current_interactable = null
 			interactable_lost.emit()
 
-func interact():
+func interact() -> void:
 	if current_interactable and current_interactable.has_method("interact"):
 		current_interactable.interact()

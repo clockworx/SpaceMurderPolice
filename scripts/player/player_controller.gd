@@ -19,6 +19,7 @@ var can_move: bool = true
 var current_hiding_spot: HidingSpot = null
 var is_crouching: bool = false
 var default_camera_height: float = 0.0
+var ui_is_active: bool = false
 
 signal interactable_detected(interactable)
 signal interactable_lost
@@ -39,18 +40,26 @@ func _ready():
     interaction_system.setup(interaction_ray)
     interaction_system.interactable_detected.connect(_on_interactable_detected)
     interaction_system.interactable_lost.connect(_on_interactable_lost)
+    
+    # Connect to UIManager for UI state changes (with delay to ensure it's ready)
+    await get_tree().process_frame
+    var ui_manager = UIManager.get_instance()
+    if ui_manager:
+        ui_manager.ui_state_changed.connect(_on_ui_state_changed)
 
 func _input(event):
-    if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-        if not is_hidden or (current_hiding_spot and current_hiding_spot.hiding_type == "vent"):
-            # Limited look while in vents, no look in other hiding spots
-            var sensitivity = MOUSE_SENSITIVITY
-            if is_hidden:
-                sensitivity *= 0.3  # Reduced sensitivity in vents
-            
-            rotate_y(-event.relative.x * sensitivity)
-            camera_holder.rotate_x(-event.relative.y * sensitivity)
-            camera_holder.rotation.x = clamp(camera_holder.rotation.x, -1.5, 1.5)
+    if event is InputEventMouseMotion:
+        var mouse_mode = Input.get_mouse_mode()
+        if mouse_mode == Input.MOUSE_MODE_CAPTURED:
+            if not is_hidden or (current_hiding_spot and current_hiding_spot.hiding_type == "vent"):
+                # Limited look while in vents, no look in other hiding spots
+                var sensitivity = MOUSE_SENSITIVITY
+                if is_hidden:
+                    sensitivity *= 0.3  # Reduced sensitivity in vents
+                
+                rotate_y(-event.relative.x * sensitivity)
+                camera_holder.rotate_x(-event.relative.y * sensitivity)
+                camera_holder.rotation.x = clamp(camera_holder.rotation.x, -1.5, 1.5)
     
     if event.is_action_pressed("ui_cancel"):
         if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
@@ -133,7 +142,9 @@ func _physics_process(delta):
     
     move_and_slide()
     
-    interaction_system.check_interaction()
+    # Only check interactions when UI is not active
+    if not ui_is_active:
+        interaction_system.check_interaction()
 
 func _on_interactable_detected(interactable):
     print("Player: Interactable detected - ", interactable.name if interactable else "null")
@@ -142,6 +153,14 @@ func _on_interactable_detected(interactable):
 func _on_interactable_lost():
     print("Player: Interactable lost")
     interactable_lost.emit()
+
+func _on_ui_state_changed(is_ui_active: bool):
+    ui_is_active = is_ui_active
+    
+    # When UI becomes active, clear any current interactable
+    if is_ui_active and interaction_system.current_interactable:
+        interaction_system.current_interactable = null
+        interactable_lost.emit()
 
 func set_hidden_state(hidden: bool, hiding_spot: HidingSpot = null):
     is_hidden = hidden

@@ -6,34 +6,16 @@
   <component name="ChangeListManager">
     <list default="true" id="b44c900f-9122-4514-84db-e293651bd7a0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/indexLayout.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project.godot" beforeDir="false" afterPath="$PROJECT_DIR$/project.godot" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/evidence/digital_evidence.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/evidence/digital_evidence.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/evidence/document_evidence.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/evidence/document_evidence.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/evidence/evidence_spawn_point.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/evidence/evidence_spawn_point.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/evidence/keycard_evidence.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/evidence/keycard_evidence.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/evidence/physical_evidence.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/evidence/physical_evidence.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/evidence/weapon_evidence.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/evidence/weapon_evidence.tscn" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scenes/levels/aurora_station.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/aurora_station.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/player/player.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/player/player.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/ship/investigator_ship.tscn" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/evidence/digital_evidence.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/evidence/digital_evidence.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/evidence/evidence_base.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/evidence/evidence_base.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/evidence/physical_evidence.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/evidence/physical_evidence.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/game_controller.gd.uid" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/interactable.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/npcs/scientist_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/scientist_npc.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/ship/the_deduction.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/ship/the_deduction.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/ui/player_ui.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/ui/player_ui.tscn" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/investigation/case_file_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/investigation/case_file_ui.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/aurora_game_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/aurora_game_manager.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/managers/evidence_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/evidence_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/evidence_spawn_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/evidence_spawn_manager.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/player/interaction_system.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/player/interaction_system.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/player/player_controller.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/player/player_controller.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/player_controller.gd.uid" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/player_ui.gd.uid" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/ui/evidence_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/evidence_ui.gd" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -56,6 +38,7 @@
     &quot;accountId&quot;: &quot;d505079c-4f0d-4d54-b8c3-b6efda071bcb&quot;
   }
 }</component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -115,16 +98,28 @@
       <workItem from="1732317390227" duration="382000" />
       <workItem from="1748904053316" duration="5518000" />
       <workItem from="1749068343505" duration="1031000" />
-      <workItem from="1749069428954" duration="23043000" />
+      <workItem from="1749069428954" duration="30229000" />
     </task>
+    <task id="LOCAL-00001" summary="Adding a bunch of new stuff">
+      <option name="closed" value="true" />
+      <created>1749096353558</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1749096353559</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+    <MESSAGE value="Adding a bunch of new stuff" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adding a bunch of new stuff" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

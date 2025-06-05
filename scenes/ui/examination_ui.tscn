@@ -1,0 +1,118 @@
+[gd_scene load_steps=4 format=3 uid="uid://c3h4m5qnkqat"]
+
+[ext_resource type="Script" path="res://scripts/ui/examination_ui.gd" id="1_examination"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_medical_bg"]
+bg_color = Color(0.1, 0.1, 0.2, 0.95)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.3, 0.6, 0.9, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_progress"]
+bg_color = Color(0.2, 0.4, 0.8, 0.8)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="ExaminationUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+script = ExtResource("1_examination")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.7)
+
+[node name="ExaminationPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -250.0
+offset_right = 350.0
+offset_bottom = 250.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_medical_bg")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ExaminationPanel"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="ExaminationPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.6, 0.9, 1)
+theme_override_font_sizes/font_size = 24
+text = "MEDICAL EXAMINATION"
+horizontal_alignment = 1
+
+[node name="VictimName" type="Label" parent="ExaminationPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Subject: Unknown"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="ExaminationPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="ExaminationPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 16
+text = "Conducting initial examination..."
+horizontal_alignment = 1
+
+[node name="ProgressContainer" type="VBoxContainer" parent="ExaminationPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ProgressLabel" type="Label" parent="ExaminationPanel/VBoxContainer/ProgressContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "Progress: 0%"
+horizontal_alignment = 1
+
+[node name="ProgressBar" type="ProgressBar" parent="ExaminationPanel/VBoxContainer/ProgressContainer"]
+layout_mode = 2
+theme_override_styles/fill = SubResource("StyleBoxFlat_progress")
+max_value = 100.0
+step = 1.0
+show_percentage = false
+
+[node name="HSeparator2" type="HSeparator" parent="ExaminationPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="FindingsArea" type="ScrollContainer" parent="ExaminationPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FindingsList" type="VBoxContainer" parent="ExaminationPanel/VBoxContainer/FindingsArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ButtonContainer" type="HBoxContainer" parent="ExaminationPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="CancelButton" type="Button" parent="ExaminationPanel/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Cancel Examination"
+
+[node name="CompleteButton" type="Button" parent="ExaminationPanel/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Complete Examination"

@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://c8xh5rd7yfh8n"]
+[gd_scene load_steps=35 format=3 uid="uid://c8xh5rd7yfh8n"]
 
 [ext_resource type="PackedScene" uid="uid://bqn7gxm5h8yxp" path="res://scenes/environment/sliding_door.tscn" id="4_station"]
 [ext_resource type="PackedScene" uid="uid://b8xn5q7y8vkxd" path="res://scenes/player/player.tscn" id="5_player"]
@@ -14,7 +14,6 @@
 [ext_resource type="PackedScene" uid="uid://cg8xj5nqm7wkp" path="res://scenes/npcs/security_npc.tscn" id="16_security"]
 [ext_resource type="PackedScene" uid="uid://b3x5hm7qnkp8w" path="res://scenes/npcs/engineer_npc.tscn" id="17_engineer"]
 [ext_resource type="Script" uid="uid://dmffme0wbf7uo" path="res://scripts/managers/day_night_manager.gd" id="18_daynight"]
-[ext_resource type="Script" uid="uid://y5i8p3qi8ycn" path="res://scripts/environment/crime_scene_body.gd" id="20_body"]
 [ext_resource type="PackedScene" uid="uid://b43814pwlj4ah" path="res://scenes/environment/locker.tscn" id="21_locker"]
 [ext_resource type="PackedScene" uid="uid://bxr3dmy6ody3d" path="res://scenes/environment/vent.tscn" id="22_vent"]
 [ext_resource type="PackedScene" uid="uid://t1123c66yy5h" path="res://scenes/environment/desk.tscn" id="23_desk"]
@@ -23,6 +22,10 @@
 [ext_resource type="PackedScene" uid="uid://d1k5m7p4rwkqa" path="res://scenes/npcs/ai_specialist_npc.tscn" id="26_ai_specialist"]
 [ext_resource type="PackedScene" uid="uid://c2n6m8r5swkq0" path="res://scenes/npcs/security_chief_npc.tscn" id="27_security_chief"]
 [ext_resource type="PackedScene" uid="uid://cuux2i45fb4x5" path="res://scenes/ship/ship_entrance.tscn" id="28_ship_entrance"]
+[ext_resource type="PackedScene" uid="uid://b8h2m4qnkp8s" path="res://scenes/environment/computer_terminal.tscn" id="29_computer_terminal"]
+[ext_resource type="Script" uid="uid://cqqf8bruucs07" path="res://scripts/environment/body_examination.gd" id="30_body_examination"]
+[ext_resource type="Script" uid="uid://bbossfe0ivlhu" path="res://scripts/managers/ui_manager.gd" id="31_ui_manager"]
+[ext_resource type="Script" uid="uid://bifhranshf0s4" path="res://scripts/managers/life_support_manager.gd" id="32_life_support"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.4, 0.4, 0.45, 1)
@@ -58,6 +61,13 @@ roughness = 0.1
 background_mode = 1
 background_color = Color(0.2, 0.2, 0.3, 1)
 ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 2.5
+
+[sub_resource type="Environment" id="Environment_default"]
+background_mode = 1
+background_color = Color(0.1, 0.1, 0.15, 1)
+ambient_light_source = 3
 ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 2.5
 
@@ -213,7 +223,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.9, 0)
 [node name="CrimeSceneBody" type="StaticBody3D" parent="Rooms/Laboratory3"]
 transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 0, 0.1, -2)
 collision_layer = 2
-script = ExtResource("20_body")
+script = ExtResource("30_body_examination")
+examination_duration = 4.0
 
 [node name="BodyMesh" type="MeshInstance3D" parent="Rooms/Laboratory3/CrimeSceneBody"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.5, 0)
@@ -767,54 +778,63 @@ script = ExtResource("7_evidence")
 [node name="DayNightManager" type="Node" parent="."]
 script = ExtResource("18_daynight")
 
+[node name="UIManager" type="Node" parent="."]
+script = ExtResource("31_ui_manager")
+
+[node name="LifeSupportManager" type="Node" parent="."]
+script = ExtResource("32_life_support")
+
+[node name="WorldEnvironment2" type="WorldEnvironment" parent="." groups=["world_environment"]]
+environment = SubResource("Environment_default")
+
 [node name="RoomLights" type="Node3D" parent="."]
 
-[node name="HallwayLight1" type="OmniLight3D" parent="RoomLights"]
+[node name="HallwayLight1" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 light_energy = 2.0
 omni_range = 15.0
 
-[node name="HallwayLight2" type="OmniLight3D" parent="RoomLights"]
+[node name="HallwayLight2" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -15)
 light_energy = 2.0
 omni_range = 15.0
 
-[node name="HallwayLight3" type="OmniLight3D" parent="RoomLights"]
+[node name="HallwayLight3" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 15)
 light_energy = 2.0
 omni_range = 15.0
 
-[node name="Laboratory3Light" type="OmniLight3D" parent="RoomLights"]
+[node name="Laboratory3Light" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 3, 10)
 light_energy = 1.5
 omni_range = 8.0
 
-[node name="MedicalLight" type="OmniLight3D" parent="RoomLights"]
+[node name="MedicalLight" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 3, 5)
 light_energy = 1.5
 omni_range = 8.0
 
-[node name="SecurityLight" type="OmniLight3D" parent="RoomLights"]
+[node name="SecurityLight" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 3, -5)
 light_energy = 1.5
 omni_range = 8.0
 
-[node name="EngineeringLight" type="OmniLight3D" parent="RoomLights"]
+[node name="EngineeringLight" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 3, -10)
 light_energy = 1.5
 omni_range = 8.0
 
-[node name="CrewQuartersLight" type="OmniLight3D" parent="RoomLights"]
+[node name="CrewQuartersLight" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 3, -15)
 light_energy = 1.5
 omni_range = 10.0
 
-[node name="CafeteriaLight" type="OmniLight3D" parent="RoomLights"]
+[node name="CafeteriaLight" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 3, -20)
 light_energy = 1.5
 omni_range = 10.0
 
-[node name="DockingLight" type="OmniLight3D" parent="RoomLights"]
+[node name="DockingLight" type="OmniLight3D" parent="RoomLights" groups=["room_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 30)
 light_energy = 2.0
 omni_range = 20.0
@@ -822,7 +842,7 @@ omni_range = 20.0
 [node name="NPCs" type="Node3D" parent="."]
 
 [node name="ScientistNPC" parent="NPCs" instance=ExtResource("15_scientist")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -12)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -13.0773)
 npc_name = "Dr. Marcus Webb"
 role = "Senior Researcher"
 initial_dialogue_id = "webb_intro"
@@ -843,19 +863,19 @@ is_suspicious = true
 wander_radius = 8.0
 
 [node name="MedicalOfficerNPC" parent="NPCs" instance=ExtResource("24_medical")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.7171, 0.1, 5)
 
 [node name="ChiefScientistNPC" parent="NPCs" instance=ExtResource("25_chief_scientist")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.1, 10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.44165, 0.1, 10)
 
 [node name="AISpecialistNPC" parent="NPCs" instance=ExtResource("26_ai_specialist")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.1, -6.67125)
 
 [node name="SecurityChiefNPC" parent="NPCs" instance=ExtResource("27_security_chief")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.1, -5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.86555, 0.1, -6.58436)
 
 [node name="ShipEntrance" parent="." instance=ExtResource("28_ship_entrance")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 30)
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0.1, 33.7597)
 entrance_name = "The Deduction Docking Port"
 
 [node name="Evidence" type="Node3D" parent="."]
@@ -929,3 +949,34 @@ transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 9, 0.1
 
 [node name="MedicalVent" parent="HidingSpots" instance=ExtResource("22_vent")]
 transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 10.8, 0.3, 5)
+
+[node name="ComputerTerminals" type="Node3D" parent="."]
+
+[node name="SecurityMainTerminal" parent="ComputerTerminals" instance=ExtResource("29_computer_terminal")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -6, 1.2, -5)
+terminal_id = "security_main"
+terminal_name = "Security Main Terminal"
+
+[node name="Lab3ResearchTerminal" parent="ComputerTerminals" instance=ExtResource("29_computer_terminal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1.2, 10)
+terminal_id = "lab3_research"
+terminal_name = "Lab 3 Research Terminal"
+
+[node name="MedicalRecordsTerminal" parent="ComputerTerminals" instance=ExtResource("29_computer_terminal")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 6, 1.2, 5)
+terminal_id = "medical_records"
+terminal_name = "Medical Records Terminal"
+
+[node name="EngineeringDiagnosticsTerminal" parent="ComputerTerminals" instance=ExtResource("29_computer_terminal")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 6, 1.2, -10)
+terminal_id = "engineering_diagnostics"
+terminal_name = "Engineering Diagnostics"
+
+[node name="RileyPersonalTerminal" parent="ComputerTerminals" instance=ExtResource("29_computer_terminal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1.2, -15)
+terminal_id = "riley_personal"
+terminal_name = "Personal Terminal - R. Kim"
+
+[node name="CafeteriaTerminal" parent="ComputerTerminals" instance=ExtResource("29_computer_terminal")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 6, 1.2, -20)
+terminal_name = "Cafeteria Terminal"

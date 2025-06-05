@@ -1,6 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://cm8kv3r1n5x6p"]
+[gd_scene load_steps=5 format=3 uid="uid://cm8kv3r1n5x6p"]
 
-[ext_resource type="Script" path="res://scripts/investigation/case_file_ui.gd" id="1_0xnp7"]
+[ext_resource type="Script" path="res://scripts/ui/player_ui.gd" id="1_player_ui"]
+[ext_resource type="PackedScene" uid="uid://c1xh5rd7yfh8n" path="res://scenes/ui/evidence_ui.tscn" id="2_evidence"]
+[ext_resource type="PackedScene" uid="uid://b2k4m5qnkp8t" path="res://scenes/ui/case_file_ui.tscn" id="3_case_file"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q5b8x"]
 bg_color = Color(0, 0, 0, 0.5)
@@ -19,7 +21,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
-script = ExtResource("1_0xnp7")
+script = ExtResource("1_player_ui")
 
 [node name="Crosshair" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -58,3 +60,41 @@ layout_mode = 2
 text = "Press [E] to interact"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="EvidenceUI" parent="." instance=ExtResource("2_evidence")]
+
+[node name="CaseFileUI" parent="." instance=ExtResource("3_case_file")]
+
+[node name="LifeSupportPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 100.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="LifeSupportPanel"]
+layout_mode = 2
+
+[node name="LifeSupportLabel" type="Label" parent="LifeSupportPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "LIFE SUPPORT"
+horizontal_alignment = 1
+
+[node name="OxygenTime" type="Label" parent="LifeSupportPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 1, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+text = "45:00"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="LifeSupportPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 1, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+text = "OPERATIONAL"
+horizontal_alignment = 1

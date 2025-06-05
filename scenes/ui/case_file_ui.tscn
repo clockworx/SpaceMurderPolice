@@ -1,0 +1,155 @@
+[gd_scene load_steps=5 format=3 uid="uid://b2k4m5qnkp8t"]
+
+[ext_resource type="Script" path="res://scripts/ui/case_file_ui.gd" id="1_case_file"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_main_panel"]
+bg_color = Color(0.1, 0.1, 0.15, 0.95)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.4, 0.6, 0.8, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_selected"]
+bg_color = Color(0.3, 0.4, 0.6, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_unselected"]
+bg_color = Color(0.2, 0.2, 0.3, 0.8)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+
+[node name="CaseFileUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+script = ExtResource("1_case_file")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.7)
+
+[node name="MainPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 100.0
+offset_top = 80.0
+offset_right = -100.0
+offset_bottom = -80.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_main_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainPanel"]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+
+[node name="CaseTitle" type="Label" parent="MainPanel/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "CASE FILE: Murder at Aurora Station"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CloseButton" type="Button" parent="MainPanel/VBoxContainer/Header"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 0)
+text = "Close"
+
+[node name="TabContainer" type="TabContainer" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/tab_selected = SubResource("StyleBoxFlat_tab_selected")
+theme_override_styles/tab_unselected = SubResource("StyleBoxFlat_tab_unselected")
+
+[node name="Evidence" type="ScrollContainer" parent="MainPanel/VBoxContainer/TabContainer"]
+layout_mode = 2
+metadata/_tab_name = "Evidence"
+
+[node name="EvidenceList" type="VBoxContainer" parent="MainPanel/VBoxContainer/TabContainer/Evidence"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Suspects" type="ScrollContainer" parent="MainPanel/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_name = "Suspects"
+
+[node name="SuspectsList" type="VBoxContainer" parent="MainPanel/VBoxContainer/TabContainer/Suspects"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Timeline" type="ScrollContainer" parent="MainPanel/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_name = "Timeline"
+
+[node name="TimelineList" type="VBoxContainer" parent="MainPanel/VBoxContainer/TabContainer/Timeline"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Notes" type="ScrollContainer" parent="MainPanel/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_name = "Notes"
+
+[node name="NotesContainer" type="VBoxContainer" parent="MainPanel/VBoxContainer/TabContainer/Notes"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NotesInput" type="TextEdit" parent="MainPanel/VBoxContainer/TabContainer/Notes/NotesContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+placeholder_text = "Add your investigation notes here..."
+wrap_mode = 1
+
+[node name="Connections" type="ScrollContainer" parent="MainPanel/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_name = "Connections"
+
+[node name="ConnectionsContainer" type="VBoxContainer" parent="MainPanel/VBoxContainer/TabContainer/Connections"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ConnectionsHelp" type="Label" parent="MainPanel/VBoxContainer/TabContainer/Connections/ConnectionsContainer"]
+layout_mode = 2
+text = "Click evidence items to connect them. Connected evidence builds stronger cases."
+theme_override_colors/font_color = Color(0.8, 0.8, 0.9, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ConnectionsList" type="VBoxContainer" parent="MainPanel/VBoxContainer/TabContainer/Connections/ConnectionsContainer"]
+layout_mode = 2
+
+[node name="Theories" type="ScrollContainer" parent="MainPanel/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_name = "Theories"
+
+[node name="TheoriesContainer" type="VBoxContainer" parent="MainPanel/VBoxContainer/TabContainer/Theories"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AddTheoryButton" type="Button" parent="MainPanel/VBoxContainer/TabContainer/Theories/TheoriesContainer"]
+layout_mode = 2
+text = "+ Add New Theory"
+
+[node name="TheoriesList" type="VBoxContainer" parent="MainPanel/VBoxContainer/TabContainer/Theories/TheoriesContainer"]
+layout_mode = 2

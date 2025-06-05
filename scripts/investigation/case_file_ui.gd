@@ -1,4 +1,5 @@
 extends Control
+class_name CaseFileUI
 
 @onready var interaction_prompt = $InteractionPrompt
 @onready var interaction_label = $InteractionPrompt/Label
@@ -29,6 +30,12 @@ func _ready():
     
     # Create crouch indicator
     _create_crouch_indicator()
+    
+    # Connect to UIManager for UI state changes
+    await get_tree().process_frame
+    var ui_manager = UIManager.get_instance()
+    if ui_manager:
+        ui_manager.ui_state_changed.connect(_on_ui_state_changed)
     
     # Connect to player signals for interaction prompts
     await get_tree().process_frame
@@ -203,3 +210,10 @@ func _on_interactable_lost():
 
 func _on_hidden_state_changed(is_hidden: bool):
     set_hidden_indicator(is_hidden)
+
+func _on_ui_state_changed(is_ui_active: bool):
+    # Hide interaction prompts when any UI screen is active
+    if is_ui_active:
+        hide_interaction_prompt()
+    # Note: We don't automatically show prompts when UI closes,
+    # as the player may have moved away from the interactable
