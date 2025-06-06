@@ -326,25 +326,68 @@ func _init_dr_okafor_dialogue():
     dialogues["okafor_relationship"] = okafor_relationship
     dialogues["okafor_discovery"] = okafor_discovery
 
+func _init_unknown_figure_dialogue():
+    # Dialogue for when player encounters Riley in saboteur mode
+    var unknown_intro = DialogueNode.new("unknown_intro", "Unknown Figure",
+        "...")
+    unknown_intro.options.append(DialogueOption.new("Who are you?", "unknown_silent"))
+    unknown_intro.options.append(DialogueOption.new("What are you doing here?", "unknown_leave"))
+    unknown_intro.options.append(DialogueOption.new("Stop right there!", "unknown_flee"))
+    
+    var unknown_silent = DialogueNode.new("unknown_silent", "Unknown Figure",
+        "[The figure remains silent, their face obscured by a dark helmet]")
+    unknown_silent.options.append(DialogueOption.new("I said, who are you?!", "unknown_leave"))
+    unknown_silent.options.append(DialogueOption.new("[Try to get closer]", "unknown_flee"))
+    
+    var unknown_leave = DialogueNode.new("unknown_leave", "Unknown Figure",
+        "[The figure turns away, moving quickly toward the exit]")
+    unknown_leave.options.append(DialogueOption.new("[Follow them]", "unknown_gone"))
+    unknown_leave.options.append(DialogueOption.new("[Let them go]", "unknown_gone"))
+    
+    var unknown_flee = DialogueNode.new("unknown_flee", "Unknown Figure",
+        "[The figure suddenly bolts, disappearing into the shadows]")
+    unknown_flee.options.append(DialogueOption.new("[Give chase]", "unknown_gone"))
+    unknown_flee.options.append(DialogueOption.new("[Stay and investigate]", "unknown_gone"))
+    
+    var unknown_gone = DialogueNode.new("unknown_gone", "System",
+        "[The mysterious figure has vanished. You notice they were near the power control panel...]")
+    
+    dialogues["unknown_intro"] = unknown_intro
+    dialogues["unknown_silent"] = unknown_silent
+    dialogues["unknown_leave"] = unknown_leave
+    dialogues["unknown_flee"] = unknown_flee
+    dialogues["unknown_gone"] = unknown_gone
+
 func start_dialogue(npc: NPCBase, dialogue_id: String = ""):
     if not npc:
         return
         
     current_npc = npc
-    var start_id = dialogue_id if dialogue_id != "" else _get_npc_start_dialogue(npc.npc_name)
+    
+    # Check if NPC has character modes (for Riley saboteur mode)
+    var character_modes = npc.get_node_or_null("RileyCharacterModes")
+    var effective_npc_name = npc.npc_name
+    
+    if character_modes and character_modes.has_method("is_in_saboteur_mode") and character_modes.is_in_saboteur_mode():
+        # Initialize saboteur dialogue if not already done
+        if not dialogues.has("unknown_intro"):
+            _init_unknown_figure_dialogue()
+        effective_npc_name = "Unknown Figure"
+    
+    var start_id = dialogue_id if dialogue_id != "" else _get_npc_start_dialogue(effective_npc_name)
     
     # Check for relationship-based alternative start
-    if relationship_manager:
-        if relationship_manager.is_hostile(npc.npc_name):
+    if relationship_manager and effective_npc_name != "Unknown Figure":
+        if relationship_manager.is_hostile(effective_npc_name):
             # Try to find hostile version
-            var hostile_id = _get_hostile_dialogue_id(npc.npc_name)
+            var hostile_id = _get_hostile_dialogue_id(effective_npc_name)
             if dialogues.has(hostile_id):
                 start_id = hostile_id
     
     if dialogues.has(start_id):
         current_dialogue = dialogues[start_id]
         current_dialogue.visited = true
-        dialogue_started.emit(npc.npc_name)
+        dialogue_started.emit(effective_npc_name)
         _display_current_dialogue()
     else:
         push_error("Dialogue not found: " + start_id)
@@ -361,6 +404,8 @@ func _get_npc_start_dialogue(npc_name: String) -> String:
             return "jake_intro"
         "Dr. Zara Okafor", "Dr. Sarah Chen":
             return "okafor_intro"
+        "Unknown Figure":
+            return "unknown_intro"
         _:
             return "chen_intro"  # Default fallback
 

@@ -20,6 +20,7 @@ var current_hiding_spot: HidingSpot = null
 var is_crouching: bool = false
 var default_camera_height: float = 0.0
 var ui_is_active: bool = false
+var input_enabled: bool = true
 
 signal interactable_detected(interactable)
 signal interactable_lost
@@ -48,6 +49,9 @@ func _ready():
         ui_manager.ui_state_changed.connect(_on_ui_state_changed)
 
 func _input(event):
+    if not input_enabled:
+        return
+    
     if event is InputEventMouseMotion:
         var mouse_mode = Input.get_mouse_mode()
         if mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -227,3 +231,9 @@ func toggle_crouch():
     var player_ui = get_node_or_null("UILayer/PlayerUI")
     if player_ui and player_ui.has_method("set_crouch_indicator"):
         player_ui.set_crouch_indicator(is_crouching)
+
+func set_input_enabled(enabled: bool):
+    input_enabled = enabled
+    if not enabled:
+        # Stop any ongoing movement
+        velocity = Vector3.ZERO

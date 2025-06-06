@@ -66,7 +66,8 @@ func set_ui_interaction_mode():
 
 func register_ui_screen(ui_control: Control):
     """Register a UI screen that requires mouse interaction"""
-    print("UI Manager: Registering UI screen: ", ui_control.name if ui_control else "null")
+    var screen_name: String = String(ui_control.name) if ui_control != null else "null"
+    print("UI Manager: Registering UI screen: ", screen_name)
     if ui_control not in active_ui_screens:
         active_ui_screens.append(ui_control)
         
@@ -78,12 +79,13 @@ func register_ui_screen(ui_control: Control):
         print("UI Manager: Emitted ui_state_changed(true)")
     
     # Connect to the UI's cleanup
-    if ui_control.has_signal("tree_exiting"):
+    if ui_control.has_signal("tree_exiting") and not ui_control.tree_exiting.is_connected(_on_ui_screen_closed):
         ui_control.tree_exiting.connect(_on_ui_screen_closed.bind(ui_control))
 
 func unregister_ui_screen(ui_control: Control):
     """Unregister a UI screen"""
-    print("UI Manager: Unregistering UI screen: ", ui_control.name if ui_control else "null")
+    var screen_name: String = String(ui_control.name) if ui_control != null else "null"
+    print("UI Manager: Unregistering UI screen: ", screen_name)
     if ui_control in active_ui_screens:
         active_ui_screens.erase(ui_control)
     
@@ -99,7 +101,14 @@ func _on_ui_screen_closed(ui_control: Control):
 
 func _set_crosshair_visible(visible: bool):
     """Show/hide the crosshair UI"""
-    var player = get_tree().get_first_node_in_group("player")
+    if not is_inside_tree():
+        return
+        
+    var tree = get_tree()
+    if not tree:
+        return
+        
+    var player = tree.get_first_node_in_group("player")
     if player:
         var player_ui = player.get_node_or_null("UILayer/PlayerUI")
         if player_ui:

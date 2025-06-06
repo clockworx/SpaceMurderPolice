@@ -7,6 +7,7 @@ class_name NPCBase
 @export var initial_dialogue_id: String = "greeting"
 @export var is_suspicious: bool = false
 @export var has_alibi: bool = true
+@export var can_be_saboteur: bool = false  # For NPCs that can switch modes
 
 @export_group("Movement")
 @export var walk_speed: float = 2.0

@@ -1,5 +1,5 @@
 extends Control
-class_name CaseFileUI
+class_name InvestigationHUD
 
 @onready var interaction_prompt = $InteractionPrompt
 @onready var interaction_label = $InteractionPrompt/Label

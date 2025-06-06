@@ -51,10 +51,14 @@ enum State {
     WAITING,
     INVESTIGATING,
     CHASING,
-    SEARCHING
+    SEARCHING,
+    SABOTAGE  # Special state for sabotage operations
 }
 
 var current_state: State = State.PATROLLING
+var is_active: bool = true  # Whether the AI is currently active
+var sabotage_target: Vector3  # Target position for sabotage
+var sabotage_complete: bool = false  # Whether sabotage task is done
 
 signal player_spotted(player_position: Vector3)
 signal player_lost()
@@ -104,6 +108,9 @@ func _ready():
     print("RileyPatrolAI: Initialization complete, current state: ", State.keys()[current_state])
 
 func _physics_process(delta):
+    if not is_active:
+        return
+        
     if not npc_base:
         print("RileyPatrolAI: ERROR - npc_base is null!")
         return
@@ -139,6 +146,8 @@ func _physics_process(delta):
             _handle_chasing(delta)
         State.SEARCHING:
             _handle_searching(delta)
+        State.SABOTAGE:
+            _handle_sabotage(delta)
 
 func _handle_patrolling(_delta):
     # Get current target based on route
@@ -293,6 +302,46 @@ func _handle_searching(delta):
         npc_base.velocity = direction * patrol_speed
         npc_base.move_and_slide()
 
+func _handle_sabotage(delta):
+    # During sabotage, Riley moves to target while still detecting player
+    if not sabotage_complete:
+        var distance = npc_base.global_position.distance_to(sabotage_target)
+        
+        if distance < 1.5:
+            # Reached sabotage location, perform sabotage
+            sabotage_complete = true
+            wait_timer = 0.0
+            print("RileyPatrolAI: Reached sabotage location, performing sabotage...")
+            return
+        
+        # Move toward sabotage target (slower, more stealthy)
+        var direction = (sabotage_target - npc_base.global_position).normalized()
+        direction.y = 0
+        
+        # Use stealth speed if player nearby
+        var move_speed = patrol_speed * 0.7  # Slower movement during sabotage
+        if player:
+            var player_distance = npc_base.global_position.distance_to(player.global_position)
+            if player_distance < 8.0:
+                move_speed *= 0.5  # Very slow when player is nearby
+        
+        npc_base.velocity = direction * move_speed
+        npc_base.move_and_slide()
+        
+        # Face movement direction
+        if direction.length() > 0.1:
+            var look_pos = npc_base.global_position + direction
+            look_pos.y = npc_base.global_position.y
+            npc_base.look_at(look_pos, Vector3.UP)
+    else:
+        # Sabotage complete, wait briefly then return to normal patrol
+        wait_timer += delta
+        if wait_timer >= 3.0:  # Wait 3 seconds after completing sabotage
+            print("RileyPatrolAI: Sabotage complete, returning to patrol")
+            sabotage_complete = false
+            _change_state(State.PATROLLING)
+            _set_next_patrol_target()
+
 func _check_player_detection():
     var distance = npc_base.global_position.distance_to(player.global_position)
     
@@ -406,6 +455,13 @@ func _change_state(new_state: State):
             if state_label:
                 state_label.text = "WAITING"
                 state_label.modulate = Color.CYAN
+        State.SABOTAGE:
+            if state_light:
+                state_light.light_color = Color.MAGENTA
+                state_light.light_energy = 1.0
+            if state_label:
+                state_label.text = "SABOTAGE"
+                state_label.modulate = Color.MAGENTA
         _:  # PATROLLING
             if state_light:
                 state_light.light_color = Color.GREEN
@@ -565,3 +621,36 @@ func _check_for_doors():
             if "door" in prompt.to_lower():
                 print("RileyPatrolAI: Opening door")
                 result.collider.interact()
+
+func set_active(active: bool):
+    is_active = active
+    print("RileyPatrolAI: Set active to ", active)
+    
+    if not active:
+        # Stop all movement
+        if npc_base:
+            npc_base.velocity = Vector3.ZERO
+        # Hide debug indicators
+        if state_light:
+            state_light.visible = false
+        if state_label:
+            state_label.visible = false
+    else:
+        # Show debug indicators
+        if state_light:
+            state_light.visible = true
+        if state_label:
+            state_label.visible = true
+
+func start_sabotage_mission(target_position: Vector3):
+    print("RileyPatrolAI: Starting sabotage mission to ", target_position)
+    sabotage_target = target_position
+    sabotage_complete = false
+    wait_timer = 0.0
+    _change_state(State.SABOTAGE)
+
+func end_sabotage_mission():
+    print("RileyPatrolAI: Ending sabotage mission, returning to patrol")
+    _change_state(State.PATROLLING)
+    _set_next_patrol_target()
+    sabotage_complete = false

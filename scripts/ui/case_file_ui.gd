@@ -145,7 +145,7 @@ func _refresh_evidence_tab():
         var item = _create_evidence_entry(evidence, false)
         evidence_list.add_child(item)
 
-func _create_evidence_entry(evidence: Dictionary, clickable: bool = false) -> Control:
+func _create_evidence_entry(evidence: Dictionary, _clickable: bool = false) -> Control:
     var container = PanelContainer.new()
     container.custom_minimum_size = Vector2(0, 100)
     
@@ -777,7 +777,7 @@ func _delete_theory(index: int):
         theories.remove_at(index)
         _refresh_theories_tab()
 
-func _on_evidence_collected(evidence_data: Dictionary):
+func _on_evidence_collected(_evidence_data: Dictionary):
     # Refresh evidence tab when new evidence is collected
     if visible:
         _refresh_evidence_tab()

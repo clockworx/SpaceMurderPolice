@@ -7,6 +7,7 @@ var case_relevant_count: int = 0
 
 signal evidence_collected(evidence_data)
 signal all_evidence_collected()
+signal evidence_spawned(count)
 
 func _ready():
     add_to_group("evidence_manager")
@@ -33,6 +34,10 @@ func _connect_evidence_nodes():
                 total_evidence_count += 1
     
     print("Evidence Manager: Found ", total_evidence_count, " evidence items")
+    
+    # Emit signal so other systems know the count
+    if total_evidence_count > 0:
+        evidence_spawned.emit(total_evidence_count)
 
 func _find_evidence_recursive(node: Node):
     if node.get_class() == "StaticBody3D" and node.has_method("get_evidence_data"):
@@ -82,6 +87,9 @@ func get_collection_progress() -> float:
     if total_evidence_count == 0:
         return 0.0
     return float(collected_evidence.size()) / float(total_evidence_count)
+
+func get_total_evidence_count() -> int:
+    return total_evidence_count
 
 func _on_evidence_spawned(count: int):
     print("Evidence Manager: Spawn manager created ", count, " evidence items")

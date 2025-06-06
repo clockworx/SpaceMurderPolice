@@ -16,14 +16,17 @@ func _ready():
         get_tree().root.add_child(rel_manager)
         print("Game Manager: Created RelationshipManager")
     
-    # Create day/night manager
-    var day_night = get_tree().get_first_node_in_group("day_night_manager")
-    if not day_night:
-        day_night = DayNightManager.new()
-        add_child(day_night)
-        print("Game Manager: Created DayNightManager")
+    # Create sabotage system manager
+    var sabotage_manager = get_tree().get_first_node_in_group("sabotage_manager")
+    if not sabotage_manager:
+        sabotage_manager = SabotageSystemManager.new()
+        add_child(sabotage_manager)
+        print("Game Manager: Created SabotageSystemManager")
     else:
-        print("Game Manager: DayNightManager already exists")
+        print("Game Manager: SabotageSystemManager already exists")
+    
+    # Setup Riley character modes
+    call_deferred("_setup_riley_character_modes")
     
     # Find player and UI nodes
     var player = get_node_or_null("../Player")
@@ -119,3 +122,59 @@ func _setup_navigation():
     nav_region.navigation_mesh = nav_mesh
     
     print("Game Manager: Created navigation mesh for level")
+
+func _setup_riley_character_modes():
+    print("Game Manager: Setting up Riley character modes...")
+    
+    # Find all NPCs
+    var npcs = get_tree().get_nodes_in_group("npcs")
+    var riley = null
+    
+    for npc in npcs:
+        if npc.npc_name == "Riley Kim":
+            riley = npc
+            break
+    
+    if not riley:
+        print("Game Manager: Riley Kim not found!")
+        return
+    
+    print("Game Manager: Found Riley at ", riley.get_path())
+    
+    # Check if RileyPatrolAI already exists
+    var patrol_ai = riley.get_node_or_null("RileyPatrolAI")
+    if not patrol_ai:
+        # Create and add RileyPatrolAI (but start it as inactive)
+        patrol_ai = Node.new()
+        patrol_ai.name = "RileyPatrolAI"
+        patrol_ai.set_script(load("res://scripts/npcs/riley_patrol_ai.gd"))
+        riley.add_child(patrol_ai)
+        print("Game Manager: Added RileyPatrolAI to Riley Kim")
+        
+        # Wait for it to initialize then deactivate it
+        await get_tree().process_frame
+        if patrol_ai.has_method("set_active"):
+            patrol_ai.set_active(false)
+            print("Game Manager: Deactivated RileyPatrolAI for normal mode")
+    else:
+        print("Game Manager: RileyPatrolAI already exists")
+        # Make sure it's inactive for normal mode
+        if patrol_ai.has_method("set_active"):
+            patrol_ai.set_active(false)
+    
+    # Check if RileyCharacterModes already exists
+    var character_modes = riley.get_node_or_null("RileyCharacterModes")
+    if not character_modes:
+        # Create and add RileyCharacterModes
+        character_modes = Node.new()
+        character_modes.name = "RileyCharacterModes"
+        character_modes.set_script(load("res://scripts/npcs/riley_character_modes.gd"))
+        riley.add_child(character_modes)
+        print("Game Manager: Added RileyCharacterModes to Riley Kim")
+    else:
+        print("Game Manager: RileyCharacterModes already exists")
+    
+    # Set Riley as can_be_saboteur
+    riley.can_be_saboteur = true
+    
+    print("Game Manager: Riley setup complete - PatrolAI: ", patrol_ai != null, ", CharacterModes: ", character_modes != null)
