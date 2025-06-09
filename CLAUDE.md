@@ -4,17 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Murder at Aurora Station is an investigation mystery game built in Godot 4.4. Players are elite space investigators solving procedurally generated murders aboard research stations.
+Murder at Aurora Station is an investigation survival horror game built in Godot 4.4. Players investigate murders while surviving escalating threats in a compromised space station, combining detective work with Outlast Trials-style co-op survival mechanics.
 
 ### Game Concept
 - **Title**: Murder at Aurora Station
-- **Genre**: Investigation Mystery / Co-operative Survival (non-violent)
-- **Core Pillars**: Investigation First, Atmospheric Tension, Meaningful Cooperation, Replayable Variety, Non-violent Solutions
-- **Core Loop**: Receive Case → Dock at Station → Gather Evidence → Analyze & Deduce → Solve Case → Return to Ship
-- **Key Mechanics**: Evidence collection/analysis, deduction engine, witness interviews, theory building
-- **Setting**: Year 2387, various space stations (research, mining, colonial, corporate, military)
-- **Player Role**: Independent space investigators piloting "The Deduction" - a mobile forensics laboratory
-- **Progression**: Persistent ship upgrades, reputation building, equipment improvements
+- **Genre**: Investigation Survival Horror / Co-operative Mystery
+- **Core Pillars**: Investigation Under Pressure, Survival Horror Tension, Resource Management, Dynamic Threats, Cooperative Gameplay
+- **Core Loop**: Investigate Murder → Gather Evidence While Avoiding Threats → Manage Resources → Survive Escalating Danger → Uncover Truth → Escape Station
+- **Key Mechanics**: Evidence collection under threat, stealth/evasion, resource management, dynamic AI threats, environmental hazards, co-op mechanics
+- **Setting**: Year 2387, Aurora Research Complex - a massive multi-level space station with 20+ areas
+- **Player Role**: Investigators trapped on a hostile station with a killer and failing systems
+- **Progression**: Unlock new areas, acquire tools/keycards, piece together the conspiracy while survival becomes harder
 
 ## Development Environment
 
@@ -50,9 +50,10 @@ SpaceMurderPolice/
     │   ├── physical_evidence.gd # Physical evidence with hiding mechanics
     │   └── digital_evidence.gd  # Digital evidence type
     ├── npcs/
-    │   ├── npc_base.gd         # Base NPC with AI and relationships
-    │   ├── dialogue_system.gd  # Branching dialogue system
-    │   └── riley_patrol_ai.gd  # Night cycle AI behavior
+    │   ├── npc_base.gd              # Base NPC with AI and relationships
+    │   ├── dialogue_system.gd       # Branching dialogue system
+    │   ├── saboteur_patrol_ai.gd    # Saboteur hunting AI behavior
+    │   └── saboteur_character_modes.gd # Dynamic character transformation
     ├── investigation/
     │   └── case_file_ui.gd     # Crosshair and interaction prompts
     ├── ship/
@@ -61,10 +62,11 @@ SpaceMurderPolice/
     │   └── [station scripts]   # Individual ship station scripts
     └── managers/
         ├── aurora_game_manager.gd   # Scene-specific game logic
-        ├── evidence_manager.gd      # Tracks collected evidence
-        ├── evidence_spawn_manager.gd # Handles evidence placement
+        ├── evidence_manager.gd      # Tracks collected evidence/resources
+        ├── evidence_spawn_manager.gd # Handles evidence/resource placement
         ├── game_state_manager.gd    # Tracks game mode and progression
-        └── day_night_manager.gd     # Day/night cycle with stealth mechanics
+        ├── phase_manager.gd         # Multi-phase horror progression
+        └── sabotage_system_manager.gd # Environmental threats and sabotage
 ```
 
 ## Key Systems
@@ -87,18 +89,18 @@ SpaceMurderPolice/
   - 6 characters: Riley Kim, Jake Torres, Dr. Sarah Chen, Dr. Marcus Webb, Dr. Zara Okafor, AI Specialist
   - Relationship levels: Hostile, Unfriendly, Neutral, Friendly, Trusted
   - NPCs remember player choices and affect available information
-- **Day/Night Cycle**: 
-  - Evidence-based progression (collect 6 items to trigger night)
-  - Day phase: investigation and interviews
-  - Night phase: stealth gameplay with Riley patrol AI
+- **Phase System**: 
+  - 5 phases: Arrival, Escalating Tension, Active Threat, Critical Discovery, Desperate Escape
+  - Evidence and time-based progression
+  - Each phase increases environmental threats and saboteur activity
 - **Stealth Mechanics**: 
   - Hiding spots: lockers, vents, under desks
   - Crouching system with reduced movement speed
   - Line-of-sight detection system
-- **Riley's Patrol AI**: 
-  - State machine: PATROLLING, WAITING, INVESTIGATING, CHASING, SEARCHING
+- **Saboteur AI System**: 
+  - State machine: PATROLLING, WAITING, INVESTIGATING, CHASING, SEARCHING, SABOTAGE
   - Room-aware navigation system
-  - Debug indicators (overhead light and text)
+  - Dynamic character transformation (normal NPC → hostile saboteur)
 - **The Deduction Ship**: 
   - Mobile forensics laboratory scene
   - 4 investigation stations: Evidence Board, Forensics Lab, Computer Terminal, Case Files
@@ -119,49 +121,106 @@ SpaceMurderPolice/
 
 ## Current NPCs (Aurora Incident)
 
-1. **Dr. Sarah Chen** - Medical Officer (helpful, starts friendly)
-2. **Dr. Marcus Webb** - Chief Scientist (jealous researcher, red herring)  
-3. **Riley Kim** - Engineer/Tech specialist and the killer (nervous, deflecting, night patrol AI)
-4. **Jake Torres** - Security Chief (gruff, starts unfriendly)
-5. **Dr. Zara Okafor** - AI Specialist (helpful with station systems)
-6. **[Security NPC]** - Additional security personnel
+1. **Dr. Sarah Chen** - Medical Officer (helpful initially, becomes paranoid as systems fail)
+2. **Dr. Marcus Webb** - Chief Scientist (jealous researcher, red herring, may help or hinder)  
+3. **Alex Chen** - Station Engineer (can become the saboteur - nervous initially, transforms into hostile hunter)
+4. **Jake Torres** - Security Chief (gruff, tries to maintain order, can become ally or obstacle)
+5. **Dr. Zara Okafor** - AI Specialist (helpful with station systems, knows about system vulnerabilities)
+6. **Security Officer** - Additional security personnel (follows Jake's orders)
 
-## Mission Flow
+Note: Any NPC marked with `can_be_saboteur = true` can transform into the antagonist role
 
-### Phase 1: Initial Investigation (Day Cycle)
-- Dock The Deduction at Aurora Station
-- Meet 6 NPCs and examine crime scene (Lab 3)
-- Collect evidence throughout station (6 total items)
-- Conduct initial interviews with relationship tracking
+## New Design Vision (Investigation Survival Horror)
 
-### Phase 2: Day Investigation Continues
-- Access all 6 rooms: Lab 3, Medical, Security, Engineering, Crew Quarters, Cafeteria
-- Build relationships with NPCs to unlock information
-- Use Evidence UI (Tab key) to track collected items
-- Investigation triggers night cycle when enough evidence collected
+### Scale Expansion
+- **From**: 6-room station
+- **To**: Multi-level research complex with 20+ interconnected areas
+- **Verticality**: Multiple decks connected by elevators, maintenance shafts, emergency ladders
 
-### Phase 3: Night Cycle (Stealth Phase)
-- Station enters emergency lighting mode
-- Riley begins AI patrol route with state machine behavior
-- Player uses hiding spots (lockers, vents, desks) and crouching
-- Access restricted areas while avoiding Riley's line-of-sight detection
-- Find final evidence linking Riley to the murder
+### Core Gameplay Loop
+1. **Investigation Phase**: Gather evidence, interview NPCs, access terminals
+2. **Threat Escalation**: Riley becomes aware of investigation, begins hunting
+3. **Survival Phase**: Avoid Riley, manage resources, use environmental systems
+4. **Discovery Phase**: Uncover deeper conspiracy, systems begin failing
+5. **Escape Phase**: Race to escape as station becomes increasingly hostile
 
-### Phase 4: Return to Ship & Analysis
-- Enter The Deduction via ship entrance
-- Use 4 investigation stations to analyze evidence:
-  - Evidence Board: Connect clues and theories
-  - Forensics Lab: Analyze physical evidence  
-  - Computer Terminal: Research suspects
-  - Case Files: Review investigation notes
-- Build final deduction and solve case
+### Threat Types
+- **Riley (Primary)**: Evolves from nervous NPC to active hunter with AI states
+- **Environmental**: Power failures, oxygen leaks, gravity malfunctions
+- **Psychological**: Hallucinations, paranoia effects, trust erosion
+- **Secondary NPCs**: Other survivors may become threats under stress
 
-## Notes
+### Resource Management
+- **Flashlight Battery**: Essential for dark areas
+- **Oxygen Tanks**: For depressurized sections
+- **Medical Supplies**: Heal injuries from environmental hazards
+- **Access Cards**: Progress through secured areas
+- **Evidence Storage**: Limited inventory forces tough choices
 
+### Co-op Mechanics
+- **Split Investigation**: Players can investigate different areas simultaneously
+- **Shared Resources**: Must coordinate resource distribution
+- **Distraction Tactics**: One player distracts threats while other progresses
+- **Information Sharing**: Evidence discovered by one benefits all
+- **Revival System**: Downed players can be rescued
+
+## Mission Flow (Updated for Survival Horror)
+
+### Phase 1: Arrival & Initial Investigation
+- Dock at Aurora Station (last time you'll see The Deduction)
+- Power fluctuations hint at system instability
+- Meet NPCs in relatively safe environment
+- Discover Dr. Elena's body and initial evidence
+- Learn about station layout and recent incidents
+
+### Phase 2: Escalating Tension
+- Riley becomes suspicious of investigation
+- First system failures (lights flicker, doors malfunction)
+- NPCs show stress (paranoia, accusations, hiding)
+- Find keycards to access restricted areas
+- Resource scarcity begins (limited batteries, medical supplies)
+
+### Phase 3: Active Threat
+- Riley transitions to hunter mode with dynamic AI
+- Major system failures (life support, gravity, power grid)
+- Environmental hazards increase (fires, hull breaches, toxic leaks)
+- NPCs may help, hinder, or become secondary threats
+- Must balance investigation with survival
+
+### Phase 4: Critical Discovery
+- Uncover conspiracy involving station experiments
+- Riley becomes increasingly aggressive and unpredictable
+- Station AI may turn hostile or helpful based on player actions
+- Other NPCs' true motivations revealed
+- Final evidence pieces require extreme risk
+
+### Phase 5: Desperate Escape
+- Station enters critical failure cascade
+- Multiple escape routes (escape pods, maintenance shuttle, cargo bay)
+- Riley makes final desperate attempts to stop players
+- Time pressure from imminent station destruction
+- Co-op players must coordinate escape or sacrifice
+
+## Technical Implementation Notes
+
+### Current State (Prototype)
 - The project uses Godot 4.4
 - Main scene is main_menu.tscn -> aurora_station.tscn
-- Collision layers: Layer 1 = Environment, Layer 2 = Interactables
-- Input map: WASD movement, E for interaction, Tab for Evidence UI, M for debug day reset
-- The Deduction ship: Persistent mobile laboratory with scene transitions
-- Day/Night cycle: Evidence-based progression system with stealth mechanics
-- All scenes include interaction UI with crosshair feedback and hover prompts
+- Current scale: 6-room station (to be expanded to 20+ areas)
+- Collision layers: Layer 1 = Environment, Layer 2 = Interactables, Layer 3 = Threats
+- Input map: WASD movement, E for interaction, Tab for Inventory, Shift for Sprint, Ctrl for Crouch
+- Basic stealth mechanics implemented (hiding spots, line-of-sight detection)
+
+### Planned Systems
+- **Dynamic Threat AI**: State machines for Riley and environmental threats
+- **Resource Inventory**: Limited slots for batteries, keycards, medical supplies
+- **Sanity/Stress System**: Affects perception and NPC interactions
+- **Environmental Hazards**: Fire spread, oxygen depletion, gravity failures
+- **Co-op Networking**: 2-4 player support with shared progression
+- **Procedural Elements**: Evidence placement, threat patterns, system failures
+
+### Art Direction
+- **Visual Style**: Dark, atmospheric with dramatic lighting
+- **Color Palette**: Deep blues/purples (normal), red alerts (danger), green (safety)
+- **Environmental Storytelling**: Damage, blood trails, broken systems tell story
+- **UI Design**: Minimal HUD, diegetic interfaces where possible

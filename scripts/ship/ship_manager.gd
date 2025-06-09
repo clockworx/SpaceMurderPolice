@@ -68,8 +68,10 @@ func _get_evidence_count() -> int:
 	return 0
 
 func can_enter_ship() -> bool:
-	# Check if player can enter ship (e.g., not during night cycle)
-	var day_night = get_tree().get_first_node_in_group("day_night_manager")
-	if day_night and day_night.has_method("is_night_time"):
-		return not day_night.is_night_time()
+	# Check if player can enter ship (e.g., not during active threat phase)
+	var phase_manager = get_tree().get_first_node_in_group("phase_manager")
+	if phase_manager and phase_manager.has_method("get_phase_name"):
+		var current_phase = phase_manager.get_phase_name()
+		# Can't enter ship during active threat or later phases
+		return current_phase in ["ARRIVAL", "ESCALATING_TENSION"]
 	return true

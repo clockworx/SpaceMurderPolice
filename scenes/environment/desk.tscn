@@ -10,10 +10,10 @@ albedo_color = Color(0.4, 0.3, 0.2, 1)
 roughness = 0.7
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_desk"]
-size = Vector3(2, 0.8, 1)
+size = Vector3(2.2, 0.9, 1.2)
 
 [node name="Desk" type="StaticBody3D"]
-collision_layer = 2
+collision_layer = 3
 script = ExtResource("1_desk")
 hiding_type = "desk"
 visibility_reduction = 0.7

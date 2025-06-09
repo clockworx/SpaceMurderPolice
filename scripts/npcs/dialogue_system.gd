@@ -52,7 +52,7 @@ func _ready():
     # Create relationship manager if it doesn't exist
     if not relationship_manager:
         relationship_manager = RelationshipManager.new()
-        get_tree().root.add_child(relationship_manager)
+        get_tree().root.add_child.call_deferred(relationship_manager)
     
     # Initialize all dialogue trees
     _init_commander_chen_dialogue()

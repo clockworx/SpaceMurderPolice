@@ -47,6 +47,11 @@ func _ready():
     var ui_manager = UIManager.get_instance()
     if ui_manager:
         ui_manager.ui_state_changed.connect(_on_ui_state_changed)
+    
+    # Connect to PlayerUI for interaction prompts - handled in signal handlers instead
+    var player_ui = get_node_or_null("UILayer/PlayerUI")
+    if player_ui:
+        print("Player: Found PlayerUI for interaction prompts")
 
 func _input(event):
     if not input_enabled:
@@ -82,21 +87,21 @@ func _input(event):
     if event.is_action_pressed("crouch"):
         toggle_crouch()
     
-    # DEBUG: Force night cycle with N key
+    # DEBUG: Force next phase with N key
     if event is InputEventKey and event.pressed and event.keycode == KEY_N:
-        var day_night = get_tree().get_first_node_in_group("day_night_manager")
-        if day_night and day_night.has_method("trigger_night_cycle"):
-            print("DEBUG: Forcing night cycle")
-            day_night.trigger_night_cycle()
+        var phase_manager = get_tree().get_first_node_in_group("phase_manager")
+        if phase_manager and phase_manager.has_method("advance_to_next_phase"):
+            print("DEBUG: Forcing next phase")
+            phase_manager.advance_to_next_phase()
         else:
-            print("DEBUG: Day/Night manager not found!")
+            print("DEBUG: Phase manager not found!")
     
-    # DEBUG: Reset to day with M key (for Morning)
+    # DEBUG: Reset to arrival phase with M key
     if event is InputEventKey and event.pressed and event.keycode == KEY_M:
-        var day_night = get_tree().get_first_node_in_group("day_night_manager")
-        if day_night and day_night.has_method("force_day_cycle"):
-            print("DEBUG: Forcing day cycle")
-            day_night.force_day_cycle()
+        var phase_manager = get_tree().get_first_node_in_group("phase_manager")
+        if phase_manager and phase_manager.has_method("force_phase"):
+            print("DEBUG: Forcing arrival phase")
+            phase_manager.force_phase(phase_manager.Phase.ARRIVAL)
 
 func _physics_process(delta):
     if not can_move and not is_hidden:
@@ -153,10 +158,23 @@ func _physics_process(delta):
 func _on_interactable_detected(interactable):
     print("Player: Interactable detected - ", interactable.name if interactable else "null")
     interactable_detected.emit(interactable)
+    
+    # Show interaction prompt
+    var player_ui = get_node_or_null("UILayer/PlayerUI")
+    if player_ui and interactable.has_method("get_interaction_prompt"):
+        var prompt = interactable.get_interaction_prompt()
+        player_ui.show_interaction_prompt(prompt)
+    elif player_ui:
+        player_ui.show_interaction_prompt("Press [E] to interact")
 
 func _on_interactable_lost():
     print("Player: Interactable lost")
     interactable_lost.emit()
+    
+    # Hide interaction prompt
+    var player_ui = get_node_or_null("UILayer/PlayerUI")
+    if player_ui:
+        player_ui.hide_interaction_prompt()
 
 func _on_ui_state_changed(is_ui_active: bool):
     ui_is_active = is_ui_active

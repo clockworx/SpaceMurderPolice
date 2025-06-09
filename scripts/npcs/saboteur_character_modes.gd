@@ -1,5 +1,5 @@
 extends Node
-class_name RileyCharacterModes
+class_name SaboteurCharacterModes
 
 # Character mode states
 enum Mode {
@@ -19,12 +19,12 @@ enum Mode {
 
 var current_mode: Mode = Mode.NORMAL
 var npc_base: NPCBase
-var patrol_ai: RileyPatrolAI
+var patrol_ai: SaboteurPatrolAI
 var mesh_instance: MeshInstance3D
 var name_label: Label3D
 var role_label: Label3D
-var original_name: String = "Riley Kim"
-var original_role: String = "Engineer"
+var original_name: String = "Unknown"
+var original_role: String = "Station Crew"
 var sabotage_target: Vector3
 
 # Materials for switching appearance
@@ -37,21 +37,21 @@ signal sabotage_movement_started(target_position: Vector3)
 signal sabotage_movement_completed()
 
 func _ready():
-    print("RileyCharacterModes: Initializing...")
+    print("SaboteurCharacterModes: Initializing...")
     npc_base = get_parent()
     if not npc_base:
-        push_error("RileyCharacterModes must be child of NPCBase")
+        push_error("SaboteurCharacterModes must be child of NPCBase")
         return
     
-    print("RileyCharacterModes: Found parent NPC: ", npc_base.npc_name)
+    print("SaboteurCharacterModes: Found parent NPC: ", npc_base.npc_name)
     
     # Find components
-    patrol_ai = npc_base.get_node_or_null("RileyPatrolAI")
+    patrol_ai = npc_base.get_node_or_null("SaboteurPatrolAI")
     mesh_instance = npc_base.get_node_or_null("MeshInstance3D")
     name_label = npc_base.get_node_or_null("Head/NameLabel")
     role_label = npc_base.get_node_or_null("Head/RoleLabel")
     
-    print("RileyCharacterModes: Components found - PatrolAI: ", patrol_ai != null, ", Mesh: ", mesh_instance != null, ", NameLabel: ", name_label != null)
+    print("SaboteurCharacterModes: Components found - PatrolAI: ", patrol_ai != null, ", Mesh: ", mesh_instance != null, ", NameLabel: ", name_label != null)
     
     # Store original values
     if name_label:
@@ -59,7 +59,7 @@ func _ready():
     if role_label:
         original_role = role_label.text
     
-    print("RileyCharacterModes: Original name: ", original_name, ", role: ", original_role)
+    print("SaboteurCharacterModes: Original name: ", original_name, ", role: ", original_role)
     
     # Create materials
     _setup_materials()
@@ -70,16 +70,16 @@ func _ready():
     # Connect to sabotage system
     var sabotage_manager = get_tree().get_first_node_in_group("sabotage_manager")
     if sabotage_manager:
-        print("RileyCharacterModes: Found sabotage manager, connecting signals...")
+        print("SaboteurCharacterModes: Found sabotage manager, connecting signals...")
         sabotage_manager.sabotage_started.connect(_on_sabotage_started)
         sabotage_manager.sabotage_ended.connect(_on_sabotage_ended)
-        print("RileyCharacterModes: Connected to sabotage signals")
+        print("SaboteurCharacterModes: Connected to sabotage signals")
     else:
-        print("RileyCharacterModes: WARNING - No sabotage manager found!")
+        print("SaboteurCharacterModes: WARNING - No sabotage manager found!")
     
     # Start in normal mode
     _apply_normal_mode()
-    print("RileyCharacterModes: Initialization complete")
+    print("SaboteurCharacterModes: Initialization complete")
 
 func _setup_materials():
     # Create normal material
@@ -130,7 +130,7 @@ func switch_to_normal_mode():
     if current_mode == Mode.NORMAL:
         return
     
-    print("Riley switching to NORMAL mode")
+    print("Saboteur switching to NORMAL mode")
     current_mode = Mode.NORMAL
     _apply_normal_mode()
     mode_changed.emit(Mode.NORMAL)
@@ -139,7 +139,7 @@ func switch_to_saboteur_mode():
     if current_mode == Mode.SABOTEUR:
         return
     
-    print("Riley switching to SABOTEUR mode")
+    print("Saboteur switching to SABOTEUR mode")
     current_mode = Mode.SABOTEUR
     _apply_saboteur_mode()
     mode_changed.emit(Mode.SABOTEUR)
@@ -165,7 +165,7 @@ func _apply_normal_mode():
     if npc_base:
         npc_base.walk_speed = 2.0
     
-    # Disable patrol behavior in normal mode (Riley is helpful, not patrolling)
+    # Disable patrol behavior in normal mode (Saboteur is helpful, not patrolling)
     if patrol_ai:
         patrol_ai.set_physics_process(false)
         if patrol_ai.has_method("set_active"):
@@ -214,7 +214,7 @@ func move_to_sabotage_target(target_position: Vector3):
     # Override physics process for custom movement
     set_physics_process(true)
 
-func _physics_process(delta):
+func _physics_process(_delta):
     if current_mode != Mode.SABOTEUR:
         set_physics_process(false)
         return
@@ -252,15 +252,15 @@ func _physics_process(delta):
         npc_base.look_at(look_pos, Vector3.UP)
 
 func _on_sabotage_started(location: String, position: Vector3):
-    print("RileyCharacterModes: Sabotage started signal received - Location: ", location, ", Position: ", position)
-    print("RileyCharacterModes: Current NPC name: ", npc_base.npc_name)
+    print("SaboteurCharacterModes: Sabotage started signal received - Location: ", location, ", Position: ", position)
+    print("SaboteurCharacterModes: Current NPC name: ", npc_base.npc_name)
     
-    # Only Riley responds to sabotage events
-    if npc_base.npc_name != "Riley Kim":
-        print("RileyCharacterModes: Not Riley Kim, ignoring sabotage signal")
+    # Only NPCs marked as saboteurs respond to sabotage events
+    if not npc_base.can_be_saboteur:
+        print("SaboteurCharacterModes: Not a saboteur NPC, ignoring sabotage signal")
         return
     
-    print("RileyCharacterModes: This IS Riley Kim! Switching to saboteur mode...")
+    print("SaboteurCharacterModes: This is a saboteur NPC! Switching to saboteur mode...")
     
     # Switch to saboteur mode
     switch_to_saboteur_mode()
@@ -272,7 +272,7 @@ func _on_sabotage_ended():
     # Wait a bit before switching back
     await get_tree().create_timer(5.0).timeout
     
-    print("Riley: Sabotage complete. Returning to normal mode...")
+    print("Saboteur: Sabotage complete. Returning to normal mode...")
     switch_to_normal_mode()
 
 func is_in_saboteur_mode() -> bool:
@@ -285,7 +285,7 @@ func get_current_identity() -> String:
 
 # Debug function - call this to manually test mode switching
 func debug_test_saboteur_mode():
-    print("RileyCharacterModes: DEBUG - Manual mode switch test")
+    print("SaboteurCharacterModes: DEBUG - Manual mode switch test")
     if current_mode == Mode.NORMAL:
         switch_to_saboteur_mode()
     else:

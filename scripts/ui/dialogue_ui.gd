@@ -20,18 +20,22 @@ func _ready():
     
     # Get dialogue system reference
     dialogue_system = DialogueSystem.new()
-    add_child(dialogue_system)
+    add_child.call_deferred(dialogue_system)
     
-    # Connect dialogue system signals
-    dialogue_system.dialogue_started.connect(_on_dialogue_started)
-    dialogue_system.dialogue_ended.connect(_on_dialogue_ended)
-    dialogue_system.dialogue_line_changed.connect(_on_dialogue_line_changed)
-    dialogue_system.evidence_revealed.connect(_on_evidence_revealed)
+    # Connect dialogue system signals after it's added
+    call_deferred("_connect_dialogue_signals")
     
-    # Get relationship manager and connect to changes
-    var rel_manager = dialogue_system.relationship_manager
-    if rel_manager:
-        rel_manager.relationship_changed.connect(_on_relationship_changed)
+func _connect_dialogue_signals():
+    if dialogue_system:
+        dialogue_system.dialogue_started.connect(_on_dialogue_started)
+        dialogue_system.dialogue_ended.connect(_on_dialogue_ended)
+        dialogue_system.dialogue_line_changed.connect(_on_dialogue_line_changed)
+        dialogue_system.evidence_revealed.connect(_on_evidence_revealed)
+        
+        # Get relationship manager and connect to changes
+        var rel_manager = dialogue_system.relationship_manager
+        if rel_manager:
+            rel_manager.relationship_changed.connect(_on_relationship_changed)
 
 func _on_dialogue_started(_npc_name: String):
     visible = true

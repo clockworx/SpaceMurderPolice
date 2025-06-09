@@ -6,8 +6,8 @@
 albedo_color = Color(0.2, 0.2, 0.4, 1)
 
 [node name="SecurityNPC" instance=ExtResource("1_base")]
-npc_name = "Officer Marcus Johnson"
-role = "Security Chief"
+npc_name = "Security Officer"
+role = "Security"
 initial_dialogue_id = "security_greeting"
 is_suspicious = true
 has_alibi = false
@@ -16,7 +16,7 @@ has_alibi = false
 surface_material_override/0 = SubResource("StandardMaterial3D_security")
 
 [node name="NameLabel" parent="Head" index="0"]
-text = "Officer Johnson"
+text = "Security Officer"
 
 [node name="RoleLabel" parent="Head" index="1"]
-text = "Security Chief"
+text = "Security"

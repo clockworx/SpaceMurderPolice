@@ -5,26 +5,32 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b44c900f-9122-4514-84db-e293651bd7a0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/environment/computer_terminal.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/environment/computer_terminal.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/environment/sliding_door.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/environment/sliding_door.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/levels/aurora_station.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/aurora_station.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/environment/computer_terminal.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/environment/computer_terminal.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/environment/desk.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/environment/desk.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/levels/aurora_station.tscn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/npcs/ai_specialist_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/ai_specialist_npc.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/npcs/engineer_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/engineer_npc.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/npcs/scientist_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/scientist_npc.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/npcs/security_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/security_npc.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/ui/main_menu.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/ui/main_menu.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/environment/hiding_spot.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/environment/hiding_spot.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/environment/sliding_door.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/environment/sliding_door.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/investigation/case_file_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/investigation/case_file_ui.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/managers/aurora_game_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/aurora_game_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/day_night_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/day_night_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/evidence_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/evidence_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/ui_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/ui_manager.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/day_night_manager.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/evidence_spawn_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/evidence_spawn_manager.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/npcs/dialogue_system.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/dialogue_system.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/npcs/riley_patrol_ai.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/riley_patrol_ai.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/riley_character_modes.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/riley_patrol_ai.gd" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/player/player_controller.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/player/player_controller.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/ship/ship_interior.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ship/ship_interior.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/ui/case_file_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/case_file_ui.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/ship/ship_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ship/ship_manager.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/ui/dialogue_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/dialogue_ui.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/ui/main_menu.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/main_menu.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/ui/player_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/player_ui.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/ui/terminal_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/terminal_ui.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/riley_setup_runtime.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/setup_riley_modes.gd" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -110,6 +116,11 @@
       <workItem from="1749104088246" duration="49000" />
       <workItem from="1749153141157" duration="11731000" />
       <workItem from="1749169670332" duration="7356000" />
+      <workItem from="1749178956856" duration="747000" />
+      <workItem from="1749231250384" duration="12680000" />
+      <workItem from="1749250536956" duration="26992000" />
+      <workItem from="1749409388213" duration="12051000" />
+      <workItem from="1749447627711" duration="4127000" />
     </task>
     <task id="LOCAL-00001" summary="Adding a bunch of new stuff">
       <option name="closed" value="true" />
@@ -127,7 +138,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749104112146</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Adding a whole bunch of other things">
+      <option name="closed" value="true" />
+      <created>1749178998492</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1749178998492</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -139,7 +158,8 @@
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="Adding a bunch of new stuff" />
     <MESSAGE value="another million things" />
-    <option name="LAST_COMMIT_MESSAGE" value="another million things" />
+    <MESSAGE value="Adding a whole bunch of other things" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adding a whole bunch of other things" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

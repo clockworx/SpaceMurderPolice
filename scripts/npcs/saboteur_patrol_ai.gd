@@ -1,5 +1,5 @@
 extends Node
-class_name RileyPatrolAI
+class_name SaboteurPatrolAI
 
 @export var patrol_speed: float = 4.0
 @export var chase_speed: float = 6.0
@@ -44,6 +44,8 @@ var wait_timer: float = 0.0
 var last_known_player_pos: Vector3
 var state_light: OmniLight3D
 var state_label: Label3D
+var awareness_sphere: MeshInstance3D
+var vision_cone_mesh: MeshInstance3D
 
 # States
 enum State {
@@ -65,22 +67,16 @@ signal player_lost()
 signal state_changed(new_state: State)
 
 func _ready():
-    print("RileyPatrolAI: Starting initialization")
+    print("SaboteurPatrolAI: Starting initialization")
     npc_base = get_parent()
     if not npc_base:
-        push_error("RileyPatrolAI must be child of NPCBase")
+        push_error("SaboteurPatrolAI must be child of NPCBase")
         return
     
-    print("RileyPatrolAI: Found parent NPC: ", npc_base.npc_name)
+    print("SaboteurPatrolAI: Found parent NPC: ", npc_base.npc_name)
     
     # Add to riley patrol group
     add_to_group("riley_patrol")
-    
-    # Create navigation agent
-    navigation_agent = NavigationAgent3D.new()
-    npc_base.add_child(navigation_agent)
-    navigation_agent.path_desired_distance = 0.5
-    navigation_agent.target_desired_distance = 1.0
     
     # Wait for navigation to be ready
     await get_tree().physics_frame
@@ -88,41 +84,46 @@ func _ready():
     # Find player
     player = get_tree().get_first_node_in_group("player")
     if player:
-        print("RileyPatrolAI: Found player")
+        print("SaboteurPatrolAI: Found player")
     else:
-        push_warning("RileyPatrolAI: Player not found!")
+        push_warning("SaboteurPatrolAI: Player not found!")
     
-    # Create state indicators
-    _create_state_indicators()
+    # Debug visualizations disabled
+    # _create_state_indicators()
+    # _create_awareness_visualization()
     
     # Start patrolling
-    print("RileyPatrolAI: Starting patrol route")
+    print("SaboteurPatrolAI: Starting patrol route")
     current_route_index = 0
     current_room_phase = "hallway"
     _update_patrol_target()
     
-    # Override parent's movement
-    if npc_base.has_method("_physics_process"):
+    # Override parent's movement - make sure parent stops processing
+    if npc_base.has_method("set_physics_process"):
         npc_base.set_physics_process(false)
     
-    print("RileyPatrolAI: Initialization complete, current state: ", State.keys()[current_state])
+    # Start with physics processing disabled until night cycle
+    set_physics_process(false)
+    is_active = false
+    
+    print("SaboteurPatrolAI: Initialization complete, current state: ", State.keys()[current_state])
 
 func _physics_process(delta):
     if not is_active:
         return
         
     if not npc_base:
-        print("RileyPatrolAI: ERROR - npc_base is null!")
+        print("SaboteurPatrolAI: ERROR - npc_base is null!")
         return
-    
-    if not navigation_agent:
-        print("RileyPatrolAI: WARNING - navigation_agent is null, using direct movement")
     
     # Update state indicators position
     if state_light:
         state_light.global_position = npc_base.global_position + Vector3.UP * 2.5
     if state_label:
         state_label.global_position = npc_base.global_position + Vector3.UP * 3.0
+    
+    # Update awareness visualization
+    _update_awareness_visualization()
     
     # Check for player detection
     if player:
@@ -131,7 +132,7 @@ func _physics_process(delta):
         # Extra check for very close range (touching)
         var touch_distance = npc_base.global_position.distance_to(player.global_position)
         if touch_distance < 1.2 and current_state != State.CHASING:
-            print("RileyPatrolAI: Player touched Riley! Immediate detection!")
+            print("SaboteurPatrolAI: Player touched Saboteur! Immediate detection!")
             _on_player_spotted()
     
     # Handle current state
@@ -160,22 +161,54 @@ func _handle_patrolling(_delta):
         _advance_patrol_phase()
         return
     
-    # Always check for doors when moving
-    _check_for_doors()
-    
-    # Move towards target
+    # Check for obstacles and walls
+    var space_state = npc_base.get_world_3d().direct_space_state
+    var from = npc_base.global_position + Vector3.UP * 0.9
     var direction = (target_position - npc_base.global_position).normalized()
     direction.y = 0
     
-    # Simple movement - stay in hallways unless entering a room
+    # Cast ray to check for obstacles
+    var to = from + direction * 2.0
+    var query = PhysicsRayQueryParameters3D.create(from, to)
+    query.exclude = [npc_base]
+    query.collision_mask = 1  # Environment layer
+    
+    var result = space_state.intersect_ray(query)
+    if result:
+        # Wall detected, try alternate path
+        var left_dir = direction.rotated(Vector3.UP, PI/3)
+        var right_dir = direction.rotated(Vector3.UP, -PI/3)
+        
+        # Test left
+        query.to = from + left_dir * 2.0
+        var left_result = space_state.intersect_ray(query)
+        
+        # Test right
+        query.to = from + right_dir * 2.0
+        var right_result = space_state.intersect_ray(query)
+        
+        if not left_result:
+            direction = left_dir
+        elif not right_result:
+            direction = right_dir
+        else:
+            # Both blocked, back up
+            direction = -direction
+    
+    # Always check for doors when moving
+    _check_for_doors()
+    
+    # Apply movement with delta for smooth motion
     npc_base.velocity = direction * patrol_speed
     npc_base.move_and_slide()
     
     # Rotate to face movement direction
-    if direction.length() > 0.1:
-        var look_pos = npc_base.global_position + direction
+    if npc_base.velocity.length() > 0.1:
+        var look_pos = npc_base.global_position + npc_base.velocity.normalized()
         look_pos.y = npc_base.global_position.y
         npc_base.look_at(look_pos, Vector3.UP)
+        npc_base.rotation.x = 0
+        npc_base.rotation.z = 0
 
 func _handle_waiting(delta):
     wait_timer += delta
@@ -185,51 +218,90 @@ func _handle_waiting(delta):
         _change_state(State.PATROLLING)
 
 func _handle_investigating(delta):
-    # First, check if we're inside a room and need to exit
-    if _is_inside_room() and not _is_in_hallway():
-        # Find nearest door and exit first
-        var nearest_door = _find_nearest_room_exit()
-        if nearest_door != Vector3.ZERO:
-            var exit_distance = npc_base.global_position.distance_to(nearest_door)
-            if exit_distance > 1.0:
-                # Move to door first
-                _check_for_doors()
-                var direction = (nearest_door - npc_base.global_position).normalized()
-                direction.y = 0
-                npc_base.velocity = direction * patrol_speed
-                npc_base.move_and_slide()
-                if direction.length() > 0.1:
-                    var look_pos = npc_base.global_position + direction
-                    look_pos.y = npc_base.global_position.y
-                    npc_base.look_at(look_pos, Vector3.UP)
-                return
-    
-    # Now handle normal investigation
-    var distance = npc_base.global_position.distance_to(investigation_target)
-    
-    if distance < 1.0:
-        # Reached investigation point, look around
-        npc_base.rotate_y(delta * 2.0)  # Spin to look around
-        wait_timer += delta
-        if wait_timer >= patrol_wait_time:
-            wait_timer = 0.0
-            _change_state(State.PATROLLING)
-            _set_next_patrol_target()
+    # Use parent's navigation system if available
+    var nav_system = npc_base.get_node_or_null("NavigationSystem")
+    if nav_system:
+        # First, check if we're inside a room and need to exit
+        if _is_inside_room() and not _is_in_hallway():
+            # Find nearest door and exit first
+            var nearest_door = _find_nearest_room_exit()
+            if nearest_door != Vector3.ZERO:
+                var exit_distance = npc_base.global_position.distance_to(nearest_door)
+                if exit_distance > 1.0:
+                    # Navigate to door first
+                    if not nav_system.is_navigating:
+                        nav_system.navigate_to(nearest_door)
+                    nav_system.open_nearby_doors()
+                    npc_base.velocity = nav_system.get_next_velocity(npc_base.velocity, patrol_speed)
+                    if npc_base.velocity.length() > 0.1:
+                        var look_pos = npc_base.global_position + npc_base.velocity.normalized()
+                        look_pos.y = npc_base.global_position.y
+                        npc_base.look_at(look_pos, Vector3.UP)
+                    return
+        
+        # Navigate to investigation target
+        if not nav_system.is_navigating:
+            nav_system.navigate_to(investigation_target)
+        
+        nav_system.open_nearby_doors()
+        npc_base.velocity = nav_system.get_next_velocity(npc_base.velocity, patrol_speed)
+        
+        if nav_system.get_distance_to_target() < 1.0:
+            nav_system.stop_navigation()
+            # Reached investigation point, look around
+            npc_base.rotate_y(delta * 2.0)  # Spin to look around
+            wait_timer += delta
+            if wait_timer >= patrol_wait_time:
+                wait_timer = 0.0
+                _change_state(State.PATROLLING)
+                _set_next_patrol_target()
     else:
-        # Check for doors
-        _check_for_doors()
+        # Fallback to original logic
+        # First, check if we're inside a room and need to exit
+        if _is_inside_room() and not _is_in_hallway():
+            # Find nearest door and exit first
+            var nearest_door = _find_nearest_room_exit()
+            if nearest_door != Vector3.ZERO:
+                var exit_distance = npc_base.global_position.distance_to(nearest_door)
+                if exit_distance > 1.0:
+                    # Move to door first
+                    _check_for_doors()
+                    var direction = (nearest_door - npc_base.global_position).normalized()
+                    direction.y = 0
+                    npc_base.velocity = direction * patrol_speed
+                    npc_base.move_and_slide()
+                    if direction.length() > 0.1:
+                        var look_pos = npc_base.global_position + direction
+                        look_pos.y = npc_base.global_position.y
+                        npc_base.look_at(look_pos, Vector3.UP)
+                    return
         
-        # Move to investigation point
-        var direction = (investigation_target - npc_base.global_position).normalized()
-        direction.y = 0
+        # Now handle normal investigation
+        var distance = npc_base.global_position.distance_to(investigation_target)
         
-        npc_base.velocity = direction * patrol_speed
-        npc_base.move_and_slide()
-        
-        if direction.length() > 0.1:
-            var look_pos = npc_base.global_position + direction
-            look_pos.y = npc_base.global_position.y
-            npc_base.look_at(look_pos, Vector3.UP)
+        if distance < 1.0:
+            # Reached investigation point, look around
+            npc_base.rotate_y(delta * 2.0)  # Spin to look around
+            wait_timer += delta
+            if wait_timer >= patrol_wait_time:
+                wait_timer = 0.0
+                _change_state(State.PATROLLING)
+                _set_next_patrol_target()
+        else:
+            # Check for doors
+            _check_for_doors()
+            
+            # Move to investigation point
+            var direction = (investigation_target - npc_base.global_position).normalized()
+            direction.y = 0
+            
+            npc_base.velocity = direction * patrol_speed
+            npc_base.move_and_slide()
+            
+            if direction.length() > 0.1:
+                var look_pos = npc_base.global_position + direction
+                look_pos.y = npc_base.global_position.y
+                npc_base.look_at(look_pos, Vector3.UP)
 
 func _handle_chasing(_delta):
     if not player:
@@ -243,43 +315,82 @@ func _handle_chasing(_delta):
         _on_player_caught()
         return
     
-    # If we're in a room and player is in hallway (or vice versa), go through door
-    var riley_in_room = _is_inside_room()
-    var player_x = abs(player.global_position.x)
-    var player_in_room = player_x > 3.0
-    
-    if riley_in_room != player_in_room:
-        # Need to go through a door
-        var nearest_door = _find_nearest_room_exit()
-        if nearest_door != Vector3.ZERO:
-            var door_distance = npc_base.global_position.distance_to(nearest_door)
-            if door_distance > 1.0:
-                # Move to door first
-                _check_for_doors()
-                var direction = (nearest_door - npc_base.global_position).normalized()
-                direction.y = 0
-                npc_base.velocity = direction * chase_speed
-                npc_base.move_and_slide()
-                if direction.length() > 0.1:
-                    var look_pos = npc_base.global_position + direction
-                    look_pos.y = npc_base.global_position.y
-                    npc_base.look_at(look_pos, Vector3.UP)
-                return
-    
-    # Check for doors when chasing
-    _check_for_doors()
-    
-    # Direct chase
-    var direction = (player.global_position - npc_base.global_position).normalized()
-    direction.y = 0
-    
-    npc_base.velocity = direction * chase_speed
-    npc_base.move_and_slide()
-    
-    # Look at player
-    var look_pos = player.global_position
-    look_pos.y = npc_base.global_position.y
-    npc_base.look_at(look_pos, Vector3.UP)
+    # Use parent's navigation system if available
+    var nav_system = npc_base.get_node_or_null("NavigationSystem")
+    if nav_system:
+        # If we're in a room and player is in hallway (or vice versa), go through door
+        var riley_in_room = _is_inside_room()
+        var player_x = abs(player.global_position.x)
+        var player_in_room = player_x > 3.0
+        
+        if riley_in_room != player_in_room:
+            # Need to go through a door
+            var nearest_door = _find_nearest_room_exit()
+            if nearest_door != Vector3.ZERO:
+                var door_distance = npc_base.global_position.distance_to(nearest_door)
+                if door_distance > 1.0:
+                    # Navigate to door first
+                    if not nav_system.is_navigating:
+                        nav_system.navigate_to(nearest_door)
+                    nav_system.open_nearby_doors()
+                    npc_base.velocity = nav_system.get_next_velocity(npc_base.velocity, chase_speed)
+                    if npc_base.velocity.length() > 0.1:
+                        var door_look_pos = npc_base.global_position + npc_base.velocity.normalized()
+                        door_look_pos.y = npc_base.global_position.y
+                        npc_base.look_at(door_look_pos, Vector3.UP)
+                    return
+        
+        # Navigate directly to player
+        if not nav_system.is_navigating or player.global_position.distance_to(last_known_player_pos) > 2.0:
+            nav_system.navigate_to(player.global_position)
+            last_known_player_pos = player.global_position
+        
+        nav_system.open_nearby_doors()
+        npc_base.velocity = nav_system.get_next_velocity(npc_base.velocity, chase_speed)
+        
+        # Look at player
+        var look_pos = player.global_position
+        look_pos.y = npc_base.global_position.y
+        npc_base.look_at(look_pos, Vector3.UP)
+    else:
+        # Fallback to original logic
+        # If we're in a room and player is in hallway (or vice versa), go through door
+        var riley_in_room = _is_inside_room()
+        var player_x = abs(player.global_position.x)
+        var player_in_room = player_x > 3.0
+        
+        if riley_in_room != player_in_room:
+            # Need to go through a door
+            var nearest_door = _find_nearest_room_exit()
+            if nearest_door != Vector3.ZERO:
+                var door_distance = npc_base.global_position.distance_to(nearest_door)
+                if door_distance > 1.0:
+                    # Move to door first
+                    _check_for_doors()
+                    var door_direction = (nearest_door - npc_base.global_position).normalized()
+                    door_direction.y = 0
+                    npc_base.velocity = door_direction * chase_speed
+                    npc_base.move_and_slide()
+                    if door_direction.length() > 0.1:
+                        var fallback_look_pos = npc_base.global_position + door_direction
+                        fallback_look_pos.y = npc_base.global_position.y
+                        npc_base.look_at(fallback_look_pos, Vector3.UP)
+                    return
+        
+        # Check for doors when chasing
+        _check_for_doors()
+        
+        # Direct chase
+        var direction = (player.global_position - npc_base.global_position).normalized()
+        direction.y = 0
+        
+        npc_base.velocity = direction * chase_speed
+        npc_base.move_and_slide()
+        
+        # Look at player
+        var look_pos = player.global_position
+        look_pos.y = npc_base.global_position.y
+        npc_base.look_at(look_pos, Vector3.UP)
 
 func _handle_searching(delta):
     # Search last known position
@@ -291,7 +402,7 @@ func _handle_searching(delta):
         wait_timer += delta
         if wait_timer >= patrol_wait_time * 2:
             wait_timer = 0.0
-            print("Riley: They got away... for now.")
+            print("Saboteur: They got away... for now.")
             _change_state(State.PATROLLING)
             _set_next_patrol_target()
     else:
@@ -303,7 +414,7 @@ func _handle_searching(delta):
         npc_base.move_and_slide()
 
 func _handle_sabotage(delta):
-    # During sabotage, Riley moves to target while still detecting player
+    # During sabotage, Saboteur moves to target while still detecting player
     if not sabotage_complete:
         var distance = npc_base.global_position.distance_to(sabotage_target)
         
@@ -311,7 +422,7 @@ func _handle_sabotage(delta):
             # Reached sabotage location, perform sabotage
             sabotage_complete = true
             wait_timer = 0.0
-            print("RileyPatrolAI: Reached sabotage location, performing sabotage...")
+            print("SaboteurPatrolAI: Reached sabotage location, performing sabotage...")
             return
         
         # Move toward sabotage target (slower, more stealthy)
@@ -337,7 +448,7 @@ func _handle_sabotage(delta):
         # Sabotage complete, wait briefly then return to normal patrol
         wait_timer += delta
         if wait_timer >= 3.0:  # Wait 3 seconds after completing sabotage
-            print("RileyPatrolAI: Sabotage complete, returning to patrol")
+            print("SaboteurPatrolAI: Sabotage complete, returning to patrol")
             sabotage_complete = false
             _change_state(State.PATROLLING)
             _set_next_patrol_target()
@@ -386,24 +497,24 @@ func _check_player_detection():
         
         # Debug logging
         if current_state != State.CHASING and distance < 5.0:
-            print("RileyPatrolAI: Detection check - Distance: ", distance, ", Angle: ", angle, ", Visibility: ", visibility_multiplier, ", Chance: ", detection_chance)
+            print("SaboteurPatrolAI: Detection check - Distance: ", distance, ", Angle: ", angle, ", Visibility: ", visibility_multiplier, ", Chance: ", detection_chance)
         
         # Immediate detection if very close or not hidden
         if distance < 2.0:
             if current_state != State.CHASING:
-                print("RileyPatrolAI: Player spotted! (very close - ", distance, " units)")
+                print("SaboteurPatrolAI: Player spotted! (very close - ", distance, " units)")
                 _on_player_spotted()
         elif visibility_multiplier >= 0.95 and distance < 5.0:
             if current_state != State.CHASING:
-                print("RileyPatrolAI: Player spotted! (fully visible at ", distance, " units)")
+                print("SaboteurPatrolAI: Player spotted! (fully visible at ", distance, " units)")
                 _on_player_spotted()
         elif detection_chance > 0.5 and randf() < 0.3:  # 30% chance when detection is high
             if current_state != State.CHASING:
-                print("RileyPatrolAI: Player spotted! (detection chance: ", detection_chance, ")")
+                print("SaboteurPatrolAI: Player spotted! (detection chance: ", detection_chance, ")")
                 _on_player_spotted()
 
 func _on_player_spotted():
-    print("Riley: Target acquired! Stop right there!")
+    print("Saboteur: Target acquired! Stop right there!")
     _change_state(State.CHASING)
     player_spotted.emit(player.global_position)
     
@@ -412,7 +523,7 @@ func _on_player_spotted():
         npc_base.speak("You can't escape! I know what you're up to!")
 
 func _on_player_caught():
-    print("Riley: Got you!")
+    print("Saboteur: Got you!")
     # Trigger game over or consequence
     var game_manager = get_tree().get_first_node_in_group("game_manager")
     if game_manager and game_manager.has_method("on_player_caught"):
@@ -423,7 +534,7 @@ func _change_state(new_state: State):
     state_changed.emit(new_state)
     
     # Debug print
-    print("RileyPatrolAI: State changed to ", State.keys()[new_state])
+    print("SaboteurPatrolAI: State changed to ", State.keys()[new_state])
     
     # Update state indicators
     match new_state:
@@ -474,7 +585,7 @@ func _set_next_patrol_target():
     # Move to next room in route
     current_route_index = (current_route_index + 1) % patrol_route.size()
     current_room_phase = "hallway"
-    print("RileyPatrolAI: Moving to next location: ", patrol_route[current_route_index])
+    # print("SaboteurPatrolAI: Moving to next location: ", patrol_route[current_route_index])
     
 func _update_patrol_target():
     var current_location = patrol_route[current_route_index]
@@ -509,18 +620,18 @@ func _advance_patrol_phase():
     match current_room_phase:
         "hallway":
             current_room_phase = "door"
-            print("RileyPatrolAI: Approaching door of ", current_location)
+            # print("SaboteurPatrolAI: Approaching door of ", current_location)
         "door":
             # Check if door is open before entering
             if _is_door_open_ahead():
                 current_room_phase = "inside"
-                print("RileyPatrolAI: Entering ", current_location)
+                # print("SaboteurPatrolAI: Entering ", current_location)
             else:
-                print("RileyPatrolAI: Door closed, waiting...")
+                # print("SaboteurPatrolAI: Door closed, waiting...")
                 _change_state(State.WAITING)
         "inside":
             current_room_phase = "exiting"
-            print("RileyPatrolAI: Checking ", current_location, ", now exiting")
+            # print("SaboteurPatrolAI: Checking ", current_location, ", now exiting")
             _change_state(State.WAITING)  # Brief pause to "investigate"
         "exiting":
             # Done with this room, move to next
@@ -547,11 +658,13 @@ func investigate_position(pos: Vector3):
     investigation_target = pos
     _change_state(State.INVESTIGATING)
     wait_timer = 0.0
-    print("RileyPatrolAI: Investigating position ", pos)
+    print("SaboteurPatrolAI: Investigating position ", pos)
 
 func _create_state_indicators():
-    # Create overhead light
-    state_light = OmniLight3D.new()
+    pass  # Disabled - no debug indicators
+    # return  # Disabled
+    # # Create overhead light
+    # state_light = OmniLight3D.new()
     state_light.light_color = Color.GREEN
     state_light.light_energy = 2.0
     state_light.omni_range = 5.0
@@ -569,18 +682,22 @@ func _create_state_indicators():
     get_tree().current_scene.add_child(state_label)
 
 func on_sound_heard(position: Vector3):
+    # Only respond to sounds if active (during night cycle)
+    if not is_active:
+        return
+        
     var distance = npc_base.global_position.distance_to(position)
     if distance <= hearing_range and current_state != State.CHASING:
-        print("Riley: What was that noise?")
+        print("Saboteur: What was that noise?")
         investigate_position(position)
 
 func _is_inside_room() -> bool:
-    # Check if Riley is inside any room (x < -3 or x > 3)
+    # Check if Saboteur is inside any room (x < -3 or x > 3)
     var x_pos = abs(npc_base.global_position.x)
     return x_pos > 3.0
 
 func _is_in_hallway() -> bool:
-    # Check if Riley is in the main hallway (x between -2 and 2)
+    # Check if Saboteur is in the main hallway (x between -2 and 2)
     var x_pos = abs(npc_base.global_position.x)
     return x_pos <= 2.0
 
@@ -619,12 +736,13 @@ func _check_for_doors():
         if result.collider.has_method("get_interaction_prompt"):
             var prompt = result.collider.get_interaction_prompt()
             if "door" in prompt.to_lower():
-                print("RileyPatrolAI: Opening door")
+                print("SaboteurPatrolAI: Opening door")
                 result.collider.interact()
 
 func set_active(active: bool):
     is_active = active
-    print("RileyPatrolAI: Set active to ", active)
+    set_physics_process(active)  # Enable/disable physics processing
+    print("SaboteurPatrolAI: Set active to ", active)
     
     if not active:
         # Stop all movement
@@ -641,16 +759,136 @@ func set_active(active: bool):
             state_light.visible = true
         if state_label:
             state_label.visible = true
+        # Start patrolling when activated
+        _change_state(State.PATROLLING)
+        _set_next_patrol_target()
 
-func start_sabotage_mission(target_position: Vector3):
-    print("RileyPatrolAI: Starting sabotage mission to ", target_position)
-    sabotage_target = target_position
+func start_sabotage_mission(sabotage_position: Vector3):
+    print("SaboteurPatrolAI: Starting sabotage mission to ", sabotage_position)
+    sabotage_target = sabotage_position
     sabotage_complete = false
     wait_timer = 0.0
     _change_state(State.SABOTAGE)
 
 func end_sabotage_mission():
-    print("RileyPatrolAI: Ending sabotage mission, returning to patrol")
+    print("SaboteurPatrolAI: Ending sabotage mission, returning to patrol")
     _change_state(State.PATROLLING)
     _set_next_patrol_target()
     sabotage_complete = false
+
+func _create_awareness_visualization():
+    pass  # Disabled - no debug visualization
+    # return  # Disabled
+    # # Create awareness sphere (wireframe)
+    # awareness_sphere = MeshInstance3D.new()
+    awareness_sphere.name = "AwarenessSphere"
+    
+    var sphere_mesh = SphereMesh.new()
+    sphere_mesh.radial_segments = 16
+    sphere_mesh.rings = 8
+    sphere_mesh.radius = detection_range
+    sphere_mesh.height = detection_range * 2
+    awareness_sphere.mesh = sphere_mesh
+    
+    # Create wireframe material
+    var sphere_material = StandardMaterial3D.new()
+    sphere_material.albedo_color = Color(0, 1, 0, 0.2)
+    sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    sphere_material.vertex_color_use_as_albedo = true
+    # sphere_material.wireframe = true  # Not available in Godot 4
+    sphere_material.no_depth_test = true
+    sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    sphere_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    
+    awareness_sphere.material_override = sphere_material
+    awareness_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    
+    npc_base.add_child(awareness_sphere)
+    
+    # Create vision cone
+    vision_cone_mesh = MeshInstance3D.new()
+    vision_cone_mesh.name = "VisionCone"
+    
+    # Create a simple pyramid mesh for vision cone
+    var arrays = []
+    arrays.resize(Mesh.ARRAY_MAX)
+    
+    var vertices = PackedVector3Array()
+    # var _normals = PackedVector3Array()
+    # var _uvs = PackedVector2Array()
+    
+    # Vision cone vertices
+    var cone_length = detection_range * 0.8
+    var cone_width = tan(deg_to_rad(vision_angle / 2)) * cone_length
+    
+    vertices.push_back(Vector3.ZERO)  # Origin
+    vertices.push_back(Vector3(-cone_width, 0, -cone_length))  # Left
+    vertices.push_back(Vector3(cone_width, 0, -cone_length))   # Right
+    vertices.push_back(Vector3(0, cone_width, -cone_length))    # Top
+    vertices.push_back(Vector3(0, -cone_width, -cone_length))   # Bottom
+    
+    # Create triangles for the cone
+    var indices = PackedInt32Array([
+        0, 1, 2,  # Horizontal plane
+        0, 3, 4,  # Vertical plane
+        0, 1, 3,  # Left-top
+        0, 3, 2,  # Right-top
+        0, 2, 4,  # Right-bottom
+        0, 4, 1   # Left-bottom
+    ])
+    
+    arrays[Mesh.ARRAY_VERTEX] = vertices
+    arrays[Mesh.ARRAY_INDEX] = indices
+    
+    var array_mesh = ArrayMesh.new()
+    array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+    
+    vision_cone_mesh.mesh = array_mesh
+    
+    # Create vision cone material
+    var cone_material = StandardMaterial3D.new()
+    cone_material.albedo_color = Color(1, 1, 0, 0.15)
+    cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    cone_material.no_depth_test = true
+    cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    
+    vision_cone_mesh.material_override = cone_material
+    vision_cone_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    vision_cone_mesh.position.y = 1.5  # Eye level
+    
+    npc_base.add_child(vision_cone_mesh)
+
+func _update_awareness_visualization():
+    if not awareness_sphere or not vision_cone_mesh:
+        return
+    
+    # Update colors based on state
+    var sphere_material = awareness_sphere.material_override as StandardMaterial3D
+    var cone_material = vision_cone_mesh.material_override as StandardMaterial3D
+    
+    if not sphere_material or not cone_material:
+        return
+    
+    match current_state:
+        State.CHASING:
+            sphere_material.albedo_color = Color(1, 0, 0, 0.3)
+            cone_material.albedo_color = Color(1, 0, 0, 0.3)
+        State.INVESTIGATING:
+            sphere_material.albedo_color = Color(1, 1, 0, 0.25)
+            cone_material.albedo_color = Color(1, 1, 0, 0.25)
+        State.SEARCHING:
+            sphere_material.albedo_color = Color(1, 0.5, 0, 0.25)
+            cone_material.albedo_color = Color(1, 0.5, 0, 0.25)
+        State.SABOTAGE:
+            sphere_material.albedo_color = Color(1, 0, 1, 0.2)
+            cone_material.albedo_color = Color(1, 0, 1, 0.2)
+        _:  # PATROLLING or WAITING
+            sphere_material.albedo_color = Color(0, 1, 0, 0.2)
+            cone_material.albedo_color = Color(1, 1, 0, 0.15)
+    
+    # Hide vision cone when not actively searching
+    vision_cone_mesh.visible = current_state != State.WAITING
+
+func get_current_state_name() -> String:
+    return State.keys()[current_state]

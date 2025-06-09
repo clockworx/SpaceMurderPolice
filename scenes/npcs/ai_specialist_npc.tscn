@@ -7,7 +7,7 @@ albedo_color = Color(0.5, 0.2, 0.8, 1)
 
 [node name="AISpecialistNPC" instance=ExtResource("1_base")]
 npc_name = "Dr. Zara Okafor"
-role = "Ship AI Specialist"
+role = "AI Specialist"
 initial_dialogue_id = "ai_specialist_greeting"
 spawn_location = "Engineering"
 wander_radius = 3.5
@@ -19,4 +19,4 @@ surface_material_override/0 = SubResource("StandardMaterial3D_ai_specialist")
 text = "Dr. Zara Okafor"
 
 [node name="RoleLabel" parent="Head" index="1"]
-text = "Ship AI Specialist"
+text = "AI Specialist"

@@ -8,7 +8,15 @@
       "Bash(grep:*)",
       "Bash(git checkout:*)",
       "Bash(ls:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(for file in scenes/npcs/*.tscn)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)",
+      "Bash(sed:*)",
+      "Bash(timeout 10 godot:*)",
+      "Bash(timeout:*)",
+      "Bash(true)",
+      "Bash(godot:*)"
     ],
     "deny": []
   }

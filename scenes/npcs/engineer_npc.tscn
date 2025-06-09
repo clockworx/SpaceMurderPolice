@@ -6,16 +6,17 @@
 albedo_color = Color(0.8, 0.6, 0.2, 1)
 
 [node name="EngineerNPC" instance=ExtResource("1_base")]
-npc_name = "Alex Rivera"
+npc_name = "Alex Chen"
 role = "Station Engineer"
 initial_dialogue_id = "engineer_greeting"
+can_be_saboteur = true
 wander_radius = 3.0
 
 [node name="MeshInstance3D" parent="." index="0"]
 surface_material_override/0 = SubResource("StandardMaterial3D_engineer")
 
 [node name="NameLabel" parent="Head" index="0"]
-text = "Alex Rivera"
+text = "Alex Chen"
 
 [node name="RoleLabel" parent="Head" index="1"]
 text = "Station Engineer"

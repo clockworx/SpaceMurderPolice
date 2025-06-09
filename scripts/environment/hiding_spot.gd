@@ -25,7 +25,9 @@ signal player_exited(player)
 func _ready():
 	add_to_group("interactable")
 	add_to_group("hiding_spots")
-	collision_layer = 2  # Interactable layer
+	# Set to both layers so NPCs collide with furniture
+	collision_layer = 3  # Both environment (1) and interactable (2) layers
+	collision_mask = 1   # Collide with environment layer
 	
 	# Calculate hide position based on type
 	_setup_hide_position()

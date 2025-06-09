@@ -8,6 +8,7 @@ class_name PlayerUI
 @onready var life_support_panel = $LifeSupportPanel
 @onready var interaction_prompt = $InteractionPrompt
 @onready var interaction_label = $InteractionPrompt/Label
+@onready var crosshair = $Crosshair/CrosshairDot
 
 var life_support_manager: LifeSupportManager
 
@@ -73,7 +74,23 @@ func show_interaction_prompt(prompt_text: String = "Press [E] to interact"):
         interaction_label.text = prompt_text
     if interaction_prompt:
         interaction_prompt.visible = true
+    
+    # Change crosshair to indicate interactable
+    if crosshair:
+        crosshair.color = Color(1, 1, 0, 1)  # Yellow
+        crosshair.custom_minimum_size = Vector2(8, 8)  # Larger
+        var center_container = crosshair.get_parent()
+        if center_container:
+            center_container.set_offsets_preset(Control.PRESET_CENTER)
 
 func hide_interaction_prompt():
     if interaction_prompt:
         interaction_prompt.visible = false
+    
+    # Reset crosshair to default
+    if crosshair:
+        crosshair.color = Color(1, 1, 1, 0.8)  # White
+        crosshair.custom_minimum_size = Vector2(4, 4)  # Default size
+        var center_container = crosshair.get_parent()
+        if center_container:
+            center_container.set_offsets_preset(Control.PRESET_CENTER)

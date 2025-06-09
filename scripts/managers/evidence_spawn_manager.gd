@@ -14,6 +14,10 @@ signal evidence_spawned(count: int)
 func _ready():
 	add_to_group("evidence_spawn_manager")
 	
+	# DISABLED: User has manually placed all evidence and NPCs
+	print("Evidence Spawn Manager: DISABLED - Using manual placement")
+	return
+	
 	# Wait for scene to be ready
 	await get_tree().process_frame
 	
