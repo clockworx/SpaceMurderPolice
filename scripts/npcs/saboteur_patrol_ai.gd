@@ -67,13 +67,15 @@ signal player_lost()
 signal state_changed(new_state: State)
 
 func _ready():
-    print("SaboteurPatrolAI: Starting initialization")
+    # Debug: Starting initialization
+    #print("SaboteurPatrolAI: Starting initialization")
     npc_base = get_parent()
     if not npc_base:
         push_error("SaboteurPatrolAI must be child of NPCBase")
         return
     
-    print("SaboteurPatrolAI: Found parent NPC: ", npc_base.npc_name)
+    # Debug: Found parent NPC
+    #print("SaboteurPatrolAI: Found parent NPC: ", npc_base.npc_name)
     
     # Add to riley patrol group
     add_to_group("riley_patrol")
@@ -84,7 +86,8 @@ func _ready():
     # Find player
     player = get_tree().get_first_node_in_group("player")
     if player:
-        print("SaboteurPatrolAI: Found player")
+        # Debug: Found player
+        #print("SaboteurPatrolAI: Found player")
     else:
         push_warning("SaboteurPatrolAI: Player not found!")
     
@@ -93,7 +96,8 @@ func _ready():
     # _create_awareness_visualization()
     
     # Start patrolling
-    print("SaboteurPatrolAI: Starting patrol route")
+    # Debug: Starting patrol route
+    #print("SaboteurPatrolAI: Starting patrol route")
     current_route_index = 0
     current_room_phase = "hallway"
     _update_patrol_target()
@@ -106,7 +110,8 @@ func _ready():
     set_physics_process(false)
     is_active = false
     
-    print("SaboteurPatrolAI: Initialization complete, current state: ", State.keys()[current_state])
+    # Debug: Initialization complete
+    #print("SaboteurPatrolAI: Initialization complete, current state: ", State.keys()[current_state])
 
 func _physics_process(delta):
     if not is_active:
@@ -497,7 +502,8 @@ func _check_player_detection():
         
         # Debug logging
         if current_state != State.CHASING and distance < 5.0:
-            print("SaboteurPatrolAI: Detection check - Distance: ", distance, ", Angle: ", angle, ", Visibility: ", visibility_multiplier, ", Chance: ", detection_chance)
+            # Debug: Detection check
+            #print("SaboteurPatrolAI: Detection check - Distance: ", distance, ", Angle: ", angle, ", Visibility: ", visibility_multiplier, ", Chance: ", detection_chance)
         
         # Immediate detection if very close or not hidden
         if distance < 2.0:
@@ -585,6 +591,7 @@ func _set_next_patrol_target():
     # Move to next room in route
     current_route_index = (current_route_index + 1) % patrol_route.size()
     current_room_phase = "hallway"
+    # Debug: Moving to next location
     # print("SaboteurPatrolAI: Moving to next location: ", patrol_route[current_route_index])
     
 func _update_patrol_target():
@@ -620,11 +627,13 @@ func _advance_patrol_phase():
     match current_room_phase:
         "hallway":
             current_room_phase = "door"
+            # Debug: Approaching door
             # print("SaboteurPatrolAI: Approaching door of ", current_location)
         "door":
             # Check if door is open before entering
             if _is_door_open_ahead():
                 current_room_phase = "inside"
+                # Debug: Entering location
                 # print("SaboteurPatrolAI: Entering ", current_location)
             else:
                 # print("SaboteurPatrolAI: Door closed, waiting...")

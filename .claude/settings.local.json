@@ -16,7 +16,15 @@
       "Bash(timeout 10 godot:*)",
       "Bash(timeout:*)",
       "Bash(true)",
-      "Bash(godot:*)"
+      "Bash(godot:*)",
+      "Bash(/home/maris/.npm-global/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n 'ext_resource.*type=\"Script\".*uid=' /mnt/c/Users/marinavr/Documents/GitHub/SpaceMurderPolice --glob \"*.tscn\")",
+      "Bash(/home/maris/.npm-global/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg 'ext_resource.*type=\"Script\"' /mnt/c/Users/marinavr/Documents/GitHub/SpaceMurderPolice --glob \"*.tscn\" -A1 -B1)",
+      "Bash(cp:*)",
+      "Bash(python3:*)",
+      "Bash(/home/maris/.npm-global/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n \"%\" /mnt/c/Users/marinavr/Documents/GitHub/SpaceMurderPolice/scripts/npcs/*.gd -A 2 -B 2)",
+      "Bash(/home/maris/.npm-global/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n \"waypoint_nodes\\.size\\(\\) == 0|waypoint_nodes\\.is_empty|if waypoint_nodes\\.size\" /mnt/c/Users/marinavr/Documents/GitHub/SpaceMurderPolice/scripts/npcs/*.gd -B 2 -A 2)",
+      "Bash(/home/maris/.npm-global/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n \"patrol_route\\.size\\(\\)\" /mnt/c/Users/marinavr/Documents/GitHub/SpaceMurderPolice/scripts/npcs/saboteur_patrol_ai.gd -B 5 -A 5)",
+      "Bash(touch:*)"
     ],
     "deny": []
   }

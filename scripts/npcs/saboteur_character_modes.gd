@@ -37,13 +37,15 @@ signal sabotage_movement_started(target_position: Vector3)
 signal sabotage_movement_completed()
 
 func _ready():
-    print("SaboteurCharacterModes: Initializing...")
+    # Debug: Initializing
+    #print("SaboteurCharacterModes: Initializing...")
     npc_base = get_parent()
     if not npc_base:
         push_error("SaboteurCharacterModes must be child of NPCBase")
         return
     
-    print("SaboteurCharacterModes: Found parent NPC: ", npc_base.npc_name)
+    # Debug: Found parent NPC
+    #print("SaboteurCharacterModes: Found parent NPC: ", npc_base.npc_name)
     
     # Find components
     patrol_ai = npc_base.get_node_or_null("SaboteurPatrolAI")
@@ -51,7 +53,8 @@ func _ready():
     name_label = npc_base.get_node_or_null("Head/NameLabel")
     role_label = npc_base.get_node_or_null("Head/RoleLabel")
     
-    print("SaboteurCharacterModes: Components found - PatrolAI: ", patrol_ai != null, ", Mesh: ", mesh_instance != null, ", NameLabel: ", name_label != null)
+    # Debug: Components found
+    #print("SaboteurCharacterModes: Components found - PatrolAI: ", patrol_ai != null, ", Mesh: ", mesh_instance != null, ", NameLabel: ", name_label != null)
     
     # Store original values
     if name_label:
@@ -59,7 +62,8 @@ func _ready():
     if role_label:
         original_role = role_label.text
     
-    print("SaboteurCharacterModes: Original name: ", original_name, ", role: ", original_role)
+    # Debug: Original name and role
+    #print("SaboteurCharacterModes: Original name: ", original_name, ", role: ", original_role)
     
     # Create materials
     _setup_materials()
@@ -70,16 +74,19 @@ func _ready():
     # Connect to sabotage system
     var sabotage_manager = get_tree().get_first_node_in_group("sabotage_manager")
     if sabotage_manager:
-        print("SaboteurCharacterModes: Found sabotage manager, connecting signals...")
+        # Debug: Found sabotage manager
+        #print("SaboteurCharacterModes: Found sabotage manager, connecting signals...")
         sabotage_manager.sabotage_started.connect(_on_sabotage_started)
         sabotage_manager.sabotage_ended.connect(_on_sabotage_ended)
-        print("SaboteurCharacterModes: Connected to sabotage signals")
+        # Debug: Connected to signals
+        #print("SaboteurCharacterModes: Connected to sabotage signals")
     else:
         print("SaboteurCharacterModes: WARNING - No sabotage manager found!")
     
     # Start in normal mode
     _apply_normal_mode()
-    print("SaboteurCharacterModes: Initialization complete")
+    # Debug: Initialization complete
+    #print("SaboteurCharacterModes: Initialization complete")
 
 func _setup_materials():
     # Create normal material

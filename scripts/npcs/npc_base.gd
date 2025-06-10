@@ -1,6 +1,13 @@
 extends CharacterBody3D
 class_name NPCBase
 
+# Movement states
+enum MovementState {
+    PATROL,  # Move between waypoints or wander
+    IDLE,    # Stop at current position
+    TALK     # Face toward a target position
+}
+
 @export_group("NPC Properties")
 @export var npc_name: String = "Unknown"
 @export var role: String = "Crew Member"
@@ -14,18 +21,58 @@ class_name NPCBase
 @export var idle_time_min: float = 2.0
 @export var idle_time_max: float = 5.0
 @export var wander_radius: float = 5.0
-@export var room_wander_radius: float = 2.5  # Smaller wander radius when in a room
 @export var assigned_room: String = ""  # Room assignment for NPC
-@export var can_leave_room: bool = false  # Whether NPC can wander to other rooms
+@export var rotation_speed: float = 5.0  # How fast to rotate (radians/second)
+@export var smooth_rotation: bool = true  # Enable smooth rotation
 
-@export_group("Schedule")
-@export var use_schedule: bool = false
-@export var schedule: Array[Dictionary] = []  # Time-based schedule
-@export var patrol_route: Array[Dictionary] = []  # Patrol route for security
+@export_group("Waypoint Settings")
+@export var use_waypoints: bool = false
+@export var waypoint_nodes: Array[Node3D] = []
+@export var waypoint_reach_distance: float = 0.3  # Distance to consider waypoint reached
+@export var pause_at_waypoints: bool = true
+@export var pause_duration_min: float = 2.0
+@export var pause_duration_max: float = 5.0
+
+@export_group("State Settings")
+@export var current_state: MovementState = MovementState.PATROL
+@export var debug_state_changes: bool = false  # Print state changes
+@export var show_state_label: bool = true  # Show state label above NPC
+@export var react_to_player_proximity: bool = true  # Auto change states based on player distance
+@export var idle_trigger_distance: float = 3.0  # Distance to stop and idle
+@export var talk_trigger_distance: float = 2.0  # Distance to face player
 
 @export_group("Interaction")
 @export var interaction_distance: float = 3.0
 @export var face_player_when_talking: bool = true
+
+@export_group("Line of Sight Detection")
+@export var enable_los_detection: bool = true
+@export var detection_range: float = 10.0:  # Maximum detection distance
+    set(value):
+        detection_range = value
+        if vision_cone_mesh:
+            _update_vision_cone_mesh()
+@export var detection_angle: float = 45.0:  # Half angle of vision cone (degrees)
+    set(value):
+        detection_angle = value
+        if vision_cone_mesh:
+            _update_vision_cone_mesh()
+@export var show_detection_indicator: bool = true
+@export var show_vision_cone: bool = false:  # Debug visualization of vision cone
+    set(value):
+        show_vision_cone = value
+        if vision_cone_mesh:
+            vision_cone_mesh.visible = value
+        elif value:
+            _create_vision_cone()
+@export var detection_indicator_color: Color = Color.RED
+@export var undetected_indicator_color: Color = Color.GREEN
+
+@export_group("Visual")
+@export var show_face_indicator: bool = true
+@export var face_indicator_color: Color = Color.YELLOW
+@export var face_indicator_size: float = 0.2
+@export_enum("Cone", "Eyes", "Nose", "Arrow") var face_indicator_type: String = "Cone"
 
 var dialogue_state: Dictionary = {}
 var has_been_interviewed: bool = false
@@ -37,8 +84,6 @@ var initial_position: Vector3
 var current_target: Vector3
 var idle_timer: float = 0.0
 var is_idle: bool = true
-var is_night_cycle: bool = false
-var night_behavior_active: bool = false
 
 signal dialogue_started(npc)
 signal dialogue_ended(npc)
@@ -46,36 +91,31 @@ signal suspicion_changed(npc, is_suspicious)
 
 var relationship_manager: RelationshipManager
 var relationship_indicator: Label3D
-var navigation_system: ImprovedNPCNavigation
-var room_bounds: Dictionary = {}  # Store room boundaries
-var room_navigation: RoomNavigationSystem
-var waypoint_navigation: WaypointNavigationSystem
-var current_activity: String = ""
-var activity_timer: float = 0.0
-var min_activity_time: float = 8.0
-var max_activity_time: float = 20.0
-var last_activity_change: float = 0.0
-var separation_radius: float = 2.0  # Minimum distance between NPCs
-var avoidance_force: float = 1.5  # How strongly NPCs push away from each other
+var face_indicator_mesh: MeshInstance3D
 
-# Advanced navigation components
-var navigation_agent: NavigationAgent3D
-var advanced_nav_manager: AdvancedNavigationManager
-var is_navigating: bool = false
-var nav_update_timer: float = 0.0
-var nav_update_interval: float = 0.1  # Update path every 0.1 seconds
+# Waypoint system variables
+var current_waypoint_index: int = 0
+var waypoint_target: Vector3
+var pause_timer: float = 0.0
+var is_paused: bool = false
 
-# Schedule system
-var current_schedule_index: int = 0
-var schedule_timer: float = 0.0
-var is_following_schedule: bool = false
-var schedule_transition_in_progress: bool = false
-var game_time_hours: float = 8.0  # Start at 8 AM
+# State system variables
+var talk_target_position: Vector3  # Position to face when in TALK state
+var previous_state: MovementState = MovementState.PATROL  # For resuming after TALK/IDLE
+var state_label: Label3D  # Debug label for showing current state
 
-# Patrol system
-var current_patrol_index: int = 0
-var patrol_timer: float = 0.0
-var is_patrolling: bool = false
+# Stuck detection
+var last_position: Vector3
+var stuck_timer: float = 0.0
+var stuck_threshold: float = 10.0  # Give NPCs time to travel long distances
+var min_movement_threshold: float = 0.05  # Minimum movement to not be considered stuck
+
+# Line of sight detection
+var detection_raycast: RayCast3D
+var detection_indicator: MeshInstance3D
+var vision_cone_mesh: MeshInstance3D
+var player_detected: bool = false
+var last_detection_state: bool = false
 
 func _ready():
     collision_layer = 2  # Interactable layer
@@ -84,65 +124,13 @@ func _ready():
     # Ensure physics processing is enabled
     set_physics_process(true)
     
-    # Define room boundaries
-    _setup_room_bounds()
-    
-    # Setup advanced navigation first
-    advanced_nav_manager = get_tree().get_first_node_in_group("advanced_navigation_manager")
-    if not advanced_nav_manager:
-        # Create advanced navigation manager if it doesn't exist
-        var adv_nav_script = load("res://scripts/managers/advanced_navigation_manager.gd")
-        if adv_nav_script:
-            advanced_nav_manager = adv_nav_script.new()
-            advanced_nav_manager.name = "AdvancedNavigationManager"
-            get_tree().root.add_child.call_deferred(advanced_nav_manager)
-            await advanced_nav_manager.navigation_ready
-    
-    # Create NavigationAgent3D for this NPC
-    if advanced_nav_manager and advanced_nav_manager.has_method("create_npc_navigator"):
-        navigation_agent = advanced_nav_manager.create_npc_navigator(self)
-        navigation_agent.velocity_computed.connect(_on_navigation_velocity_computed)
-        navigation_agent.navigation_finished.connect(_on_navigation_finished)
-        navigation_agent.target_reached.connect(_on_navigation_target_reached)
-        print(npc_name + ": NavigationAgent3D configured")
-        
-        # Wait for navigation to be ready
-        await get_tree().physics_frame
-        await get_tree().physics_frame
-    
-    # DISABLED: Don't use waypoint navigation - user has placed NPCs manually
-    # waypoint_navigation = get_tree().get_first_node_in_group("waypoint_navigation")
-    # if not waypoint_navigation:
-    #     # Create waypoint navigation system
-    #     var waypoint_nav_script = load("res://scripts/npcs/waypoint_navigation_system.gd")
-    #     if waypoint_nav_script:
-    #         waypoint_navigation = waypoint_nav_script.new()
-    #         waypoint_navigation.name = "WaypointNavigation"
-    #         waypoint_navigation.add_to_group("waypoint_navigation")
-    #         get_tree().root.add_child.call_deferred(waypoint_navigation)
-    
-    # DISABLED: Don't use room navigation either - user has placed NPCs manually
-    # if not waypoint_navigation:
-    #     var room_nav_script = load("res://scripts/npcs/room_navigation_system.gd")
-    #     if room_nav_script:
-    #         room_navigation = room_nav_script.new()
-    #         room_navigation.name = "RoomNavigation"
-    #         add_child(room_navigation)
-    
-    # DISABLED: Let user's scene placement determine room assignment
-    # Don't override with code-based assignment
-    print(npc_name + " starting in scene-defined position")
-    
     initial_position = global_position
     current_target = global_position
+    last_position = global_position
     
-    # DISABLED: Trust user's manual placement
-    # Don't modify initial positions
-    
-    # Start with a short idle, then pick first activity
+    # Start with a short idle
     idle_timer = 0.5
     is_idle = true
-    current_activity = ""  # Ensure activity is reset
     
     # Add to NPC group
     add_to_group("npcs")
@@ -158,31 +146,35 @@ func _ready():
     
     # Get relationship manager
     relationship_manager = get_tree().get_first_node_in_group("relationship_manager")
+    
+    # Create face indicator
+    _create_face_indicator()
     if not relationship_manager:
         relationship_manager = RelationshipManager.new()
+        relationship_manager.add_to_group("relationship_manager")
         get_tree().root.add_child.call_deferred(relationship_manager)
     
     # Create relationship indicator
     _create_relationship_indicator()
     
-    # Connect to relationship changes
-    relationship_manager.relationship_changed.connect(_on_relationship_changed)
+    # Create state label for debugging
+    _create_state_label()
     
-    # DISABLED: User has manually positioned NPCs correctly
-    # Trust the scene file positions instead of auto-repositioning
-    print(npc_name + " starting at position: " + str(global_position))
+    # Create line of sight detection system
+    _create_detection_system()
     
-    # Just set the initial position for reference
-    initial_position = global_position
-    current_target = global_position
+    # Initialize waypoint system if enabled
+    if use_waypoints and waypoint_nodes.size() > 0:
+        _update_waypoint_target()
+        # Debug: NPC initialized with waypoints
+        #print(npc_name + " initialized with ", waypoint_nodes.size(), " waypoint nodes")
     
-    # Don't start first activity immediately - let idle timer handle it
+    # Connect to relationship changes if manager exists
+    if relationship_manager and relationship_manager.has_signal("relationship_changed"):
+        relationship_manager.relationship_changed.connect(_on_relationship_changed)
     
-    # Initialize schedule system
-    _setup_default_schedules()
-    if use_schedule and schedule.size() > 0:
-        is_following_schedule = true
-        _update_schedule_target()
+    # Debug: NPC initialized
+    #print(npc_name + " initialized at position: " + str(global_position))
 
 func _physics_process(delta):
     if is_talking:
@@ -197,47 +189,40 @@ func _physics_process(delta):
                 rotation.z = 0
         return
     
-    # Update activity timer
-    if activity_timer > 0:
-        activity_timer -= delta
-        
-    # Update patrol if using patrol system
-    if is_patrolling:
-        _update_patrol()
-        
-    # Force activity changes periodically to ensure NPCs move
-    last_activity_change += delta
-    if last_activity_change > 15.0:  # Check every 15 seconds
-        if is_idle and idle_timer > 2.0:  # Only interrupt if been idle for a while
-            idle_timer = 0.1  # Force new target selection soon
-        last_activity_change = 0.0
+    # Update line of sight detection
+    if enable_los_detection:
+        _update_detection()
     
-    # Simple AI behavior
-    if is_idle:
-        idle_timer -= delta
-        if idle_timer <= 0:
-            _choose_new_target()
-    else:
-        # Navigation disabled due to errors - use simple movement
-        _move_to_target(delta)
-        
-        # Check if stuck (but not too frequently)
-        if velocity.length() < 0.1 and current_target.distance_to(global_position) > 2.0:
-            # Increment a stuck counter instead of immediately choosing new target
-            if not has_meta("stuck_timer"):
-                set_meta("stuck_timer", 0.0)
-            var stuck_timer = get_meta("stuck_timer") + delta
-            set_meta("stuck_timer", stuck_timer)
-            
-            # Only consider stuck after 2 seconds of no movement
-            if stuck_timer > 2.0:
-                print(npc_name + " seems stuck after 2 seconds, choosing new target")
-                _choose_new_target()
-                set_meta("stuck_timer", 0.0)
-        else:
-            # Reset stuck timer if moving
-            if has_meta("stuck_timer"):
-                set_meta("stuck_timer", 0.0)
+    # Handle different states
+    match current_state:
+        MovementState.PATROL:
+            _handle_patrol_state(delta)
+        MovementState.IDLE:
+            _handle_idle_state(delta)
+        MovementState.TALK:
+            _handle_talk_state(delta)
+
+func _move_to_target(delta):
+    var direction = (current_target - global_position).normalized()
+    direction.y = 0  # Keep movement horizontal
+    
+    # Check if reached target
+    var distance_to_target = global_position.distance_to(current_target)
+    if distance_to_target < 0.5:
+        _start_idle()
+        return
+    
+    # Simple movement
+    velocity = direction * walk_speed
+    velocity.y = -10  # Gravity
+    
+    # Face movement direction
+    if direction.length() > 0.1:
+        look_at(global_position + direction, Vector3.UP)
+        rotation.x = 0
+        rotation.z = 0
+    
+    move_and_slide()
 
 func _start_idle():
     is_idle = true
@@ -245,869 +230,800 @@ func _start_idle():
     velocity = Vector3.ZERO
 
 func _choose_new_target():
-    # First choose activity if needed
-    if activity_timer <= 0:
-        _choose_new_activity()
-        activity_timer = randf_range(min_activity_time, max_activity_time)
+    # Simple random wandering within radius
+    var random_offset = Vector3(
+        randf_range(-wander_radius, wander_radius),
+        0,
+        randf_range(-wander_radius, wander_radius)
+    )
     
-    # Use NavigationAgent3D if available
-    if navigation_agent and navigation_agent is NavigationAgent3D:
-        var target_pos = Vector3.ZERO
-        
-        # Get target based on current activity
-        if current_activity != "wander" and assigned_room != "hallway":
-            target_pos = advanced_nav_manager.get_room_waypoint(assigned_room, current_activity)
-        else:
-            # Get random patrol point
-            target_pos = advanced_nav_manager.get_random_patrol_point(assigned_room)
-        
-        if target_pos != Vector3.ZERO:
-            current_target = target_pos
-            # Set navigation target
-            navigation_agent.target_position = current_target
-            is_navigating = true
-            
-            # Register our target position to prevent bunching
-            if advanced_nav_manager.has_method("register_npc_position"):
-                advanced_nav_manager.register_npc_position(self, current_target)
-        else:
-            # Fallback to simple navigation
-            _choose_target_fallback()
-    else:
-        # Use simple navigation
-        _choose_target_fallback()
-    
-    # If we have a NavigationAgent3D, set the target
-    if navigation_agent and navigation_agent is NavigationAgent3D and current_target != Vector3.ZERO:
-        navigation_agent.target_position = current_target
-        is_navigating = true
+    current_target = initial_position + random_offset
+    current_target.y = global_position.y  # Keep same height
     
     is_idle = false
-    # Check if we're actually going somewhere new
-    var distance_to_new_target = current_target.distance_to(global_position)
-    if distance_to_new_target > 1.5:
-        print(npc_name + " moving to " + str(current_target) + " for activity: " + current_activity + " (distance: " + str(distance_to_new_target) + ")")
-    else:
-        # Too close to current position, try to find a farther target
-        print(npc_name + " target too close (", distance_to_new_target, "m), current pos: ", global_position, ", target: ", current_target)
-        
-        # Force a random walk if stuck - but stay within room bounds
-        var random_offset = Vector3(
-            randf_range(-3.0, 3.0),
-            0,
-            randf_range(-3.0, 3.0)
-        )
-        var potential_target = global_position + random_offset
-        
-        # Ensure target is within room bounds
-        if not assigned_room.is_empty() and room_bounds.has(assigned_room):
-            var bounds = room_bounds[assigned_room]
-            potential_target.x = clamp(potential_target.x, bounds.min_x + 1.0, bounds.max_x - 1.0)
-            potential_target.z = clamp(potential_target.z, bounds.min_z + 1.0, bounds.max_z - 1.0)
-        else:
-            # Clamp to station bounds if no room assigned
-            potential_target.x = clamp(potential_target.x, -15.0, 15.0)
-            potential_target.z = clamp(potential_target.z, -25.0, 20.0)
-        
-        current_target = potential_target
-        print(npc_name + " forcing random walk to: ", current_target)
+
+func _create_relationship_indicator():
+    if relationship_indicator:
         return
-
-func _choose_target_fallback():
-    # Simple movement within current area
-    if false and waypoint_navigation and not assigned_room.is_empty():
-        # Get target based on current activity
-        if current_activity != "wander" and assigned_room != "hallway":
-            var activity_pos = waypoint_navigation.get_activity_position(assigned_room, current_activity)
-            if activity_pos != Vector3.ZERO:
-                current_target = activity_pos
-            else:
-                current_target = waypoint_navigation.get_next_waypoint(assigned_room, global_position)
-        else:
-            current_target = waypoint_navigation.get_next_waypoint(assigned_room, global_position)
-    elif room_navigation and not assigned_room.is_empty():
-        # Fallback to room navigation
-        if current_activity != "wander" and assigned_room != "hallway":
-            var activity_pos = room_navigation.get_activity_position(assigned_room, current_activity)
-            if activity_pos != Vector3.ZERO:
-                current_target = activity_pos
-            else:
-                current_target = room_navigation.get_next_waypoint(assigned_room, global_position)
-        else:
-            current_target = room_navigation.get_next_waypoint(assigned_room, global_position)
-    else:
-        # Fallback to simple room-based movement
-        if not assigned_room.is_empty() and room_bounds.has(assigned_room):
-            var bounds = room_bounds[assigned_room]
-            # Stay in back half of room, away from doors
-            var x = 0.0
-            var z = randf_range(bounds.min_z + 1.0, bounds.max_z - 1.0)
-            
-            if bounds.min_x < 0:  # Left side room
-                x = randf_range(bounds.min_x + 1.0, bounds.min_x + 2.5)
-            else:  # Right side room
-                x = randf_range(bounds.max_x - 2.5, bounds.max_x - 1.0)
-            
-            current_target = Vector3(x, 0.1, z)
-        else:
-            # Default wander for hallway NPCs
-            var angle = randf() * TAU
-            var distance = randf() * wander_radius * 0.5  # Smaller wander radius
-            var offset = Vector3(cos(angle) * distance, 0, sin(angle) * distance)
-            current_target = initial_position + offset
-
-func _move_to_target(_delta):
-    var to_target = current_target - global_position
-    to_target.y = 0
-    var distance = to_target.length()
+        
+    relationship_indicator = Label3D.new()
+    relationship_indicator.name = "RelationshipIndicator"
+    relationship_indicator.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+    relationship_indicator.no_depth_test = true
+    relationship_indicator.modulate = Color.WHITE
+    relationship_indicator.outline_modulate = Color.BLACK
+    relationship_indicator.outline_size = 2
+    relationship_indicator.font_size = 16
+    relationship_indicator.visible = false
     
-    if distance > 1.0:  # Increased threshold to prevent stopping too early
-        var direction = to_target.normalized()
-        
-        # Improved obstacle avoidance with multiple ray checks
-        var space_state = get_world_3d().direct_space_state
-        var check_height = 0.9
-        var check_distance = 1.2
-        var blocked = false
-        
-        # Check multiple heights for obstacles
-        for height in [0.3, 0.9, 1.5]:
-            var from = global_position + Vector3.UP * height
-            var to = from + direction * check_distance
-            
-            var query = PhysicsRayQueryParameters3D.create(from, to)
-            query.exclude = [self]
-            query.collision_mask = 1  # Environment layer
-            
-            var result = space_state.intersect_ray(query)
-            if result:
-                blocked = true
-                break
-        
-        # Also check ground ahead to avoid walking off edges
-        var ground_from = global_position + direction * 0.5 + Vector3.UP * 0.5
-        var ground_to = ground_from + Vector3.DOWN * 1.0
-        var ground_query = PhysicsRayQueryParameters3D.create(ground_from, ground_to)
-        ground_query.exclude = [self]
-        ground_query.collision_mask = 1
-        var ground_result = space_state.intersect_ray(ground_query)
-        if not ground_result:
-            blocked = true  # No ground ahead
-        
-        if blocked:
-            # More sophisticated avoidance
-            # Try multiple angles to find a clear path
-            var clear_direction = Vector3.ZERO
-            var angles = [PI/4, -PI/4, PI/2, -PI/2, 3*PI/4, -3*PI/4, PI]
-            
-            for angle in angles:
-                var test_dir = direction.rotated(Vector3.UP, angle)
-                var all_clear = true
-                
-                # Test this direction at multiple heights
-                for height in [0.3, 0.9, 1.5]:
-                    var from = global_position + Vector3.UP * height
-                    var test_to = from + test_dir * check_distance
-                    var test_query = PhysicsRayQueryParameters3D.create(from, test_to)
-                    test_query.exclude = [self]
-                    test_query.collision_mask = 1
-                    
-                    var test_result = space_state.intersect_ray(test_query)
-                    if test_result:
-                        all_clear = false
-                        break
-                
-                if all_clear:
-                    clear_direction = test_dir
-                    break
-            
-            if clear_direction != Vector3.ZERO:
-                direction = clear_direction
-            else:
-                # All directions blocked, stop and wait
-                direction = Vector3.ZERO
-                velocity = Vector3.ZERO
-                # Force new target after a short wait
-                if not has_meta("blocked_timer"):
-                    set_meta("blocked_timer", 0.0)
-                var blocked_timer = get_meta("blocked_timer") + _delta
-                set_meta("blocked_timer", blocked_timer)
-                if blocked_timer > 1.0:
-                    print(npc_name + " is completely blocked, choosing new target")
-                    _choose_new_target()
-                    set_meta("blocked_timer", 0.0)
-                return
-        
-        # Add gentle NPC avoidance
-        var avoidance = _calculate_npc_avoidance()
-        if avoidance.length() > 0.1:
-            direction = (direction * 2.0 + avoidance).normalized()
-        
-        # Apply movement
-        velocity = direction * walk_speed
-        
-        # Rotate to face movement direction
-        if velocity.length() > 0.1:
-            var look_target = global_position + velocity
-            look_target.y = global_position.y
-            look_at(look_target, Vector3.UP)
-            rotation.x = 0
-            rotation.z = 0
-        
-        # Check for doors
-        _check_and_open_doors()
+    var head = get_node_or_null("Head")
+    if head:
+        head.add_child(relationship_indicator)
+        relationship_indicator.position.y = 0.3
     else:
-        # Reached target
-        velocity = Vector3.ZERO
-        _start_idle()
+        add_child(relationship_indicator)
+        relationship_indicator.position.y = 2.3
+
+func _on_relationship_changed(character_name: String, new_level: int):
+    if character_name != npc_name:
+        return
+        
+    if not relationship_indicator:
+        return
     
-    # Always call move_and_slide to apply physics
+    # Update indicator based on relationship level
+    match new_level:
+        -2:
+            relationship_indicator.text = "⚔️ Hostile"
+            relationship_indicator.modulate = Color.RED
+        -1:
+            relationship_indicator.text = "😠 Unfriendly"
+            relationship_indicator.modulate = Color.ORANGE
+        0:
+            relationship_indicator.text = "😐 Neutral"
+            relationship_indicator.modulate = Color.YELLOW
+        1:
+            relationship_indicator.text = "🙂 Friendly"
+            relationship_indicator.modulate = Color.LIGHT_GREEN
+        2:
+            relationship_indicator.text = "😊 Trusted"
+            relationship_indicator.modulate = Color.GREEN
+    
+    # Show indicator briefly
+    relationship_indicator.visible = true
+    await get_tree().create_timer(3.0).timeout
+    relationship_indicator.visible = false
+
+func _handle_patrol_state(delta):
+    # Check if stuck
+    _check_if_stuck(delta)
+    
+    # Check player proximity if enabled
+    if react_to_player_proximity:
+        _check_player_proximity()
+    
+    # Update state label with current waypoint info
+    _update_state_label()
+    
+    if use_waypoints and waypoint_nodes.size() > 0:
+        _follow_waypoints(delta)
+    else:
+        # Original wander behavior
+        if is_idle:
+            idle_timer -= delta
+            if idle_timer <= 0:
+                _choose_new_target()
+        else:
+            _move_to_target(delta)
+
+func _handle_idle_state(delta):
+    # Check if player moved away
+    if react_to_player_proximity:
+        var player = get_tree().get_first_node_in_group("player")
+        if player:
+            var distance = global_position.distance_to(player.global_position)
+            if distance > idle_trigger_distance:
+                set_patrol_state()  # Resume patrol
+            elif distance <= talk_trigger_distance:
+                set_talk_state(player.global_position)  # Face player if very close
+    
+    # Just apply gravity and stay in place
+    velocity.x = 0
+    velocity.z = 0
+    velocity.y = -10  # Gravity
     move_and_slide()
+
+func _handle_talk_state(delta):
+    # Check if player moved away
+    if react_to_player_proximity and not is_talking:
+        var player = get_tree().get_first_node_in_group("player")
+        if player:
+            var distance = global_position.distance_to(player.global_position)
+            if distance > talk_trigger_distance:
+                set_idle_state()  # Go to idle if player backs away
     
-    # Safety check - ensure NPC stays within bounds
-    var needs_reset = false
-    
-    # Check height bounds
-    if global_position.y < -1.0 or global_position.y > 5.0:
-        print("WARNING: " + npc_name + " fell out of bounds! Resetting Y position")
-        global_position.y = 0.1
-        velocity.y = 0
-        needs_reset = true
-    
-    # DISABLED: Don't enforce room bounds - user has placed NPCs manually
-    # Just log if they're in unexpected positions
-    if not assigned_room.is_empty() and room_bounds.has(assigned_room):
-        var bounds = room_bounds[assigned_room]
+    # Face the talk target
+    if talk_target_position != Vector3.ZERO:
+        var direction = (talk_target_position - global_position).normalized()
+        direction.y = 0  # Keep horizontal
         
-        if global_position.x < bounds.min_x - 2.0 or global_position.x > bounds.max_x + 2.0:
-            pass  # Don't move them, just let them be where placed
-        
-        if global_position.z < bounds.min_z - 2.0 or global_position.z > bounds.max_z + 2.0:
-            pass  # Don't move them, just let them be where placed
-    else:
-        # General station bounds check - but don't reset
-        if global_position.x < -16.0 or global_position.x > 16.0 or global_position.z < -26.0 or global_position.z > 21.0:
-            # Just log, don't move
-            pass
+        if direction.length() > 0.1:
+            _rotate_toward_direction(direction, delta)
     
-    if needs_reset:
-        velocity = Vector3.ZERO
-        _choose_new_target()
+    # Stay in place
+    velocity.x = 0
+    velocity.z = 0
+    velocity.y = -10  # Gravity
+    move_and_slide()
+
+func _follow_waypoints(delta):
+    # Ensure we have waypoints
+    if waypoint_nodes.is_empty():
+        return
+    
+    # Update target position from current waypoint node
+    _update_waypoint_target()
+    
+    if is_paused:
+        pause_timer -= delta
+        
+        # Optional: Slowly look around while paused
+        if smooth_rotation and pause_timer > 0:
+            var look_offset = sin(pause_timer * 2.0) * 0.5
+            rotation.y += look_offset * delta
+        
+        if pause_timer <= 0:
+            is_paused = false
+            if waypoint_nodes.size() > 0:
+                current_waypoint_index = (current_waypoint_index + 1) % waypoint_nodes.size()
+                _update_waypoint_target()
+                # Debug: Continuing to next waypoint
+                #print(npc_name + " continuing to waypoint ", current_waypoint_index)
+        return
+    
+    # Calculate 2D distance (ignore Y completely)
+    var pos_2d = Vector2(global_position.x, global_position.z)
+    var target_2d = Vector2(waypoint_target.x, waypoint_target.z)
+    var distance_to_target = pos_2d.distance_to(target_2d)
+    
+    # Check if waypoint is reached
+    if distance_to_target <= waypoint_reach_distance:
+        # Debug info for waypoint reaching
+        var waypoint_name = waypoint_nodes[current_waypoint_index].name if is_instance_valid(waypoint_nodes[current_waypoint_index]) else "Unknown"
+        # Debug: Reached waypoint
+        #print(npc_name + " reached waypoint ", current_waypoint_index, " (", waypoint_name, ") at distance: ", distance_to_target)
+        
+        # Reset stuck timer since we successfully reached a waypoint
+        stuck_timer = 0.0
+        
+        if pause_at_waypoints:
+            is_paused = true
+            pause_timer = randf_range(pause_duration_min, pause_duration_max)
+            # Debug: Pausing at waypoint
+            #print(npc_name + " pausing for ", pause_timer, " seconds")
+        else:
+            if waypoint_nodes.size() > 0:
+                current_waypoint_index = (current_waypoint_index + 1) % waypoint_nodes.size()
+                _update_waypoint_target()
+        return
+    
+    # Move towards waypoint (2D movement only)
+    var direction_2d = (target_2d - pos_2d).normalized()
+    var direction = Vector3(direction_2d.x, 0, direction_2d.y)
+    
+    velocity = direction * walk_speed
+    velocity.y = -10  # Gravity
+    
+    # Handle rotation
+    if direction.length() > 0.1:
+        _rotate_toward_direction(direction, delta)
+    
+    move_and_slide()
 
 func interact():
+    # This is called when the player interacts with the NPC
     if is_talking:
         return
     
-    # Don't allow interviews during night cycle
-    if is_night_cycle:
-        if npc_name == "Riley Kim":
-            # Riley doesn't talk during patrol, just ignore
-            return
-        else:
-            # Show a quick message that they can't talk
-            print(npc_name + ": I need to get to my quarters. We can talk in the morning.")
-            return
+    # Switch to TALK state and face the player
+    var player = get_tree().get_first_node_in_group("player")
+    if player:
+        set_talk_state(player.global_position)
     
     is_talking = true
-    dialogue_started.emit(self)
+    emit_signal("dialogue_started", self)
     
-    # Stop moving
-    velocity = Vector3.ZERO
-    is_idle = true
-    
-    print(npc_name + ": Starting dialogue")
-    
-    # Find dialogue UI and start dialogue
+    # Open dialogue UI
     var dialogue_ui = get_tree().get_first_node_in_group("dialogue_ui")
     if dialogue_ui:
-        dialogue_ui.start_dialogue(self)
-    
-    has_been_interviewed = true
+        dialogue_ui.start_dialogue(self, initial_dialogue_id)
 
 func end_dialogue():
     is_talking = false
-    dialogue_ended.emit(self)
-    _start_idle()
+    has_been_interviewed = true
+    emit_signal("dialogue_ended", self)
+    
+    # Return to previous state
+    resume_previous_state()
 
 func get_interaction_prompt() -> String:
-    # Don't show interaction prompt during night cycle
-    if is_night_cycle:
-        return ""
-    
-    if has_been_interviewed:
-        return "Press [E] to talk to " + npc_name + " again"
-    else:
-        return "Press [E] to interview " + npc_name
-
-func get_dialogue_data() -> Dictionary:
-    return {
-        "npc_name": npc_name,
-        "role": role,
-        "current_dialogue": current_dialogue,
-        "has_been_interviewed": has_been_interviewed,
-        "is_suspicious": is_suspicious,
-        "has_alibi": has_alibi
-    }
+    return "Talk to " + npc_name
 
 func set_suspicious(suspicious: bool):
     if is_suspicious != suspicious:
         is_suspicious = suspicious
-        suspicion_changed.emit(self, is_suspicious)
+        emit_signal("suspicion_changed", self, is_suspicious)
 
-func _on_body_entered(body):
-    if body.is_in_group("player"):
-        player_nearby = true
+func get_current_relationship_level() -> int:
+    if relationship_manager:
+        return relationship_manager.get_relationship(npc_name)
+    return 0
 
-func _on_body_exited(body):
-    if body.is_in_group("player"):
-        player_nearby = false
-        if is_talking:
-            end_dialogue()
-
-func _create_relationship_indicator():
-    relationship_indicator = Label3D.new()
-    relationship_indicator.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-    relationship_indicator.position.y = 0.8  # Higher above head
-    relationship_indicator.font_size = 20  # Larger text
-    relationship_indicator.outline_size = 10  # Thicker outline
-    $Head.add_child(relationship_indicator)
-    _update_relationship_indicator()
-
-func _update_relationship_indicator():
-    if not relationship_manager or not relationship_indicator:
+func _create_face_indicator():
+    if not show_face_indicator:
         return
     
-    var level = relationship_manager.get_relationship(npc_name)
-    var color = relationship_manager.get_relationship_color(npc_name)
-    var level_name = ""
-    var _debug_text = ""  # Prefixed with underscore since not used
-    
-    # Always show relationship status for debugging
-    match level:
-        -2:
-            level_name = "HOSTILE"
-            _debug_text = "[-2]"
-        -1:
-            level_name = "UNFRIENDLY"
-            _debug_text = "[-1]"
-        0:
-            level_name = "NEUTRAL"
-            _debug_text = "[0]"
-        1:
-            level_name = "FRIENDLY"
-            _debug_text = "[+1]"
-        2:
-            level_name = "TRUSTED"
-            _debug_text = "[+2]"
-    
-    # Only show when player is nearby
-    relationship_indicator.text = level_name
-    relationship_indicator.modulate = color
-    relationship_indicator.visible = player_nearby  # Only visible when player is close
+    match face_indicator_type:
+        "Cone":
+            _create_cone_indicator()
+        "Eyes":
+            _create_eye_indicators()
+        "Nose":
+            _create_nose_indicator()
+        "Arrow":
+            _create_arrow_indicator()
 
-func _on_relationship_changed(changed_npc_name: String, _old_level: int, _new_level: int):
-    if changed_npc_name == npc_name:
-        _update_relationship_indicator()
+func _create_cone_indicator():
+    # Create the face indicator mesh
+    face_indicator_mesh = MeshInstance3D.new()
+    face_indicator_mesh.name = "FaceIndicator"
+    
+    # Create a cone mesh to show direction
+    var cone = CylinderMesh.new()
+    cone.top_radius = 0.0  # Makes it a cone
+    cone.bottom_radius = face_indicator_size
+    cone.height = face_indicator_size * 2
+    cone.radial_segments = 8
+    cone.rings = 1
+    
+    face_indicator_mesh.mesh = cone
+    
+    # Create material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = face_indicator_color
+    material.emission_enabled = true
+    material.emission = face_indicator_color
+    material.emission_energy = 0.3
+    material.no_depth_test = false  # Ensure it's occluded by geometry
+    material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+    face_indicator_mesh.material_override = material
+    
+    # Position it in front of the character at head height (forward is -Z in Godot)
+    face_indicator_mesh.position = Vector3(0, 1.6, -0.5)
+    face_indicator_mesh.rotation_degrees = Vector3(90, 0, 0)  # Point forward
+    
+    add_child(face_indicator_mesh)
 
-func on_night_cycle_started():
-    is_night_cycle = true
+func _create_eye_indicators():
+    # Create two small spheres for eyes
+    var eye_distance = 0.1
+    var eye_size = 0.05
+    var eye_height = 1.7
+    var eye_forward = -0.4  # Forward is -Z in Godot
     
-    # Different NPCs react differently to night
-    match npc_name:
-        "Riley Kim":
-            # Riley becomes the hunter - activate patrol AI
-            night_behavior_active = true
-            print(npc_name + ": Beginning night patrol...")
-            _activate_riley_patrol_mode()
-        "Dr. Marcus Webb", "Commander Chen", "Dr. Okafor":
-            # Most NPCs go to quarters
-            night_behavior_active = true
-            print(npc_name + ": Heading to quarters for the night.")
-            _move_to_quarters()
-        "Jake Torres":
-            # Security stays on duty but changes position
-            night_behavior_active = true
-            print(npc_name + ": Maintaining security watch.")
-            _move_to_security_post()
+    for i in range(2):
+        var eye = MeshInstance3D.new()
+        eye.name = "Eye" + str(i + 1)
+        
+        var sphere = SphereMesh.new()
+        sphere.radial_segments = 8
+        sphere.rings = 4
+        sphere.radius = eye_size
+        sphere.height = eye_size * 2
+        
+        eye.mesh = sphere
+        
+        # Create glowing material
+        var mat = StandardMaterial3D.new()
+        mat.albedo_color = Color.WHITE
+        mat.emission_enabled = true
+        mat.emission = Color.WHITE
+        mat.emission_energy = 1.0
+        mat.no_depth_test = false  # Ensure it's occluded by geometry
+        eye.material_override = mat
+        
+        # Position eyes
+        var x_offset = eye_distance if i == 0 else -eye_distance
+        eye.position = Vector3(x_offset, eye_height, eye_forward)
+        
+        add_child(eye)
 
-func _activate_riley_patrol_mode():
-    print("DEBUG: Activating Riley patrol mode for ", npc_name)
+func _create_nose_indicator():
+    # Create a simple box for nose
+    var nose = MeshInstance3D.new()
+    nose.name = "NoseIndicator"
     
-    # Stop normal movement
-    is_idle = true
-    current_target = global_position
-    velocity = Vector3.ZERO
+    var box = BoxMesh.new()
+    box.size = Vector3(face_indicator_size * 0.5, face_indicator_size * 0.8, face_indicator_size * 1.5)
     
-    # Ensure we're not processing physics in base class
-    set_physics_process(false)
+    nose.mesh = box
     
-    # Check if patrol AI already exists
-    var patrol_ai = get_node_or_null("SaboteurPatrolAI")
-    if patrol_ai:
-        print("DEBUG: Riley patrol AI already exists, enabling it")
-        # Enable the patrol AI's physics process
-        patrol_ai.set_physics_process(true)
-        patrol_ai.set_active(true)
-        # Reset to patrolling state
-        if patrol_ai.has_method("_change_state"):
-            patrol_ai._change_state(patrol_ai.State.PATROLLING)
-        if patrol_ai.has_method("_set_next_patrol_target"):
-            patrol_ai._set_next_patrol_target()
+    # Create material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = face_indicator_color
+    material.emission_enabled = true
+    material.emission = face_indicator_color
+    material.emission_energy = 0.5
+    material.no_depth_test = false  # Ensure it's occluded by geometry
+    nose.material_override = material
+    
+    # Position at face level (forward is -Z)
+    nose.position = Vector3(0, 1.65, -0.45)
+    
+    add_child(nose)
+
+func _create_arrow_indicator():
+    # Create an arrow using a cone
+    var arrow = MeshInstance3D.new()
+    arrow.name = "ArrowIndicator"
+    
+    # Create arrow shape
+    var cone = CylinderMesh.new()
+    cone.top_radius = 0.0
+    cone.bottom_radius = face_indicator_size * 1.5
+    cone.height = face_indicator_size * 3
+    cone.radial_segments = 3  # Triangle shape
+    
+    arrow.mesh = cone
+    
+    # Create material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = face_indicator_color
+    material.emission_enabled = true
+    material.emission = face_indicator_color
+    material.emission_energy = 0.8
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.albedo_color.a = 0.8
+    material.no_depth_test = false  # Ensure it's occluded by geometry
+    arrow.material_override = material
+    
+    # Position above head pointing forward (forward is -Z)
+    arrow.position = Vector3(0, 2.2, -0.3)
+    arrow.rotation_degrees = Vector3(-90, 0, 0)
+    
+    add_child(arrow)
+
+# State management functions
+func set_state(new_state: MovementState, target_position: Vector3 = Vector3.ZERO):
+    if current_state == new_state:
         return
     
-    # Add patrol AI component if it doesn't exist
-    var saboteur_patrol_script = load("res://scripts/npcs/saboteur_patrol_ai.gd")
-    if not saboteur_patrol_script:
-        push_error("Failed to load saboteur_patrol_ai.gd!")
+    # Store previous state for resuming
+    if current_state != MovementState.IDLE and current_state != MovementState.TALK:
+        previous_state = current_state
+    
+    current_state = new_state
+    
+    if debug_state_changes:
+        print(npc_name + " state changed to: ", MovementState.keys()[new_state])
+    
+    # Update state label
+    _update_state_label()
+    
+    # Handle state-specific setup
+    match new_state:
+        MovementState.PATROL:
+            # Resume patrol, no special setup needed
+            pass
+        MovementState.IDLE:
+            # Stop movement
+            velocity = Vector3.ZERO
+        MovementState.TALK:
+            # Set target to face
+            talk_target_position = target_position
+            velocity = Vector3.ZERO
+
+func resume_previous_state():
+    set_state(previous_state)
+
+func set_patrol_state():
+    set_state(MovementState.PATROL)
+
+func set_idle_state():
+    set_state(MovementState.IDLE)
+
+func set_talk_state(target_position: Vector3):
+    set_state(MovementState.TALK, target_position)
+
+# Helper function to get current state as string
+func get_state_name() -> String:
+    return MovementState.keys()[current_state]
+
+# State label functions
+func _create_state_label():
+    if not show_state_label:
         return
         
-    patrol_ai = saboteur_patrol_script.new()
-    patrol_ai.name = "SaboteurPatrolAI"
-    add_child(patrol_ai)
-    print("DEBUG: Saboteur patrol AI added as child")
+    state_label = Label3D.new()
+    state_label.name = "StateLabel"
     
-    # Disable parent's physics process to let patrol AI take over
-    set_physics_process(false)
+    # Configure label appearance
+    state_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+    state_label.no_depth_test = false  # Allow geometry to occlude
+    state_label.fixed_size = true
+    state_label.pixel_size = 0.001  # Much smaller
     
-    # Change appearance to be more menacing
-    var mesh_instance = get_node_or_null("MeshInstance3D")
-    if not mesh_instance:
-        mesh_instance = find_child("*Mesh*", true, false) as MeshInstance3D
+    # Position above head (closer to name)
+    state_label.position = Vector3(0, 2.2, 0)
     
-    if mesh_instance:
-        print("DEBUG: Found mesh instance, changing appearance")
-        var material = mesh_instance.get_surface_override_material(0)
-        if not material:
-            material = mesh_instance.mesh.surface_get_material(0) if mesh_instance.mesh else null
+    # Set initial text
+    state_label.text = "[" + get_state_name() + "]"
+    
+    # Style the label (smaller font)
+    state_label.modulate = Color.WHITE
+    state_label.outline_modulate = Color.BLACK
+    state_label.outline_size = 4
+    state_label.font_size = 16  # Smaller than name label
+    
+    add_child(state_label)
+    
+    # Set initial color
+    _update_state_label()
+
+func _update_state_label():
+    if not state_label:
+        return
+    
+    var state_name = get_state_name()
+    state_label.text = "[" + state_name + "]"
+    
+    # Color code by state
+    match current_state:
+        MovementState.PATROL:
+            state_label.modulate = Color.GREEN
+        MovementState.IDLE:
+            state_label.modulate = Color.YELLOW
+        MovementState.TALK:
+            state_label.modulate = Color.CYAN
+    
+    # Add additional info for certain states
+    if current_state == MovementState.PATROL and use_waypoints and waypoint_nodes.size() > 0:
+        state_label.text += "\nWP: " + str(current_waypoint_index + 1) + "/" + str(waypoint_nodes.size())
+        if is_paused:
+            state_label.text += " (Paused)"
+
+func _check_player_proximity():
+    var player = get_tree().get_first_node_in_group("player")
+    if not player:
+        return
+    
+    var distance = global_position.distance_to(player.global_position)
+    
+    if distance <= talk_trigger_distance:
+        set_talk_state(player.global_position)
+    elif distance <= idle_trigger_distance:
+        set_idle_state()
+
+# Waypoint functions
+func _update_waypoint_target():
+    if waypoint_nodes.size() == 0:
+        return
         
-        if material and material is StandardMaterial3D:
-            var new_material = material.duplicate()
-            new_material.albedo_color = Color(0.8, 0.2, 0.2)  # Reddish tint
-            new_material.emission_enabled = true
-            new_material.emission = Color(0.5, 0, 0)
-            new_material.emission_energy_multiplier = 0.5
-            mesh_instance.set_surface_override_material(0, new_material)
-    else:
-        print("DEBUG: No mesh instance found")
+    var current_waypoint = waypoint_nodes[current_waypoint_index]
+    if is_instance_valid(current_waypoint):
+        waypoint_target = current_waypoint.global_position
+        # Always ignore Y - NPCs stay at ground level
+        waypoint_target.y = global_position.y
+
+func _check_if_stuck(delta):
+    # Don't check for stuck if we're intentionally paused at a waypoint
+    if is_paused:
+        stuck_timer = 0.0
+        last_position = global_position
+        return
     
-    print("Riley: The station is mine now. No one escapes.")
-
-func _move_to_quarters():
-    # Move to a "quarters" position (simplified for now)
-    is_idle = false
-    velocity = Vector3.ZERO
-    # In a full implementation, this would navigate to crew quarters
-
-func _move_to_security_post():
-    # Move to security monitoring position
-    is_idle = false
-
-func on_day_cycle_started():
-    is_night_cycle = false
-    night_behavior_active = false
+    var movement = global_position.distance_to(last_position)
     
-    # Restore normal behavior
-    if npc_name == "Riley Kim":
-        # Disable patrol AI and restore normal movement
-        var patrol_ai = get_node_or_null("SaboteurPatrolAI")
-        if patrol_ai:
-            patrol_ai.set_physics_process(false)
-        set_physics_process(true)
-        
-        # Restore normal appearance
-        var mesh_instance = get_node_or_null("MeshInstance3D")
-        if not mesh_instance:
-            mesh_instance = find_child("*Mesh*", true, false) as MeshInstance3D
-        
-        if mesh_instance and mesh_instance.get_surface_override_material(0):
-            # Remove the override to restore original
-            mesh_instance.set_surface_override_material(0, null)
-        
-        print(npc_name + ": Returning to normal duties.")
-    
-    # Resume normal idle behavior
-    _start_idle()
-    # In a full implementation, this would navigate to security office
-
-func _on_navigation_stuck(stuck_position: Vector3):
-    print(npc_name + " got stuck at ", stuck_position, ", choosing new target")
-    # Move back a bit and choose new target
-    global_position -= global_transform.basis.z * 0.5
-    # Choose a new random target when stuck
-    _choose_new_target()
-
-func _check_and_open_doors():
-    # Cast ray forward to check for doors
-    var space_state = get_world_3d().direct_space_state
-    var from = global_position + Vector3.UP * 1.0
-    var forward = velocity.normalized() if velocity.length() > 0.1 else -global_transform.basis.z
-    var to = from + forward * 2.5  # Check further ahead for doors
-    
-    var query = PhysicsRayQueryParameters3D.create(from, to)
-    query.collision_mask = 3  # Check both environment and interactable layers
-    query.exclude = [self]
-    
-    var result = space_state.intersect_ray(query)
-    if result and result.collider.has_method("open_door"):
-        # It's a door - check if closed
-        if not result.collider.is_open:
-            print(npc_name + ": Approaching door")
-            # Stop and wait for door to open
-            var door_distance = global_position.distance_to(result.collider.global_position)
-            if door_distance < 3.5:
-                # Close enough - stop and wait
-                velocity = Vector3.ZERO
-                is_idle = true
-                idle_timer = 0.5  # Wait briefly for door to open
-                
-                # Face the door
-                var look_pos = result.collider.global_position
-                look_pos.y = global_position.y
-                look_at(look_pos, Vector3.UP)
-                rotation.x = 0
-                rotation.z = 0
-
-func _on_navigation_finished():
-    # Navigation completed, start idle
-    _start_idle()
-
-func get_current_state() -> String:
-    # Used by navigation debug visualization
-    if npc_name == "Riley Kim" and is_night_cycle:
-        var patrol_ai = get_node_or_null("SaboteurPatrolAI")
-        if patrol_ai and patrol_ai.has_method("get_current_state_name"):
-            return patrol_ai.get_current_state_name()
-    return "idle" if is_idle else "moving"
-
-func _choose_new_activity():
-    # Choose activity based on NPC role and room
-    var old_activity = current_activity
-    match assigned_room:
-        "laboratory":
-            var activities = ["workstation", "equipment", "research", "wander"]
-            current_activity = activities[randi() % activities.size()]
-        "medical":
-            var activities = ["examination", "supplies", "desk", "wander"]
-            current_activity = activities[randi() % activities.size()]
-        "security":
-            var activities = ["monitors", "weapons", "desk", "wander"]
-            current_activity = activities[randi() % activities.size()]
-        "engineering":
-            var activities = ["console", "repairs", "storage", "wander"]
-            current_activity = activities[randi() % activities.size()]
-        "cafeteria":
-            var activities = ["kitchen", "tables", "storage", "wander"]
-            current_activity = activities[randi() % activities.size()]
-        _:
-            current_activity = "wander"
-    
-    if current_activity != old_activity:
-        print(npc_name + " switching from " + old_activity + " to " + current_activity)
-
-func _setup_room_bounds():
-    # Define boundaries for each room (updated for larger room sizes)
-    room_bounds = {
-        "laboratory": {"min_x": -15.0, "max_x": -1.0, "min_z": 3.0, "max_z": 17.0},
-        "medical": {"min_x": 2.0, "max_x": 14.0, "min_z": -1.0, "max_z": 11.0},
-        "security": {"min_x": -14.0, "max_x": -2.0, "min_z": -11.0, "max_z": 1.0},
-        "engineering": {"min_x": 1.0, "max_x": 15.0, "min_z": -17.0, "max_z": -3.0},
-        "quarters": {"min_x": -15.0, "max_x": -1.0, "min_z": -21.0, "max_z": -9.0},
-        "cafeteria": {"min_x": 0.0, "max_x": 16.0, "min_z": -27.0, "max_z": -13.0},
-        "hallway": {"min_x": -3.0, "max_x": 3.0, "min_z": -30.0, "max_z": 22.5}
-    }
-
-func _get_room_from_position(pos: Vector3) -> String:
-    # Determine which room a position is in
-    # Check rooms first before defaulting to hallway
-    for room_name in room_bounds:
-        if room_name == "hallway":
-            continue  # Check hallway last
-        var bounds = room_bounds[room_name]
-        if pos.x >= bounds.min_x and pos.x <= bounds.max_x and \
-           pos.z >= bounds.min_z and pos.z <= bounds.max_z:
-            return room_name
-    
-    # Check if in hallway bounds
-    if room_bounds.has("hallway"):
-        var hallway_bounds = room_bounds["hallway"]
-        if pos.x >= hallway_bounds.min_x and pos.x <= hallway_bounds.max_x and \
-           pos.z >= hallway_bounds.min_z and pos.z <= hallway_bounds.max_z:
-            return "hallway"
-    
-    return "hallway"  # Default to hallway if not in any room
-
-func _assign_npc_to_room():
-    # Updated with correct NPC names from the game
-    match npc_name:
-        "Dr. Sarah Chen":
-            assigned_room = "medical"
-            can_leave_room = true  # Medical officer might need to visit patients
-        "Dr. Marcus Webb":
-            assigned_room = "laboratory"
-            can_leave_room = false  # Chief scientist stays in lab
-        "Alex Chen":
-            assigned_room = "engineering"
-            can_leave_room = true  # Engineer needs to move around
-        "Jake Torres":
-            assigned_room = "security"
-            can_leave_room = true  # Security chief patrols
-        "Dr. Zara Okafor":
-            assigned_room = "hallway"  # AI specialist can be anywhere
-            can_leave_room = true
-        _:
-            # Default assignment based on position
-            assigned_room = _get_room_from_position(global_position)
-            can_leave_room = true
-
-# Calculate avoidance force from other NPCs
-func _calculate_npc_avoidance() -> Vector3:
-    var avoidance = Vector3.ZERO
-    var npcs = get_tree().get_nodes_in_group("npcs")
-    
-    for npc in npcs:
-        if npc == self:
-            continue
+    if movement < min_movement_threshold:
+        stuck_timer += delta
+        if stuck_timer > stuck_threshold:
+            # Only skip if truly stuck (not making progress)
+            var waypoint_name = waypoint_nodes[current_waypoint_index].name if current_waypoint_index < waypoint_nodes.size() and is_instance_valid(waypoint_nodes[current_waypoint_index]) else "Unknown"
+            print("[WARNING] " + npc_name + " appears stuck! Skipping waypoint ", current_waypoint_index, " (", waypoint_name, ")")
             
-        var distance = global_position.distance_to(npc.global_position)
-        if distance < separation_radius and distance > 0.01:
-            # Calculate repulsion force
-            var away_dir = (global_position - npc.global_position)
-            away_dir.y = 0  # Keep on same level
-            if away_dir.length() > 0:
-                away_dir = away_dir.normalized()
-                var force = 1.0 - (distance / separation_radius)
-                avoidance += away_dir * force * avoidance_force
-    
-    # Limit avoidance force to prevent jittering
-    if avoidance.length() > avoidance_force:
-        avoidance = avoidance.normalized() * avoidance_force
-    
-    return avoidance
-
-# Check if position would cause collision with furniture
-func _is_position_blocked(pos: Vector3) -> bool:
-    var space_state = get_world_3d().direct_space_state
-    var from = pos + Vector3.UP * 0.5
-    var to = pos + Vector3.DOWN * 0.1
-    
-    var query = PhysicsRayQueryParameters3D.create(from, to)
-    query.exclude = [self]
-    query.collision_mask = 3  # Check both environment and interactables
-    
-    var result = space_state.intersect_ray(query)
-    return result != null
-
-# Navigation using NavigationAgent3D for smooth movement
-func _navigate_with_agent(delta):
-    if not navigation_agent:
-        # Fallback to old movement
-        _move_to_target(delta)
-        return
-        
-    # Always update the target position
-    navigation_agent.target_position = current_target
-    
-    if navigation_agent.is_navigation_finished():
-        # Reached target
-        is_navigating = false
-        _start_idle()
-        
-        # Unregister our position
-        if advanced_nav_manager and advanced_nav_manager.has_method("unregister_npc_position"):
-            advanced_nav_manager.unregister_npc_position(current_target)
+            # Skip to next waypoint
+            if waypoint_nodes.size() > 0:
+                current_waypoint_index = (current_waypoint_index + 1) % waypoint_nodes.size()
+                _update_waypoint_target()
+            stuck_timer = 0.0
+            is_paused = false
     else:
-        # Get next position on path
-        var next_position = navigation_agent.get_next_path_position()
-        var direction = global_position.direction_to(next_position)
-        direction.y = 0  # Keep on same level
-        
-        # Apply movement
-        velocity = direction * walk_speed
-        
-        # Rotate to face movement direction
-        if velocity.length() > 0.1:
-            var look_target = global_position + velocity
-            look_target.y = global_position.y
-            look_at(look_target, Vector3.UP)
-            rotation.x = 0
-            rotation.z = 0
-        
-        move_and_slide()
-        
-        # Check for doors along the path
-        _check_and_open_doors()
-
-# Called when NavigationAgent computes safe velocity
-func _on_navigation_velocity_computed(safe_velocity: Vector3):
-    if is_navigating:
-        velocity = safe_velocity
-        
-        # Rotate to face movement direction
-        if velocity.length() > 0.1:
-            var look_target = global_position + velocity
-            look_target.y = global_position.y
-            look_at(look_target, Vector3.UP)
-            rotation.x = 0
-            rotation.z = 0
-        
-        move_and_slide()
-
-# Called when navigation target is reached
-func _on_navigation_target_reached():
-    print(npc_name + " reached navigation target")
-    is_navigating = false
-    _start_idle()
-
-# Apply velocity from advanced navigation system
-func apply_velocity(new_velocity: Vector3):
-    velocity = new_velocity
+        stuck_timer = 0.0
     
-    # Rotate to face movement direction
-    if velocity.length() > 0.1:
-        var look_target = global_position + velocity
-        look_target.y = global_position.y
-        look_at(look_target, Vector3.UP)
+    last_position = global_position
+
+func _rotate_toward_direction(direction: Vector3, delta: float):
+    # Calculate target rotation
+    var target_transform = transform.looking_at(global_position + direction, Vector3.UP)
+    
+    if smooth_rotation:
+        # Smooth rotation using quaternion slerp
+        var current_quat = transform.basis.get_rotation_quaternion()
+        var target_quat = target_transform.basis.get_rotation_quaternion()
+        
+        # Interpolate rotation
+        var new_quat = current_quat.slerp(target_quat, rotation_speed * delta)
+        transform.basis = Basis(new_quat)
+        
+        # Keep upright
         rotation.x = 0
         rotation.z = 0
-    
-    move_and_slide()
-
-# Schedule System Functions
-func _setup_default_schedules():
-    # Set up default schedules based on NPC role
-    if schedule.is_empty():
-        match npc_name:
-            "Dr. Sarah Chen":  # Medical Officer
-                schedule = [
-                    {"time": 8.0, "room": "cafeteria", "activity": "breakfast", "duration": 0.5},
-                    {"time": 8.5, "room": "medical", "activity": "examination", "duration": 3.5},
-                    {"time": 12.0, "room": "cafeteria", "activity": "lunch", "duration": 1.0},
-                    {"time": 13.0, "room": "medical", "activity": "supplies", "duration": 4.0},
-                    {"time": 17.0, "room": "medical", "activity": "desk", "duration": 1.0},
-                    {"time": 18.0, "room": "cafeteria", "activity": "dinner", "duration": 1.0},
-                    {"time": 19.0, "room": "quarters", "activity": "rest", "duration": 13.0}
-                ]
-            "Dr. Marcus Webb":  # Chief Scientist
-                schedule = [
-                    {"time": 7.0, "room": "laboratory", "activity": "research", "duration": 5.0},
-                    {"time": 12.0, "room": "cafeteria", "activity": "lunch", "duration": 0.5},
-                    {"time": 12.5, "room": "laboratory", "activity": "equipment", "duration": 6.5},
-                    {"time": 19.0, "room": "laboratory", "activity": "workstation", "duration": 2.0},
-                    {"time": 21.0, "room": "quarters", "activity": "rest", "duration": 10.0}
-                ]
-            "Jake Torres":  # Security Chief
-                # Use patrol route instead of schedule
-                use_schedule = false
-                patrol_route = [
-                    {"room": "security", "activity": "monitors", "duration": 120.0},
-                    {"room": "hallway", "activity": "patrol", "duration": 60.0},
-                    {"room": "laboratory", "activity": "check", "duration": 30.0},
-                    {"room": "medical", "activity": "check", "duration": 30.0},
-                    {"room": "engineering", "activity": "check", "duration": 30.0},
-                    {"room": "cafeteria", "activity": "check", "duration": 30.0},
-                    {"room": "quarters", "activity": "check", "duration": 30.0},
-                    {"room": "security", "activity": "weapons", "duration": 60.0}
-                ]
-                is_patrolling = true
-            "Alex Chen":  # Engineer
-                schedule = [
-                    {"time": 6.0, "room": "engineering", "activity": "console", "duration": 2.0},
-                    {"time": 8.0, "room": "cafeteria", "activity": "breakfast", "duration": 0.5},
-                    {"time": 8.5, "room": "engineering", "activity": "machinery", "duration": 3.5},
-                    {"time": 12.0, "room": "cafeteria", "activity": "lunch", "duration": 1.0},
-                    {"time": 13.0, "room": "engineering", "activity": "repairs", "duration": 5.0},
-                    {"time": 18.0, "room": "cafeteria", "activity": "dinner", "duration": 1.0},
-                    {"time": 19.0, "room": "engineering", "activity": "console", "duration": 2.0},
-                    {"time": 21.0, "room": "quarters", "activity": "rest", "duration": 9.0}
-                ]
-            "Dr. Zara Okafor":  # AI Specialist
-                schedule = [
-                    {"time": 9.0, "room": "cafeteria", "activity": "breakfast", "duration": 0.5},
-                    {"time": 9.5, "room": "laboratory", "activity": "workstation", "duration": 2.5},
-                    {"time": 12.0, "room": "cafeteria", "activity": "lunch", "duration": 1.0},
-                    {"time": 13.0, "room": "engineering", "activity": "console", "duration": 2.0},
-                    {"time": 15.0, "room": "laboratory", "activity": "research", "duration": 3.0},
-                    {"time": 18.0, "room": "cafeteria", "activity": "dinner", "duration": 1.5},
-                    {"time": 19.5, "room": "quarters", "activity": "rest", "duration": 13.5}
-                ]
-
-func _update_schedule_target():
-    if not use_schedule or schedule.is_empty():
-        return
-    
-    # Find current schedule entry based on game time
-    var current_entry = _get_current_schedule_entry()
-    if not current_entry:
-        return
-    
-    # Check if we need to transition to a new room
-    if current_entry.room != assigned_room:
-        print(npc_name + " transitioning from " + assigned_room + " to " + current_entry.room + " for " + current_entry.activity)
-        assigned_room = current_entry.room
-        current_activity = current_entry.activity
-        schedule_transition_in_progress = true
-        
-        # Get the room center as initial target
-        if room_bounds.has(assigned_room):
-            var bounds = room_bounds[assigned_room]
-            current_target = Vector3(
-                (bounds.min_x + bounds.max_x) / 2.0,
-                0.1,
-                (bounds.min_z + bounds.max_z) / 2.0
-            )
-            is_idle = false
     else:
-        # Already in the right room, update activity
-        if current_activity != current_entry.activity:
-            current_activity = current_entry.activity
-            activity_timer = current_entry.duration * 60.0  # Convert minutes to seconds
-            _choose_new_target()
+        # Instant rotation (original behavior)
+        look_at(global_position + direction, Vector3.UP)
+        rotation.x = 0
+        rotation.z = 0
 
-func _get_current_schedule_entry() -> Dictionary:
-    if schedule.is_empty():
-        return {}
-    
-    # Find the schedule entry that matches current time
-    var current_entry = {}
-    var latest_time = 0.0
-    
-    for entry in schedule:
-        if entry.time <= game_time_hours and entry.time > latest_time:
-            current_entry = entry
-            latest_time = entry.time
-    
-    # If no entry found (too early), use the last entry from previous day
-    if current_entry.is_empty() and schedule.size() > 0:
-        current_entry = schedule[-1]
-    
-    return current_entry
-
-func _update_patrol():
-    if not is_patrolling or patrol_route.is_empty():
+# Line of sight detection functions
+func _create_detection_system():
+    if not enable_los_detection:
         return
     
-    patrol_timer -= get_physics_process_delta_time()
+    # Creating detection system...
     
-    if patrol_timer <= 0:
-        # Move to next patrol point
-        current_patrol_index = (current_patrol_index + 1) % patrol_route.size()
-        var patrol_point = patrol_route[current_patrol_index]
-        
-        print(npc_name + " patrolling to " + patrol_point.room + " for " + patrol_point.activity)
-        
-        assigned_room = patrol_point.room
-        current_activity = patrol_point.activity
-        patrol_timer = patrol_point.duration
-        
-        # Force new target selection
-        _choose_new_target()
+    # Create RayCast3D for line of sight
+    detection_raycast = RayCast3D.new()
+    detection_raycast.name = "DetectionRayCast"
+    detection_raycast.enabled = true
+    detection_raycast.exclude_parent = true
+    detection_raycast.collision_mask = 2  # Detect only layer 2 (player)
+    
+    # Set raycast direction and length
+    detection_raycast.target_position = Vector3(0, 0, -detection_range)  # Forward is -Z
+    
+    # Position at eye level
+    detection_raycast.position = Vector3(0, 1.6, 0)
+    
+    add_child(detection_raycast)
+    
+    # Create detection indicator if enabled
+    if show_detection_indicator:
+        _create_detection_indicator()
+    
+    # Create vision cone visualization if enabled
+    if show_vision_cone:
+        _create_vision_cone()
 
-func set_game_time(hours: float):
-    game_time_hours = fmod(hours, 24.0)
-    if use_schedule:
-        _update_schedule_target()
+func _create_detection_indicator():
+    detection_indicator = MeshInstance3D.new()
+    detection_indicator.name = "DetectionIndicator"
+    
+    # Create a sphere mesh for the indicator
+    var sphere = SphereMesh.new()
+    sphere.radius = 0.1
+    sphere.height = 0.2
+    sphere.radial_segments = 8
+    sphere.rings = 4
+    
+    detection_indicator.mesh = sphere
+    
+    # Create material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = undetected_indicator_color
+    material.emission_enabled = true
+    material.emission = undetected_indicator_color
+    material.emission_energy = 0.5
+    detection_indicator.material_override = material
+    
+    # Position above head
+    detection_indicator.position = Vector3(0, 2.5, 0)
+    
+    add_child(detection_indicator)
 
-func force_schedule_entry(index: int):
-    if index >= 0 and index < schedule.size():
-        current_schedule_index = index
-        _update_schedule_target()
+func _create_vision_cone():
+    vision_cone_mesh = MeshInstance3D.new()
+    vision_cone_mesh.name = "VisionCone"
+    
+    _update_vision_cone_mesh()
+    
+    add_child(vision_cone_mesh)
+
+func _update_vision_cone_mesh():
+    if not vision_cone_mesh:
+        return
+    
+    # Remove old range line if it exists
+    var old_line = vision_cone_mesh.get_node_or_null("RangeLine")
+    if old_line:
+        old_line.queue_free()
+    
+    # Create a custom cone mesh for the vision area
+    var arrays = []
+    arrays.resize(Mesh.ARRAY_MAX)
+    
+    var vertices = PackedVector3Array()
+    var uvs = PackedVector2Array()
+    var normals = PackedVector3Array()
+    
+    # Create cone vertices
+    var segments = 16
+    var cone_height = detection_range
+    var cone_radius = tan(deg_to_rad(detection_angle)) * cone_height
+    
+    # Apex of cone (at NPC position)
+    vertices.push_back(Vector3.ZERO)
+    uvs.push_back(Vector2(0.5, 0.5))
+    normals.push_back(Vector3.UP)
+    
+    # Base of cone vertices
+    for i in range(segments + 1):
+        var angle = 2.0 * PI * i / segments
+        var x = cos(angle) * cone_radius
+        var y = sin(angle) * cone_radius
+        vertices.push_back(Vector3(x, y, -cone_height))  # -Z is forward
+        uvs.push_back(Vector2(cos(angle) * 0.5 + 0.5, sin(angle) * 0.5 + 0.5))
+        normals.push_back(Vector3.UP)
+    
+    # Create faces
+    var faces = PackedInt32Array()
+    for i in range(segments):
+        # Triangle from apex to base edge
+        faces.push_back(0)  # Apex
+        faces.push_back(i + 1)
+        faces.push_back(i + 2)
+    
+    arrays[Mesh.ARRAY_VERTEX] = vertices
+    arrays[Mesh.ARRAY_TEX_UV] = uvs
+    arrays[Mesh.ARRAY_NORMAL] = normals
+    arrays[Mesh.ARRAY_INDEX] = faces
+    
+    # Create the mesh
+    var array_mesh = ArrayMesh.new()
+    array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+    
+    vision_cone_mesh.mesh = array_mesh
+    
+    # Create material for filled cone
+    var material = StandardMaterial3D.new()
+    material.albedo_color = Color(0.5, 0.5, 1.0, 0.3)  # Semi-transparent blue
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    material.no_depth_test = false  # Ensure it's occluded by geometry
+    vision_cone_mesh.material_override = material
+    
+    # Add thick red line on ground showing range
+    var range_line = MeshInstance3D.new()
+    range_line.name = "RangeLine"
+    
+    # Create cylinder for thick line
+    var cylinder = CylinderMesh.new()
+    cylinder.height = detection_range
+    cylinder.top_radius = 0.1  # Thick line
+    cylinder.bottom_radius = 0.1
+    cylinder.radial_segments = 8
+    
+    range_line.mesh = cylinder
+    range_line.position = Vector3(0, -1.6, -detection_range / 2.0)  # Center the cylinder
+    range_line.rotation_degrees = Vector3(90, 0, 0)  # Rotate to lie flat
+    
+    # Bright red material
+    var line_material = StandardMaterial3D.new()
+    line_material.albedo_color = Color(1.0, 0.0, 0.0, 1.0)  # Pure red
+    line_material.emission_enabled = true
+    line_material.emission = Color(1.0, 0.0, 0.0)
+    line_material.emission_energy = 1.0
+    line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    range_line.material_override = line_material
+    
+    vision_cone_mesh.add_child(range_line)
+    
+    # Position at eye level
+    vision_cone_mesh.position = Vector3(0, 1.6, 0)
+
+func _update_detection():
+    if not detection_raycast:
+        if enable_los_detection:
+            _create_detection_system()
+        else:
+            return
+    
+    var player = get_tree().get_first_node_in_group("player")
+    if not player:
+        _set_detection_state(false)
+        return
+    
+    # Check if player is within detection range
+    var distance_to_player = global_position.distance_to(player.global_position)
+    if distance_to_player > detection_range:
+        _set_detection_state(false)
+        return
+    
+    # Player is within range, continue checking angle
+    
+    # Check if player is within vision cone angle
+    var to_player = (player.global_position - global_position).normalized()
+    to_player.y = 0  # Ignore vertical component
+    
+    var forward = -transform.basis.z.normalized()
+    forward.y = 0
+    
+    var angle = rad_to_deg(forward.angle_to(to_player))
+    if angle > detection_angle:
+        _set_detection_state(false)
+        return
+    
+    # Player is within angle, continue to raycast
+    
+    # Point raycast at player
+    var local_player_pos = to_local(player.global_position)
+    # Don't override the Y, use actual relative position
+    detection_raycast.target_position = local_player_pos
+    
+    # Aim raycast at player
+    
+    # Force raycast update
+    detection_raycast.force_raycast_update()
+    
+    # Check if raycast hit the player
+    if detection_raycast.is_colliding():
+        var collider = detection_raycast.get_collider()
+        # Raycast hit something
+        if collider and collider.is_in_group("player"):
+            _set_detection_state(true)
+        else:
+            # Something is blocking line of sight
+            _set_detection_state(false)
+    else:
+        # Raycast not hitting anything
+        _set_detection_state(false)
+
+func _set_detection_state(detected: bool):
+    # Only update if state changed
+    if player_detected != detected:
+        player_detected = detected
+    
+    last_detection_state = detected
+    
+    # Create indicator if it doesn't exist but should be shown
+    if show_detection_indicator and not detection_indicator:
+        _create_detection_indicator()
+    
+    # Update indicator color
+    if detection_indicator and detection_indicator.material_override:
+        var material = detection_indicator.material_override
+        if detected:
+            material.albedo_color = detection_indicator_color
+            material.emission = detection_indicator_color
+        else:
+            material.albedo_color = undetected_indicator_color
+            material.emission = undetected_indicator_color
+
+func is_player_detected() -> bool:
+    return player_detected
+
+func get_detection_info() -> Dictionary:
+    return {
+        "detected": player_detected,
+        "range": detection_range,
+        "angle": detection_angle,
+        "last_known_position": detection_raycast.get_collision_point() if player_detected and detection_raycast else Vector3.ZERO
+    }
+
+# Debug visibility toggle functions
+func set_detection_indicator_visible(visible: bool):
+    show_detection_indicator = visible
+    if detection_indicator:
+        detection_indicator.visible = visible
+
+func set_vision_cone_visible(visible: bool):
+    show_vision_cone = visible
+    if vision_cone_mesh:
+        vision_cone_mesh.visible = visible
+    elif visible:
+        # Create it if it doesn't exist and we want to show it
+        _create_vision_cone()
+
+func toggle_detection_debug():
+    set_detection_indicator_visible(!show_detection_indicator)
+    set_vision_cone_visible(!show_vision_cone)

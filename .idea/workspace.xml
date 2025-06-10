@@ -6,31 +6,120 @@
   <component name="ChangeListManager">
     <list default="true" id="b44c900f-9122-4514-84db-e293651bd7a0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/environment/desk.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/environment/desk.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/levels/aurora_station.tscn" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/npcs/ai_specialist_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/ai_specialist_npc.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project.godot" beforeDir="false" afterPath="$PROJECT_DIR$/project.godot" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/navigation/waypoint.tscn" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/scenes/npcs/engineer_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/engineer_npc.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/npcs/scientist_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/scientist_npc.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/npcs/security_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/security_npc.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/ui/main_menu.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/ui/main_menu.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/environment/hiding_spot.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/environment/hiding_spot.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/environment/sliding_door.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/environment/sliding_door.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/npcs/npc_base.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/npc_base.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/npcs/security_chief_npc.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/npcs/security_chief_npc.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/rooms/room_template.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/rooms/room_template.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/test/fixed_room_template.tscn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/test/navigation_test.tscn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/builders/build_station_direct.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/builders/build_station_direct.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/builders/complete_station_builder.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/builders/complete_station_builder.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/builders/horror_station_builder.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/builders/horror_station_builder.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/environment/repair_station.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/environment/repair_station.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/csg_construction_helper.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/expanded_station_builder.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/expanded_station_waypoints.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/expanded_station_waypoints.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/modular_station_builder.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/modular_station_waypoints.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/modular_station_waypoints.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/multi_deck_station_builder.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/simple_station_builder.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/simple_station_builder.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/levels/station_corridor_system.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/advanced_navigation_manager.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/advanced_navigation_manager.gd.uid" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/managers/aurora_game_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/aurora_game_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/day_night_manager.gd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/evidence_spawn_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/evidence_spawn_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/npcs/dialogue_system.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/dialogue_system.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/aurora_game_manager.gd.uid" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/aurora_game_manager.gd.uid" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/comprehensive_npc_fix.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/comprehensive_npc_fix.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/day_night_manager.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/disable_navigation_mesh.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/disable_navigation_mesh.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/disable_npc_repositioning.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/disable_npc_repositioning.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/enable_npc_navigation.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/enable_npc_navigation.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/evidence_manager.gd.uid" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/evidence_manager.gd.uid" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/evidence_spawn_manager.gd.uid" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/evidence_spawn_manager.gd.uid" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/expanded_navigation_manager.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/expanded_navigation_manager.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/fix_navigation_mesh.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/fix_navigation_mesh.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/fix_npc_positions.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/fix_npc_positions.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/force_npc_positions.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/force_npc_positions.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/game_manager.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/game_manager.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/immediate_npc_fix.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/immediate_npc_fix.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_cleanup.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_cleanup.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_manager.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_manager.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/npc_navigation_fix.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/npc_navigation_fix.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/simple_navigation_fix.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/simple_navigation_fix.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/simple_npc_movement.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/simple_npc_movement.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/improved_npc_navigation.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/improved_npc_navigation.gd.uid" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/npcs/riley_character_modes.gd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/npcs/riley_patrol_ai.gd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/player/player_controller.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/player/player_controller.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/ship/ship_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ship/ship_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/ui/dialogue_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/dialogue_ui.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/ui/main_menu.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/main_menu.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/ui/player_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/player_ui.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/utils/riley_setup_runtime.gd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/utils/setup_riley_modes.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_base.gd.uid" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/npc_base.gd.uid" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_initializer.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_initializer.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_navigation_addon.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_navigation_addon.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/riley_character_modes.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/riley_patrol_ai.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/room_navigation_system.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/room_navigation_system.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/saboteur_character_modes.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/saboteur_character_modes.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/saboteur_patrol_ai.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/saboteur_patrol_ai.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/waypoint_navigation_system.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/waypoint_navigation_system.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/door_debug_visualizer.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/door_debug_visualizer.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/fix_station_doors.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/fix_station_doors.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/force_npcs_visible.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/force_npcs_visible.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/navigation_test.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/navigation_test.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/npc_debug.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test/npc_debug.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/tools/build_horror_station_tool.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/tools/build_horror_station_tool.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/tools/build_station_in_scene.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/tools/build_station_in_scene.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/tools/fix_npc_positions_in_scene.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/tools/fix_npc_positions_in_scene.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/tools/remove_spawn_points.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/tools/remove_spawn_points.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/apply_room_updates.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/apply_room_updates.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/aurora_station_modifications.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/aurora_station_modifications.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/riley_setup_runtime.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/room_resizer.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/room_resizer.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/room_update_helper.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/room_update_helper.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/saboteur_setup_runtime.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/saboteur_setup_runtime.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/setup_riley_modes.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/setup_saboteur_modes.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/utils/setup_saboteur_modes.gd.uid" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -121,6 +210,7 @@
       <workItem from="1749250536956" duration="26992000" />
       <workItem from="1749409388213" duration="12051000" />
       <workItem from="1749447627711" duration="4127000" />
+      <workItem from="1749492544995" duration="33298000" />
     </task>
     <task id="LOCAL-00001" summary="Adding a bunch of new stuff">
       <option name="closed" value="true" />

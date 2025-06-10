@@ -13,3 +13,14 @@ export_presets.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# Development tools (optional - uncomment to exclude)
+# scripts/tools/
+
+# Editor-specific
+*.tmp
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db

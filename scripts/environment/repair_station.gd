@@ -40,8 +40,6 @@ func _ready():
             print("Power already damaged, activating repair station")
             is_damaged = true
             _update_visual_state(true)
-    else:
-        print("Repair Station WARNING: No sabotage manager found!")
     
     # DEBUG: Allow manual activation with T key
     set_process_input(true)
