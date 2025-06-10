@@ -26,6 +26,10 @@ signal interactable_detected(interactable)
 signal interactable_lost
 signal hidden_state_changed(is_hidden: bool)
 
+# Sound system
+var sound_emission_timer: float = 0.0
+const SOUND_EMISSION_INTERVAL: float = 0.5  # Emit sound every 0.5 seconds while moving
+
 func _ready():
     Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
     
@@ -137,10 +141,17 @@ func _physics_process(delta):
             velocity.x = direction.x * speed
             velocity.z = direction.z * speed
             
-            # Make noise when running
-            if speed == RUN_SPEED:
-                make_noise(10.0)
-            # Crouching is completely silent
+            # Make noise based on movement type
+            if direction.length() > 0.1:  # Only when actually moving
+                sound_emission_timer += delta
+                if sound_emission_timer >= SOUND_EMISSION_INTERVAL:
+                    sound_emission_timer = 0.0
+                    if speed == RUN_SPEED:
+                        make_noise(12.0)  # Running is loud
+                    elif speed == WALK_SPEED:
+                        make_noise(8.0)   # Walking makes moderate noise
+                    elif speed == CROUCH_SPEED:
+                        make_noise(3.2)   # Crouching is quiet (40% of walking)
         else:
             velocity.x = move_toward(velocity.x, 0, speed * delta * 3)
             velocity.z = move_toward(velocity.z, 0, speed * delta * 3)
@@ -217,7 +228,13 @@ func get_visibility_multiplier() -> float:
     return multiplier
 
 func make_noise(radius: float):
-    # Alert nearby NPCs
+    # Alert all NPCs with sound detection enabled
+    var npcs = get_tree().get_nodes_in_group("npcs")
+    for npc in npcs:
+        if npc.has_method("hear_sound"):
+            npc.hear_sound(global_position, radius)
+    
+    # Also alert Riley patrol AI for backwards compatibility
     var riley = get_tree().get_first_node_in_group("riley_patrol")
     if riley:
         # Riley patrol AI is a child of the NPC, get the parent's position

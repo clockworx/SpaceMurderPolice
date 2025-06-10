@@ -358,9 +358,15 @@ mesh = SubResource("SphereMesh_bott5")
 transform = Transform3D(-0.788493, 0, 0.615043, 0, 1, 0, -0.615043, 0, -0.788493, -3.15005, 0.144201, 7.01766)
 collision_layer = 4
 initial_dialogue_id = "greeting"
+has_alibi = false
+sound_detection_radius = 3.0
+crouched_sound_radius_multiplier = 1.0
+running_sound_radius_multiplier = 5.0
+sound_investigation_duration = 3.0
 use_waypoints = true
 waypoint_nodes = [NodePath("../../Waypoints/Waypoint"), NodePath("../../Waypoints/Waypoint2"), NodePath("../../Waypoints/Waypoint3"), NodePath("../../Waypoints/Waypoint2")]
-show_vision_cone = true
+show_state_label = false
+show_detection_indicator = false
 
 [node name="DetectionIndicator" type="MeshInstance3D" parent="NPCs/ChiefScientist"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)

@@ -9,7 +9,9 @@ enum MovementState {
     PATROL,  # Move between waypoints
     IDLE,    # Stop at current position
     TALK,    # Face toward a target position
-    WANDER   # Random movement within radius (no waypoints)
+    WANDER,  # Random movement within radius (no waypoints)
+    INVESTIGATE,  # Stop and look around when player detected
+    RETURN_TO_PATROL  # Go back to waypoint route after investigation
 }
 
 @export_group("NPC Properties")
@@ -19,6 +21,13 @@ enum MovementState {
 @export var is_suspicious: bool = false
 @export var has_alibi: bool = true
 @export var can_be_saboteur: bool = false
+
+@export_group("Saboteur Mode")
+@export var enable_saboteur_behavior: bool = false
+@export var detection_range: float = 10.0
+@export var vision_angle: float = 60.0
+@export var investigation_duration: float = 3.0
+@export var return_to_patrol_speed: float = 3.0
 
 @export_group("Movement")
 @export var walk_speed: float = 2.0
@@ -84,6 +93,13 @@ var last_position: Vector3
 var stuck_timer: float = 0.0
 var stuck_threshold: float = 10.0
 
+# Detection system
+var player_detected: bool = false
+var investigation_timer: float = 0.0
+var investigation_position: Vector3
+var last_patrol_waypoint_index: int = 0
+var returning_to_patrol: bool = false
+
 # Signals
 signal dialogue_started(npc)
 signal dialogue_ended(npc)
@@ -123,6 +139,10 @@ func _physics_process(delta):
     if Engine.is_editor_hint() or is_talking:
         return
     
+    # Check for player detection if saboteur behavior is enabled
+    if enable_saboteur_behavior and can_be_saboteur and current_state == MovementState.PATROL:
+        _check_for_player_detection()
+    
     # Handle movement based on state
     match current_state:
         MovementState.PATROL:
@@ -133,6 +153,10 @@ func _physics_process(delta):
             _handle_talk_state(delta)
         MovementState.WANDER:
             _handle_wander_state(delta)
+        MovementState.INVESTIGATE:
+            _handle_investigate_state(delta)
+        MovementState.RETURN_TO_PATROL:
+            _handle_return_to_patrol_state(delta)
 
 # State management
 func set_state(new_state: MovementState, target_position: Vector3 = Vector3.ZERO):
@@ -161,6 +185,15 @@ func set_state(new_state: MovementState, target_position: Vector3 = Vector3.ZERO
             velocity = Vector3.ZERO
         MovementState.WANDER:
             _choose_new_target()
+        MovementState.INVESTIGATE:
+            investigation_position = target_position
+            investigation_timer = 0.0
+            velocity = Vector3.ZERO
+            # Remember current waypoint
+            if use_waypoints:
+                last_patrol_waypoint_index = current_waypoint_index
+        MovementState.RETURN_TO_PATROL:
+            returning_to_patrol = true
     
     _update_state_label()
     emit_signal("state_changed", old_state, new_state)
@@ -222,6 +255,54 @@ func _handle_wander_state(delta):
             _choose_new_target()
     else:
         _move_to_target(delta)
+
+func _handle_investigate_state(delta):
+    investigation_timer += delta
+    
+    # Look around by rotating
+    rotate_y(delta * 2.0)
+    
+    # Check if investigation time is up
+    if investigation_timer >= investigation_duration:
+        print(npc_name + ": Nothing here... returning to patrol.")
+        set_state(MovementState.RETURN_TO_PATROL)
+    
+    velocity = Vector3(0, -10, 0)
+    move_and_slide()
+
+func _handle_return_to_patrol_state(delta):
+    if not use_waypoints or waypoint_nodes.size() == 0:
+        set_state(MovementState.WANDER)
+        return
+    
+    # Get the waypoint we need to return to
+    var target_waypoint = waypoint_nodes[last_patrol_waypoint_index]
+    if not is_instance_valid(target_waypoint):
+        set_state(MovementState.PATROL)
+        return
+    
+    var target_pos = target_waypoint.global_position
+    target_pos.y = global_position.y
+    
+    # Check if we've reached the waypoint
+    var distance = global_position.distance_to(target_pos)
+    if distance <= waypoint_reach_distance:
+        # Resume normal patrol from this waypoint
+        current_waypoint_index = last_patrol_waypoint_index
+        returning_to_patrol = false
+        set_state(MovementState.PATROL)
+        print(npc_name + ": Back on patrol route.")
+        return
+    
+    # Move toward the waypoint
+    var direction = (target_pos - global_position).normalized()
+    velocity = direction * return_to_patrol_speed
+    velocity.y = -10
+    
+    if direction.length() > 0.1:
+        _rotate_toward_direction(direction, delta)
+    
+    move_and_slide()
 
 # Waypoint navigation
 func _follow_waypoints(delta):
@@ -535,6 +616,12 @@ func _update_state_label():
             state_label.modulate = Color.CYAN
         MovementState.WANDER:
             state_label.modulate = Color.ORANGE
+        MovementState.INVESTIGATE:
+            state_label.modulate = Color.RED
+            state_label.text += "\n[!]"
+        MovementState.RETURN_TO_PATROL:
+            state_label.modulate = Color.ORANGE
+            state_label.text += "\n→WP" + str(last_patrol_waypoint_index + 1)
 
 func get_state_name() -> String:
     return MovementState.keys()[current_state]
@@ -544,3 +631,40 @@ func set_suspicious(suspicious: bool):
     if is_suspicious != suspicious:
         is_suspicious = suspicious
         emit_signal("suspicion_changed", self, is_suspicious)
+
+# Detection system for saboteur behavior
+func _check_for_player_detection():
+    var player = get_tree().get_first_node_in_group("player")
+    if not player:
+        return
+    
+    var distance = global_position.distance_to(player.global_position)
+    
+    # Check if in detection range
+    if distance > detection_range:
+        return
+    
+    # Check line of sight
+    var space_state = get_world_3d().direct_space_state
+    var query = PhysicsRayQueryParameters3D.create(
+        global_position + Vector3.UP * 1.5,
+        player.global_position + Vector3.UP * 1.0
+    )
+    query.exclude = [self]
+    query.collision_mask = 1  # Environment layer
+    
+    var result = space_state.intersect_ray(query)
+    if result:
+        # Something blocking view
+        return
+    
+    # Check vision angle
+    var to_player = (player.global_position - global_position).normalized()
+    var forward = -global_transform.basis.z
+    var angle = rad_to_deg(forward.angle_to(to_player))
+    
+    if angle <= vision_angle / 2.0:
+        # Player detected!
+        print(npc_name + ": Who's there? I see you!")
+        player_detected = true
+        set_state(MovementState.INVESTIGATE, player.global_position)

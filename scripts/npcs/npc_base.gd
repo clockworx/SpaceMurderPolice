@@ -1,3 +1,4 @@
+@tool
 extends CharacterBody3D
 class_name NPCBase
 
@@ -5,7 +6,9 @@ class_name NPCBase
 enum MovementState {
     PATROL,  # Move between waypoints or wander
     IDLE,    # Stop at current position
-    TALK     # Face toward a target position
+    TALK,     # Face toward a target position
+    INVESTIGATE,  # Stop and look around when player detected
+    RETURN_TO_PATROL  # Go back to waypoint route after investigation
 }
 
 @export_group("NPC Properties")
@@ -14,7 +17,40 @@ enum MovementState {
 @export var initial_dialogue_id: String = "greeting"
 @export var is_suspicious: bool = false
 @export var has_alibi: bool = true
-@export var can_be_saboteur: bool = false  # For NPCs that can switch modes
+@export var can_be_saboteur: bool = false:  # For NPCs that can switch modes
+    set(value):
+        can_be_saboteur = value
+        if not value:
+            # Disable all saboteur features when can_be_saboteur is turned off
+            enable_saboteur_behavior = false
+            enable_sound_detection = false
+            if show_sound_detection_area and sound_detection_sphere:
+                sound_detection_sphere.visible = false
+        if Engine.is_editor_hint():
+            notify_property_list_changed()
+
+@export_group("Saboteur Mode")
+@export var enable_saboteur_behavior: bool = false
+@export var saboteur_detection_range: float = 10.0
+@export var vision_angle: float = 60.0
+@export var investigation_duration: float = 3.0
+@export var return_to_patrol_speed: float = 3.0
+
+@export_group("Sound Detection")
+@export var enable_sound_detection: bool = false
+@export var sound_detection_radius: float = 8.0
+@export var crouched_sound_radius_multiplier: float = 0.4  # 40% of normal radius when crouched
+@export var running_sound_radius_multiplier: float = 1.5  # 150% of normal radius when running
+@export var sound_investigation_duration: float = 2.0
+@export var show_sound_detection_area: bool = false:
+    set(value):
+        show_sound_detection_area = value
+        if Engine.is_editor_hint():
+            return
+        if value and not sound_detection_sphere:
+            _create_sound_detection_visualization()
+        elif sound_detection_sphere:
+            sound_detection_sphere.visible = value
 
 @export_group("Movement")
 @export var walk_speed: float = 2.0
@@ -57,7 +93,11 @@ enum MovementState {
         detection_angle = value
         if vision_cone_mesh:
             _update_vision_cone_mesh()
-@export var show_detection_indicator: bool = true
+@export var show_detection_indicator: bool = true:
+    set(value):
+        show_detection_indicator = value
+        if detection_indicator:
+            detection_indicator.visible = value
 @export var show_vision_cone: bool = false:  # Debug visualization of vision cone
     set(value):
         show_vision_cone = value
@@ -117,9 +157,35 @@ var vision_cone_mesh: MeshInstance3D
 var player_detected: bool = false
 var last_detection_state: bool = false
 
+# Saboteur detection system
+var investigation_timer: float = 0.0
+var investigation_position: Vector3
+var last_patrol_waypoint_index: int = 0
+var returning_to_patrol: bool = false
+
+# Sound detection system
+var sound_detection_sphere: MeshInstance3D
+var sound_detected: bool = false
+var is_investigating_sound: bool = false
+var sound_waypoint_debug: MeshInstance3D  # Debug sphere for sound investigation point
+
 func _ready():
+    if Engine.is_editor_hint():
+        return
+        
     collision_layer = 2  # Interactable layer
     collision_mask = 1   # Collide with environment
+    
+    # Ensure saboteur features are disabled if can_be_saboteur is false
+    if not can_be_saboteur:
+        enable_saboteur_behavior = false
+        enable_sound_detection = false
+    
+    # Clean up any existing detection indicator if it shouldn't be shown
+    if not show_detection_indicator:
+        var existing_indicator = get_node_or_null("DetectionIndicator")
+        if existing_indicator:
+            existing_indicator.queue_free()
     
     # Ensure physics processing is enabled
     set_physics_process(true)
@@ -163,6 +229,13 @@ func _ready():
     # Create line of sight detection system
     _create_detection_system()
     
+    # Ensure detection indicator visibility matches the setting
+    if detection_indicator:
+        detection_indicator.visible = show_detection_indicator
+    
+    # Create sound detection visualization
+    _create_sound_detection_visualization()
+    
     # Initialize waypoint system if enabled
     if use_waypoints and waypoint_nodes.size() > 0:
         _update_waypoint_target()
@@ -177,6 +250,9 @@ func _ready():
     #print(npc_name + " initialized at position: " + str(global_position))
 
 func _physics_process(delta):
+    if Engine.is_editor_hint():
+        return
+        
     if is_talking:
         # Face the player while talking
         if face_player_when_talking:
@@ -193,6 +269,19 @@ func _physics_process(delta):
     if enable_los_detection:
         _update_detection()
     
+    # Ensure detection indicator respects visibility setting
+    if detection_indicator and not show_detection_indicator:
+        detection_indicator.queue_free()
+        detection_indicator = null
+    
+    # Check for saboteur detection if enabled
+    if can_be_saboteur and enable_saboteur_behavior and current_state == MovementState.PATROL:
+        _check_for_saboteur_detection()
+    
+    # Update sound detection visualization
+    if can_be_saboteur and enable_sound_detection:
+        _update_sound_detection_visualization()
+    
     # Handle different states
     match current_state:
         MovementState.PATROL:
@@ -201,6 +290,10 @@ func _physics_process(delta):
             _handle_idle_state(delta)
         MovementState.TALK:
             _handle_talk_state(delta)
+        MovementState.INVESTIGATE:
+            _handle_investigate_state(delta)
+        MovementState.RETURN_TO_PATROL:
+            _handle_return_to_patrol_state(delta)
 
 func _move_to_target(delta):
     var direction = (current_target - global_position).normalized()
@@ -354,6 +447,83 @@ func _handle_talk_state(delta):
     velocity.x = 0
     velocity.z = 0
     velocity.y = -10  # Gravity
+    move_and_slide()
+
+func _handle_investigate_state(delta):
+    # First, move to investigation position if not there yet
+    var distance_to_target = global_position.distance_to(investigation_position)
+    
+    if distance_to_target > 1.0:  # Not at investigation point yet
+        # Move toward investigation position
+        var direction = (investigation_position - global_position).normalized()
+        direction.y = 0
+        
+        velocity = direction * walk_speed
+        velocity.y = -10
+        
+        if direction.length() > 0.1:
+            _rotate_toward_direction(direction, delta)
+        
+        move_and_slide()
+    else:
+        # At investigation point, look around
+        investigation_timer += delta
+        
+        # Look around by rotating
+        rotate_y(delta * 2.0)
+        
+        # Check if investigation time is up
+        var duration = sound_investigation_duration if is_investigating_sound else investigation_duration
+        if investigation_timer >= duration:
+            if is_investigating_sound:
+                print(npc_name + ": Must have been nothing...")
+            else:
+                print(npc_name + ": Nothing here... returning to patrol.")
+            is_investigating_sound = false
+            sound_detected = false
+            set_state(MovementState.RETURN_TO_PATROL)
+            
+            # Clean up debug sphere
+            if sound_waypoint_debug:
+                sound_waypoint_debug.queue_free()
+                sound_waypoint_debug = null
+        
+        velocity = Vector3(0, -10, 0)
+        move_and_slide()
+
+func _handle_return_to_patrol_state(delta):
+    if not use_waypoints or waypoint_nodes.size() == 0:
+        # No waypoints, just go back to wandering
+        set_state(MovementState.PATROL)
+        return
+    
+    # Get the waypoint we need to return to
+    var target_waypoint = waypoint_nodes[last_patrol_waypoint_index]
+    if not is_instance_valid(target_waypoint):
+        set_state(MovementState.PATROL)
+        return
+    
+    var target_pos = target_waypoint.global_position
+    target_pos.y = global_position.y
+    
+    # Check if we've reached the waypoint
+    var distance = global_position.distance_to(target_pos)
+    if distance <= waypoint_reach_distance:
+        # Resume normal patrol from this waypoint
+        current_waypoint_index = last_patrol_waypoint_index
+        returning_to_patrol = false
+        set_state(MovementState.PATROL)
+        print(npc_name + ": Back on patrol route.")
+        return
+    
+    # Move toward the waypoint
+    var direction = (target_pos - global_position).normalized()
+    velocity = direction * return_to_patrol_speed
+    velocity.y = -10
+    
+    if direction.length() > 0.1:
+        _rotate_toward_direction(direction, delta)
+    
     move_and_slide()
 
 func _follow_waypoints(delta):
@@ -622,6 +792,16 @@ func set_state(new_state: MovementState, target_position: Vector3 = Vector3.ZERO
             # Set target to face
             talk_target_position = target_position
             velocity = Vector3.ZERO
+        MovementState.INVESTIGATE:
+            investigation_position = target_position
+            investigation_position.y = global_position.y  # Keep at same height
+            investigation_timer = 0.0
+            velocity = Vector3.ZERO
+            # Remember current waypoint
+            if use_waypoints:
+                last_patrol_waypoint_index = current_waypoint_index
+        MovementState.RETURN_TO_PATROL:
+            returning_to_patrol = true
 
 func resume_previous_state():
     set_state(previous_state)
@@ -685,12 +865,20 @@ func _update_state_label():
             state_label.modulate = Color.YELLOW
         MovementState.TALK:
             state_label.modulate = Color.CYAN
+        MovementState.INVESTIGATE:
+            state_label.modulate = Color.RED
+        MovementState.RETURN_TO_PATROL:
+            state_label.modulate = Color.ORANGE
     
     # Add additional info for certain states
     if current_state == MovementState.PATROL and use_waypoints and waypoint_nodes.size() > 0:
         state_label.text += "\nWP: " + str(current_waypoint_index + 1) + "/" + str(waypoint_nodes.size())
         if is_paused:
             state_label.text += " (Paused)"
+    elif current_state == MovementState.INVESTIGATE:
+        state_label.text += "\n[!]"
+    elif current_state == MovementState.RETURN_TO_PATROL:
+        state_label.text += "\n→WP" + str(last_patrol_waypoint_index + 1)
 
 func _check_player_proximity():
     var player = get_tree().get_first_node_in_group("player")
@@ -786,9 +974,14 @@ func _create_detection_system():
     
     add_child(detection_raycast)
     
-    # Create detection indicator if enabled
-    if show_detection_indicator:
+    # Create detection indicator ONLY if explicitly enabled
+    if show_detection_indicator and enable_los_detection:
         _create_detection_indicator()
+    else:
+        # Make sure no indicator exists
+        if detection_indicator:
+            detection_indicator.queue_free()
+            detection_indicator = null
     
     # Create vision cone visualization if enabled
     if show_vision_cone:
@@ -817,6 +1010,9 @@ func _create_detection_indicator():
     
     # Position above head
     detection_indicator.position = Vector3(0, 2.5, 0)
+    
+    # Set visibility based on the flag
+    detection_indicator.visible = show_detection_indicator
     
     add_child(detection_indicator)
 
@@ -989,8 +1185,9 @@ func _set_detection_state(detected: bool):
     if show_detection_indicator and not detection_indicator:
         _create_detection_indicator()
     
-    # Update indicator color
-    if detection_indicator and detection_indicator.material_override:
+    # Update indicator color only if it should be visible
+    if detection_indicator and detection_indicator.material_override and show_detection_indicator:
+        detection_indicator.visible = true
         var material = detection_indicator.material_override
         if detected:
             material.albedo_color = detection_indicator_color
@@ -998,6 +1195,8 @@ func _set_detection_state(detected: bool):
         else:
             material.albedo_color = undetected_indicator_color
             material.emission = undetected_indicator_color
+    elif detection_indicator and not show_detection_indicator:
+        detection_indicator.visible = false
 
 func is_player_detected() -> bool:
     return player_detected
@@ -1027,3 +1226,188 @@ func set_vision_cone_visible(visible: bool):
 func toggle_detection_debug():
     set_detection_indicator_visible(!show_detection_indicator)
     set_vision_cone_visible(!show_vision_cone)
+
+# Sound detection visualization
+func _create_sound_detection_visualization():
+    if not show_sound_detection_area:
+        return
+    
+    sound_detection_sphere = MeshInstance3D.new()
+    sound_detection_sphere.name = "SoundDetectionArea"
+    
+    var sphere_mesh = SphereMesh.new()
+    sphere_mesh.radial_segments = 32
+    sphere_mesh.rings = 16
+    sphere_mesh.radius = sound_detection_radius
+    sphere_mesh.height = sound_detection_radius * 2
+    
+    sound_detection_sphere.mesh = sphere_mesh
+    
+    # Create transparent material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = Color(0, 1, 1, 0.1)  # Cyan color for sound
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.no_depth_test = true
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    
+    sound_detection_sphere.material_override = material
+    sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    
+    add_child(sound_detection_sphere)
+
+func _update_sound_detection_visualization():
+    if not sound_detection_sphere:
+        return
+    
+    sound_detection_sphere.visible = show_sound_detection_area and enable_sound_detection
+    
+    if sound_detection_sphere.visible:
+        # Update size based on current detection radius
+        var mesh = sound_detection_sphere.mesh as SphereMesh
+        if mesh:
+            mesh.radius = sound_detection_radius
+            mesh.height = sound_detection_radius * 2
+        
+        # Update color based on detection state
+        var mat = sound_detection_sphere.material_override as StandardMaterial3D
+        if mat:
+            if sound_detected:
+                mat.albedo_color = Color(1, 1, 0, 0.2)  # Yellow when sound detected
+            else:
+                mat.albedo_color = Color(0, 1, 1, 0.1)  # Cyan normally
+
+func _create_sound_waypoint_debug(position: Vector3):
+    # Remove old debug sphere if it exists
+    if sound_waypoint_debug:
+        sound_waypoint_debug.queue_free()
+    
+    # Create new debug sphere
+    sound_waypoint_debug = MeshInstance3D.new()
+    sound_waypoint_debug.name = "SoundWaypointDebug"
+    
+    # Create sphere mesh
+    var sphere_mesh = SphereMesh.new()
+    sphere_mesh.radial_segments = 16
+    sphere_mesh.rings = 8
+    sphere_mesh.radius = 0.3
+    sphere_mesh.height = 0.6
+    
+    sound_waypoint_debug.mesh = sphere_mesh
+    
+    # Create bright red material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = Color(1, 0, 0, 1)  # Bright red
+    material.emission_enabled = true
+    material.emission = Color(1, 0, 0)
+    material.emission_energy = 0.5
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    
+    sound_waypoint_debug.material_override = material
+    sound_waypoint_debug.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    
+    # Add to scene at investigation position
+    get_tree().current_scene.add_child(sound_waypoint_debug)
+    sound_waypoint_debug.global_position = position
+    
+    # Add a timer to remove it after investigation is done
+    await get_tree().create_timer(sound_investigation_duration + 2.0).timeout
+    if sound_waypoint_debug:
+        sound_waypoint_debug.queue_free()
+
+# Hide Saboteur Mode properties when can_be_saboteur is false
+func _validate_property(property: Dictionary):
+    # List of properties to hide when can_be_saboteur is false
+    var saboteur_properties = [
+        "enable_saboteur_behavior",
+        "saboteur_detection_range",
+        "vision_angle",
+        "investigation_duration",
+        "return_to_patrol_speed",
+        "enable_sound_detection",
+        "sound_detection_radius",
+        "crouched_sound_radius_multiplier",
+        "running_sound_radius_multiplier",
+        "sound_investigation_duration",
+        "show_sound_detection_area"
+    ]
+    
+    # Hide saboteur properties if can_be_saboteur is false
+    if property.name in saboteur_properties and not can_be_saboteur:
+        property.usage = PROPERTY_USAGE_NO_EDITOR
+
+# Saboteur detection system
+func _check_for_saboteur_detection():
+    var player = get_tree().get_first_node_in_group("player")
+    if not player:
+        return
+    
+    var distance = global_position.distance_to(player.global_position)
+    
+    # Check if in detection range
+    if distance > saboteur_detection_range:
+        return
+    
+    # Check line of sight
+    var space_state = get_world_3d().direct_space_state
+    var query = PhysicsRayQueryParameters3D.create(
+        global_position + Vector3.UP * 1.5,
+        player.global_position + Vector3.UP * 1.0
+    )
+    query.exclude = [self]
+    query.collision_mask = 1  # Environment layer
+    
+    var result = space_state.intersect_ray(query)
+    if result:
+        # Something blocking view
+        return
+    
+    # Check vision angle
+    var to_player = (player.global_position - global_position).normalized()
+    var forward = -global_transform.basis.z
+    var angle = rad_to_deg(forward.angle_to(to_player))
+    
+    if angle <= vision_angle / 2.0:
+        # Player detected!
+        print(npc_name + ": Who's there? I see you!")
+        player_detected = true
+        set_state(MovementState.INVESTIGATE, player.global_position)
+
+# Sound detection methods
+func hear_sound(sound_position: Vector3, sound_radius: float):
+    if not can_be_saboteur or not enable_sound_detection:
+        return
+    
+    # Don't react to sounds if already investigating or in wrong state
+    if current_state != MovementState.PATROL:
+        return
+    
+    var distance = global_position.distance_to(sound_position)
+    
+    # Check if within hearing range
+    if distance <= sound_radius:
+        # Check line of sight to determine if it's a direct sound or muffled
+        var space_state = get_world_3d().direct_space_state
+        var query = PhysicsRayQueryParameters3D.create(
+            global_position + Vector3.UP * 1.5,
+            sound_position + Vector3.UP * 0.5
+        )
+        query.exclude = [self]
+        query.collision_mask = 1  # Environment layer
+        
+        var result = space_state.intersect_ray(query)
+        
+        if result:
+            # Sound is muffled by walls, slightly randomize investigation point
+            var offset = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1))
+            sound_position += offset
+            print(npc_name + ": What was that noise?")
+        else:
+            print(npc_name + ": I heard something!")
+        
+        sound_detected = true
+        is_investigating_sound = true
+        set_state(MovementState.INVESTIGATE, sound_position)
+        
+        # Create debug sphere at investigation point
+        _create_sound_waypoint_debug(sound_position)
