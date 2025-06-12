@@ -77,6 +77,10 @@ enum MovementState {
 @export var idle_trigger_distance: float = 3.0  # Distance to stop and idle
 @export var talk_trigger_distance: float = 2.0  # Distance to face player
 
+@export_group("Movement System")
+@export var use_navmesh: bool = false
+@export var use_hybrid_movement: bool = false  # Use hybrid system that switches between Direct and NavMesh
+
 @export_group("Interaction")
 @export var interaction_distance: float = 3.0
 @export var face_player_when_talking: bool = true
@@ -169,12 +173,27 @@ var sound_detected: bool = false
 var is_investigating_sound: bool = false
 var sound_waypoint_debug: MeshInstance3D  # Debug sphere for sound investigation point
 
+# Movement system
+var movement_system: MovementInterface
+
 func _ready():
     if Engine.is_editor_hint():
         return
         
     collision_layer = 2  # Interactable layer
     collision_mask = 1   # Collide with environment
+    
+    # Initialize movement system
+    if use_hybrid_movement:
+        movement_system = HybridMovement.new(self)
+    elif use_navmesh:
+        movement_system = NavMeshMovement.new(self)
+    else:
+        movement_system = DirectMovement.new(self)
+    
+    add_child(movement_system)
+    movement_system.movement_completed.connect(_on_movement_completed)
+    movement_system.movement_failed.connect(_on_movement_failed)
     
     # Ensure saboteur features are disabled if can_be_saboteur is false
     if not can_be_saboteur:
@@ -296,26 +315,9 @@ func _physics_process(delta):
             _handle_return_to_patrol_state(delta)
 
 func _move_to_target(delta):
-    var direction = (current_target - global_position).normalized()
-    direction.y = 0  # Keep movement horizontal
-    
-    # Check if reached target
-    var distance_to_target = global_position.distance_to(current_target)
-    if distance_to_target < 0.5:
-        _start_idle()
-        return
-    
-    # Simple movement
-    velocity = direction * walk_speed
-    velocity.y = -10  # Gravity
-    
-    # Face movement direction
-    if direction.length() > 0.1:
-        look_at(global_position + direction, Vector3.UP)
-        rotation.x = 0
-        rotation.z = 0
-    
-    move_and_slide()
+    # Delegate to movement system
+    if movement_system and not movement_system.is_moving():
+        movement_system.move_to_position(current_target)
 
 func _start_idle():
     is_idle = true
@@ -334,6 +336,60 @@ func _choose_new_target():
     current_target.y = global_position.y  # Keep same height
     
     is_idle = false
+
+# Movement system wrapper methods
+func move_to_position(position: Vector3) -> void:
+    if movement_system:
+        movement_system.move_to_position(position)
+
+func stop_movement() -> void:
+    if movement_system:
+        movement_system.stop_movement()
+    velocity = Vector3.ZERO
+
+# Movement system signal handlers
+func _on_movement_completed() -> void:
+    match current_state:
+        MovementState.PATROL:
+            if use_waypoints and waypoint_nodes.size() > 0:
+                # Handle waypoint reaching
+                var waypoint_name = waypoint_nodes[current_waypoint_index].name if is_instance_valid(waypoint_nodes[current_waypoint_index]) else "Unknown"
+                
+                # Reset stuck timer since we successfully reached a waypoint
+                stuck_timer = 0.0
+                
+                if pause_at_waypoints:
+                    is_paused = true
+                    pause_timer = randf_range(pause_duration_min, pause_duration_max)
+                else:
+                    if waypoint_nodes.size() > 0:
+                        current_waypoint_index = (current_waypoint_index + 1) % waypoint_nodes.size()
+                        _update_waypoint_target()
+            else:
+                _start_idle()
+        MovementState.INVESTIGATE:
+            # Movement completed, we're at investigation point
+            pass  # Investigation logic handled in _handle_investigate_state
+        MovementState.RETURN_TO_PATROL:
+            # Resume normal patrol from this waypoint
+            current_waypoint_index = last_patrol_waypoint_index
+            returning_to_patrol = false
+            set_state(MovementState.PATROL)
+            print(npc_name + ": Back on patrol route.")
+        _:
+            _start_idle()
+
+func _on_movement_failed(reason: String) -> void:
+    print(npc_name + " movement failed: " + reason)
+    
+    match current_state:
+        MovementState.PATROL:
+            if use_waypoints and waypoint_nodes.size() > 0:
+                # Skip to next waypoint if movement failed
+                current_waypoint_index = (current_waypoint_index + 1) % waypoint_nodes.size()
+                _update_waypoint_target()
+        _:
+            _start_idle()
 
 func _create_relationship_indicator():
     if relationship_indicator:
@@ -420,10 +476,11 @@ func _handle_idle_state(delta):
             elif distance <= talk_trigger_distance:
                 set_talk_state(player.global_position)  # Face player if very close
     
-    # Just apply gravity and stay in place
-    velocity.x = 0
-    velocity.z = 0
-    velocity.y = -10  # Gravity
+    # Ensure NPC stays in place
+    stop_movement()
+    
+    # Apply gravity
+    velocity.y = -10
     move_and_slide()
 
 func _handle_talk_state(delta):
@@ -444,9 +501,10 @@ func _handle_talk_state(delta):
             _rotate_toward_direction(direction, delta)
     
     # Stay in place
-    velocity.x = 0
-    velocity.z = 0
-    velocity.y = -10  # Gravity
+    stop_movement()
+    
+    # Apply gravity
+    velocity.y = -10
     move_and_slide()
 
 func _handle_investigate_state(delta):
@@ -454,19 +512,12 @@ func _handle_investigate_state(delta):
     var distance_to_target = global_position.distance_to(investigation_position)
     
     if distance_to_target > 1.0:  # Not at investigation point yet
-        # Move toward investigation position
-        var direction = (investigation_position - global_position).normalized()
-        direction.y = 0
-        
-        velocity = direction * walk_speed
-        velocity.y = -10
-        
-        if direction.length() > 0.1:
-            _rotate_toward_direction(direction, delta)
-        
-        move_and_slide()
+        # Use movement system to move to investigation position
+        if not movement_system.is_moving():
+            move_to_position(investigation_position)
     else:
         # At investigation point, look around
+        stop_movement()  # Ensure we're stopped
         investigation_timer += delta
         
         # Look around by rotating
@@ -488,7 +539,8 @@ func _handle_investigate_state(delta):
                 sound_waypoint_debug.queue_free()
                 sound_waypoint_debug = null
         
-        velocity = Vector3(0, -10, 0)
+        # Apply gravity while investigating
+        velocity.y = -10
         move_and_slide()
 
 func _handle_return_to_patrol_state(delta):
@@ -506,25 +558,9 @@ func _handle_return_to_patrol_state(delta):
     var target_pos = target_waypoint.global_position
     target_pos.y = global_position.y
     
-    # Check if we've reached the waypoint
-    var distance = global_position.distance_to(target_pos)
-    if distance <= waypoint_reach_distance:
-        # Resume normal patrol from this waypoint
-        current_waypoint_index = last_patrol_waypoint_index
-        returning_to_patrol = false
-        set_state(MovementState.PATROL)
-        print(npc_name + ": Back on patrol route.")
-        return
-    
-    # Move toward the waypoint
-    var direction = (target_pos - global_position).normalized()
-    velocity = direction * return_to_patrol_speed
-    velocity.y = -10
-    
-    if direction.length() > 0.1:
-        _rotate_toward_direction(direction, delta)
-    
-    move_and_slide()
+    # Use movement system to return to patrol waypoint
+    if not movement_system.is_moving():
+        move_to_position(target_pos)
 
 func _follow_waypoints(delta):
     # Ensure we have waypoints
@@ -536,6 +572,9 @@ func _follow_waypoints(delta):
     
     if is_paused:
         pause_timer -= delta
+        
+        # Stop movement while paused
+        stop_movement()
         
         # Optional: Slowly look around while paused
         if smooth_rotation and pause_timer > 0:
@@ -549,46 +588,24 @@ func _follow_waypoints(delta):
                 _update_waypoint_target()
                 # Debug: Continuing to next waypoint
                 #print(npc_name + " continuing to waypoint ", current_waypoint_index)
+        
+        # Apply gravity while paused
+        velocity.y = -10
+        move_and_slide()
         return
     
-    # Calculate 2D distance (ignore Y completely)
-    var pos_2d = Vector2(global_position.x, global_position.z)
-    var target_2d = Vector2(waypoint_target.x, waypoint_target.z)
-    var distance_to_target = pos_2d.distance_to(target_2d)
+    # Use movement system to move to waypoint
+    if not movement_system.is_moving():
+        move_to_position(waypoint_target)
     
-    # Check if waypoint is reached
-    if distance_to_target <= waypoint_reach_distance:
-        # Debug info for waypoint reaching
-        var waypoint_name = waypoint_nodes[current_waypoint_index].name if is_instance_valid(waypoint_nodes[current_waypoint_index]) else "Unknown"
-        # Debug: Reached waypoint
-        #print(npc_name + " reached waypoint ", current_waypoint_index, " (", waypoint_name, ") at distance: ", distance_to_target)
-        
-        # Reset stuck timer since we successfully reached a waypoint
-        stuck_timer = 0.0
-        
-        if pause_at_waypoints:
-            is_paused = true
-            pause_timer = randf_range(pause_duration_min, pause_duration_max)
-            # Debug: Pausing at waypoint
-            #print(npc_name + " pausing for ", pause_timer, " seconds")
-        else:
-            if waypoint_nodes.size() > 0:
-                current_waypoint_index = (current_waypoint_index + 1) % waypoint_nodes.size()
-                _update_waypoint_target()
-        return
-    
-    # Move towards waypoint (2D movement only)
-    var direction_2d = (target_2d - pos_2d).normalized()
-    var direction = Vector3(direction_2d.x, 0, direction_2d.y)
-    
-    velocity = direction * walk_speed
-    velocity.y = -10  # Gravity
-    
-    # Handle rotation
-    if direction.length() > 0.1:
-        _rotate_toward_direction(direction, delta)
-    
-    move_and_slide()
+    # Handle rotation towards movement direction if movement system is active
+    if movement_system and movement_system.is_moving():
+        var target = movement_system.get_current_target()
+        if target != Vector3.ZERO:
+            var direction = (target - global_position).normalized()
+            direction.y = 0
+            if direction.length() > 0.1:
+                _rotate_toward_direction(direction, delta)
 
 func interact():
     # This is called when the player interacts with the NPC
@@ -910,6 +927,12 @@ func _check_if_stuck(delta):
         last_position = global_position
         return
     
+    # Don't check if movement system isn't active
+    if not movement_system or not movement_system.is_moving():
+        stuck_timer = 0.0
+        last_position = global_position
+        return
+    
     var movement = global_position.distance_to(last_position)
     
     if movement < min_movement_threshold:
@@ -918,6 +941,9 @@ func _check_if_stuck(delta):
             # Only skip if truly stuck (not making progress)
             var waypoint_name = waypoint_nodes[current_waypoint_index].name if current_waypoint_index < waypoint_nodes.size() and is_instance_valid(waypoint_nodes[current_waypoint_index]) else "Unknown"
             print("[WARNING] " + npc_name + " appears stuck! Skipping waypoint ", current_waypoint_index, " (", waypoint_name, ")")
+            
+            # Stop current movement
+            stop_movement()
             
             # Skip to next waypoint
             if waypoint_nodes.size() > 0:

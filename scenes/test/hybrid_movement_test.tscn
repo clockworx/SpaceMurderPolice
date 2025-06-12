@@ -1,0 +1,119 @@
+[gd_scene load_steps=9 format=3 uid="uid://druxk0asrkehk"]
+
+[ext_resource type="PackedScene" uid="uid://bx8nr7h4qld5m" path="res://scenes/npcs/npc_base.tscn" id="1_npc"]
+[ext_resource type="Script" uid="uid://bt1chwqoc44lf" path="res://scripts/test/hybrid_movement_test.gd" id="2_test"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 1
+background_color = Color(0.5, 0.7, 0.9, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.8, 0.8, 0.8, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+size = Vector3(30, 1, 30)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(30, 1, 30)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(6, 3, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall"]
+size = Vector3(6, 3, 0.5)
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_1"]
+vertices = PackedVector3Array(-3.75, 0.5, -6.25, -2.25, 0.5, -6.25, -2.5, 0.5, -14.5, -4, 0.5, -4.75, -14.5, 0.5, -14.5, -14.5, 0.5, -4.75, 2.5, 0.5, -6.25, 2.75, 0.5, -14.5, 4.25, 0.5, -6, 4.25, 0.5, -4, 6.5, 0.5, -3.75, 6.5, 0.5, -1.75, 14.5, 0.5, -1.75, 14.5, 0.5, -14.5, -3, 1.5, -5.25, -3, 1.5, -4.75, 3, 1.5, -4.75, 3, 1.5, -5.25, 5, 0.5, 14.5, 5, 0.5, 4.25, 3.75, 0.5, 4, 3.75, 0.5, -3.5, -3.75, 0.5, -3.5, -14.5, 0.5, 14.5, 4.75, 1.5, -3, 4.75, 1.5, 3, 5.25, 1.5, 3, 5.25, 1.5, -3, 6.5, 0.5, 1.75, 14.5, 0.5, 1.75, 6.5, 0.5, 3.75, 14.5, 0.5, 14.5)
+polygons = [PackedInt32Array(2, 1, 0), PackedInt32Array(0, 3, 2), PackedInt32Array(2, 3, 5), PackedInt32Array(2, 5, 4), PackedInt32Array(1, 2, 6), PackedInt32Array(6, 2, 7), PackedInt32Array(10, 9, 8), PackedInt32Array(12, 11, 10), PackedInt32Array(7, 8, 6), PackedInt32Array(10, 8, 12), PackedInt32Array(12, 8, 7), PackedInt32Array(12, 7, 13), PackedInt32Array(17, 16, 14), PackedInt32Array(14, 16, 15), PackedInt32Array(20, 19, 18), PackedInt32Array(22, 21, 20), PackedInt32Array(5, 3, 22), PackedInt32Array(20, 18, 22), PackedInt32Array(22, 18, 5), PackedInt32Array(5, 18, 23), PackedInt32Array(27, 26, 24), PackedInt32Array(24, 26, 25), PackedInt32Array(11, 12, 28), PackedInt32Array(28, 12, 29), PackedInt32Array(30, 28, 29), PackedInt32Array(30, 29, 19), PackedInt32Array(19, 29, 18), PackedInt32Array(18, 29, 31)]
+
+[node name="HybridMovementTest" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 8, 8, 8)
+fov = 60.0
+
+[node name="Ground" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("BoxMesh_ground")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="Obstacles" type="Node3D" parent="."]
+
+[node name="Wall1" type="StaticBody3D" parent="Obstacles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Obstacles/Wall1"]
+mesh = SubResource("BoxMesh_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Obstacles/Wall1"]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="Wall2" type="StaticBody3D" parent="Obstacles"]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 5, 1.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Obstacles/Wall2"]
+mesh = SubResource("BoxMesh_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Obstacles/Wall2"]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="HybridTestNPC" parent="." instance=ExtResource("1_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+npc_name = "Hybrid Movement NPC"
+role = "Test Subject"
+wander_radius = 0.0
+current_state = 1
+use_hybrid_movement = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_1")
+
+[node name="NavMeshGeometry" type="CSGBox3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+size = Vector3(30, 1, 30)
+
+[node name="WallCutout1" type="CSGBox3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
+operation = 2
+use_collision = true
+size = Vector3(7, 2, 1.5)
+
+[node name="WallCutout2" type="CSGBox3D" parent="NavigationRegion3D"]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 5, 0, 0)
+operation = 2
+use_collision = true
+size = Vector3(7, 2, 1.5)
+
+[node name="TestController" type="Node3D" parent="."]
+script = ExtResource("2_test")
+
+[node name="Instructions" type="RichTextLabel" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -400.0
+offset_top = -200.0
+grow_horizontal = 0
+grow_vertical = 0
+bbcode_enabled = true
+text = "[b]Hybrid Movement Test[/b]
+Dynamic switching between Direct and NavMesh
+
+A - Toggle auto mode
+N - Next waypoint
+R - Reset position
+S - Show stats
+F - Force switch system"

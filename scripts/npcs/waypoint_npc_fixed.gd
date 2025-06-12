@@ -4,28 +4,9 @@ class_name WaypointNPCFixed
 
 # Fixed version of waypoint NPC that properly handles pausing without stuck detection
 
-@export_group("Waypoint Settings")
-@export var use_waypoints: bool = true
-@export var waypoint_nodes: Array[Node3D] = [] : set = set_waypoint_nodes
-@export var waypoint_reach_distance: float = 0.3  # Distance to consider waypoint reached
-@export var pause_at_waypoints: bool = true
-@export var pause_duration_min: float = 2.0
-@export var pause_duration_max: float = 5.0
-
-@export_group("Rotation Settings") 
-@export var rotation_speed: float = 5.0  # How fast to rotate (radians/second)
-@export var smooth_rotation: bool = true  # Enable smooth rotation
-
-var current_waypoint_index: int = 0
-var waypoint_target: Vector3
-var pause_timer: float = 0.0
-var is_paused: bool = false
-
-# Movement tracking
-var last_position: Vector3
-var stuck_timer: float = 0.0
-var stuck_threshold: float = 2.0
-var min_movement_threshold: float = 0.05
+# Additional settings for fixed waypoint behavior
+@export_group("Fixed Waypoint Settings")
+@export var waypoint_min_movement_threshold: float = 0.05
 
 func _ready():
     if not Engine.is_editor_hint():

@@ -1,0 +1,41 @@
+[gd_scene load_steps=2 format=3 uid="uid://missing_npcs"]
+
+[ext_resource type="PackedScene" uid="uid://bx8nr7h4qld5m" path="res://scenes/npcs/npc_base.tscn" id="1_npc"]
+
+[node name="MissingNPCs" type="Node3D"]
+
+[node name="Dr_Zara_Okafor" parent="." instance=ExtResource("1_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.1, 5)
+npc_name = "Dr. Zara Okafor"
+role = "AI Specialist"
+collision_layer = 4
+collision_mask = 1
+initial_dialogue_id = "ai_specialist_greeting"
+can_be_saboteur = false
+assigned_room = "Communications Center"
+wander_radius = 5.0
+current_state = 1
+use_waypoints = false
+use_hybrid_movement = true
+enable_saboteur_behavior = false
+enable_sound_detection = false
+enable_los_detection = false
+show_detection_indicator = false
+
+[node name="Security_Officer_Riley" parent="." instance=ExtResource("1_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.1, 8)
+npc_name = "Security Officer Riley"
+role = "Security Personnel"
+collision_layer = 4
+collision_mask = 1
+initial_dialogue_id = "security_officer_greeting"
+can_be_saboteur = false
+assigned_room = "Security Office"
+wander_radius = 3.0
+current_state = 1
+use_waypoints = false
+use_hybrid_movement = true
+enable_saboteur_behavior = false
+enable_sound_detection = false
+enable_los_detection = false
+show_detection_indicator = false

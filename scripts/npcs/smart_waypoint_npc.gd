@@ -4,28 +4,12 @@ class_name SmartWaypointNPC
 
 # Smarter waypoint NPC that can detect when a path might go through walls
 
-@export_group("Waypoint Settings")
-@export var use_waypoints: bool = true
-@export var waypoint_nodes: Array[Node3D] = []
-@export var waypoint_reach_distance: float = 0.3
-@export var pause_at_waypoints: bool = true
-@export var pause_duration_min: float = 2.0
-@export var pause_duration_max: float = 5.0
+@export_group("Smart Waypoint Settings")
 @export var check_wall_crossing: bool = true  # Enable smart wall detection
 
-@export_group("Rotation Settings")
-@export var rotation_speed: float = 5.0
-@export var smooth_rotation: bool = true
-
-var current_waypoint_index: int = 0
-var waypoint_target: Vector3
-var pause_timer: float = 0.0
-var is_paused: bool = false
-
-# Movement tracking
-var last_position: Vector3
-var stuck_timer: float = 0.0
-var stuck_threshold: float = 10.0
+# Movement tracking (additional to base class)
+var intermediate_points: Array[Vector3] = []
+var current_intermediate_index: int = 0
 
 func _ready():
     if not Engine.is_editor_hint():

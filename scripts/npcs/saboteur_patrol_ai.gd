@@ -88,6 +88,7 @@ func _ready():
     if player:
         # Debug: Found player
         #print("SaboteurPatrolAI: Found player")
+        pass
     else:
         push_warning("SaboteurPatrolAI: Player not found!")
     
@@ -503,7 +504,7 @@ func _check_player_detection():
         # Debug logging
         if current_state != State.CHASING and distance < 5.0:
             # Debug: Detection check
-            #print("SaboteurPatrolAI: Detection check - Distance: ", distance, ", Angle: ", angle, ", Visibility: ", visibility_multiplier, ", Chance: ", detection_chance)
+            pass #print("SaboteurPatrolAI: Detection check - Distance: ", distance, ", Angle: ", angle, ", Visibility: ", visibility_multiplier, ", Chance: ", detection_chance)")
         
         # Immediate detection if very close or not hidden
         if distance < 2.0:
