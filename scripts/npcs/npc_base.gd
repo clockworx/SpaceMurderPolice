@@ -61,6 +61,17 @@ enum MovementState {
 @export var rotation_speed: float = 5.0  # How fast to rotate (radians/second)
 @export var smooth_rotation: bool = true  # Enable smooth rotation
 
+@export_group("Schedule")
+@export var use_schedule: bool = false  # Enable schedule-based movement
+@export var current_scheduled_room: String = "":  # Display current scheduled room
+    get:
+        if schedule_manager:
+            var room = schedule_manager.get_npc_scheduled_room(npc_name)
+            return schedule_manager.get_room_name(room)
+        return ""
+    set(value):
+        pass  # Read-only
+
 @export_group("Waypoint Settings")
 @export var use_waypoints: bool = false
 @export var waypoint_nodes: Array[Node3D] = []
@@ -68,6 +79,11 @@ enum MovementState {
 @export var pause_at_waypoints: bool = true
 @export var pause_duration_min: float = 2.0
 @export var pause_duration_max: float = 5.0
+@export var show_current_waypoint_index: int = -1:  # Read-only display of current waypoint
+    get:
+        return current_waypoint_index
+    set(value):
+        pass  # Read-only
 
 @export_group("State Settings")
 @export var current_state: MovementState = MovementState.PATROL
@@ -134,6 +150,8 @@ signal dialogue_ended(npc)
 signal suspicion_changed(npc, is_suspicious)
 
 var relationship_manager: RelationshipManager
+var schedule_manager: ScheduleManager
+var waypoint_network_manager: WaypointNetworkManager
 var relationship_indicator: Label3D
 var face_indicator_mesh: MeshInstance3D
 
@@ -232,6 +250,12 @@ func _ready():
     # Get relationship manager
     relationship_manager = get_tree().get_first_node_in_group("relationship_manager")
     
+    # Get schedule manager
+    schedule_manager = get_tree().get_first_node_in_group("schedule_manager")
+    
+    # Get waypoint network manager
+    waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
+    
     # Create face indicator
     _create_face_indicator()
     if not relationship_manager:
@@ -264,6 +288,10 @@ func _ready():
     # Connect to relationship changes if manager exists
     if relationship_manager and relationship_manager.has_signal("relationship_changed"):
         relationship_manager.relationship_changed.connect(_on_relationship_changed)
+    
+    # Connect to schedule changes if manager exists
+    if schedule_manager and schedule_manager.has_signal("schedule_changed"):
+        schedule_manager.schedule_changed.connect(_on_schedule_changed)
     
     # Debug: NPC initialized
     #print(npc_name + " initialized at position: " + str(global_position))
@@ -347,8 +375,44 @@ func stop_movement() -> void:
         movement_system.stop_movement()
     velocity = Vector3.ZERO
 
+func force_move_to_position(position: Vector3) -> void:
+    # Force immediate movement, overriding current behavior
+    print(npc_name + " force moving to position: " + str(position))
+    
+    # Clear any waypoint following
+    if use_waypoints:
+        use_waypoints = false
+        # Re-enable after reaching destination
+        call_deferred("_re_enable_waypoints", 5.0)
+    
+    # Clear pause state
+    is_paused = false
+    pause_timer = 0.0
+    
+    # Set to patrol state if not already
+    if current_state != MovementState.PATROL:
+        set_state(MovementState.PATROL)
+    
+    # Force movement
+    move_to_position(position)
+
+func _re_enable_waypoints(delay: float = 0.0):
+    if delay > 0:
+        await get_tree().create_timer(delay).timeout
+    use_waypoints = true
+
 # Movement system signal handlers
 func _on_movement_completed() -> void:
+    # Check if we're following a navigation path
+    if navigation_path.size() > 0 and navigation_path_index < navigation_path.size() - 1:
+        navigation_path_index += 1
+        move_to_position(navigation_path[navigation_path_index])
+        return
+    else:
+        # Clear navigation path when complete
+        navigation_path.clear()
+        navigation_path_index = 0
+    
     match current_state:
         MovementState.PATROL:
             if use_waypoints and waypoint_nodes.size() > 0:
@@ -1437,3 +1501,48 @@ func hear_sound(sound_position: Vector3, sound_radius: float):
         
         # Create debug sphere at investigation point
         _create_sound_waypoint_debug(sound_position)
+
+func _on_schedule_changed(character_name: String, new_room: ScheduleManager.Room):
+    if character_name != npc_name:
+        return
+    
+    if not use_schedule:
+        return
+    
+    # Get the waypoint for the scheduled room
+    var waypoint_name = schedule_manager.get_room_waypoint_name(new_room)
+    if waypoint_name.is_empty():
+        print("Warning: No waypoint defined for room ", schedule_manager.get_room_name(new_room))
+        return
+    
+    print(npc_name + " moving to " + schedule_manager.get_room_name(new_room))
+    _navigate_to_room(waypoint_name)
+    assigned_room = schedule_manager.get_room_name(new_room)
+
+func _navigate_to_room(room_waypoint_name: String):
+    if waypoint_network_manager:
+        # Get path through waypoint network
+        var path = waypoint_network_manager.get_path_to_room(global_position, room_waypoint_name)
+        if path.size() > 0:
+            # Set up waypoint following for the path
+            _follow_waypoint_path(path)
+            return
+    
+    # Fallback to direct movement
+    var waypoint_node = get_tree().get_first_node_in_group(room_waypoint_name)
+    if not waypoint_node:
+        waypoint_node = get_node_or_null("/root/" + get_tree().current_scene.name + "/Waypoints/" + room_waypoint_name)
+    
+    if waypoint_node and waypoint_node is Node3D:
+        move_to_position(waypoint_node.global_position)
+
+var navigation_path: Array[Vector3] = []
+var navigation_path_index: int = 0
+
+func _follow_waypoint_path(path: Array[Vector3]):
+    navigation_path = path
+    navigation_path_index = 0
+    
+    # Start moving to first waypoint
+    if navigation_path.size() > 0:
+        move_to_position(navigation_path[0])

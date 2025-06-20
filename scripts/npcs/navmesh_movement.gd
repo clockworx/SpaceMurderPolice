@@ -38,7 +38,7 @@ func _setup_nav_agent() -> void:
 	# print("NavMeshMovement: Creating new NavigationAgent3D")
 	nav_agent = NavigationAgent3D.new()
 	nav_agent.path_desired_distance = 1.0
-	nav_agent.target_desired_distance = 2.0  # Increased for better stopping distance
+	nav_agent.target_desired_distance = character.get("waypoint_reach_distance") if character.has_method("get") and character.get("waypoint_reach_distance") else 0.3
 	nav_agent.path_max_distance = 1.0
 	nav_agent.avoidance_enabled = true
 	nav_agent.radius = 0.5  # Match navigation mesh settings

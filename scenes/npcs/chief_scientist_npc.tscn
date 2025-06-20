@@ -9,8 +9,7 @@ albedo_color = Color(0.3, 0.7, 0.3, 1)
 npc_name = "Dr. Marcus Webb"
 role = "Chief Scientist"
 initial_dialogue_id = "chief_scientist_greeting"
-spawn_location = "Laboratory 3"
-wander_radius = 5.0
+show_current_waypoint_index = 0
 
 [node name="MeshInstance3D" parent="." index="0"]
 surface_material_override/0 = SubResource("StandardMaterial3D_chief_scientist")
