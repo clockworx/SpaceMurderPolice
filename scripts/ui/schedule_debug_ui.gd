@@ -11,6 +11,7 @@ extends Control
 @onready var room_option_button: OptionButton = $VBoxContainer/RoomContainer/RoomOptionButton
 @onready var force_move_button: Button = $VBoxContainer/RoomContainer/ForceMoveButton
 @onready var npc_status_label: Label = $VBoxContainer/NPCStatusLabel
+@onready var movement_toggle_button: Button = $VBoxContainer/MovementToggleButton
 
 var selected_npc: NPCBase
 
@@ -29,6 +30,14 @@ func _ready():
 	time_speed_slider.value_changed.connect(_on_time_speed_changed)
 	pause_button.pressed.connect(_on_pause_pressed)
 	force_move_button.pressed.connect(_on_force_move_pressed)
+	
+	# Add movement toggle button if it doesn't exist
+	if not movement_toggle_button:
+		movement_toggle_button = Button.new()
+		movement_toggle_button.text = "Toggle Movement System"
+		$VBoxContainer.add_child(movement_toggle_button)
+	
+	movement_toggle_button.pressed.connect(_on_movement_toggle_pressed)
 	
 	# Add toggle key to input map if not exists
 	if not InputMap.has_action("toggle_schedule_debug"):
@@ -88,6 +97,7 @@ func _update_ui():
 		var status = "NPC: " + selected_npc.npc_name + "\n"
 		status += "State: " + str(selected_npc.current_state) + "\n"
 		status += "Room: " + selected_npc.assigned_room + "\n"
+		status += "Movement: " + ("NavMesh" if selected_npc.use_navmesh else "Direct/Waypoint") + "\n"
 		status += "Using Waypoints: " + str(selected_npc.use_waypoints) + "\n"
 		status += "Is Paused: " + str(selected_npc.is_paused) + "\n"
 		
@@ -137,3 +147,11 @@ func _on_force_move_pressed():
 		# Force immediate movement using navigation
 		selected_npc._navigate_to_room(waypoint_name)
 		selected_npc.assigned_room = schedule_manager.get_room_name(room_index)
+
+func _on_movement_toggle_pressed():
+	if not selected_npc:
+		return
+	
+	# Toggle between NavMesh and Direct/Waypoint movement
+	selected_npc.use_navmesh = not selected_npc.use_navmesh
+	print("Toggled movement system to: ", "NavMesh" if selected_npc.use_navmesh else "Direct/Waypoint")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://dxffoqv4y33v"]
+[gd_scene load_steps=32 format=3 uid="uid://dxffoqv4y33v"]
 
 [ext_resource type="ArrayMesh" uid="uid://cse7yllg5tcey" path="res://scenes/ship/station.obj" id="1_tivca"]
 [ext_resource type="PackedScene" uid="uid://b8xn5q7y8vkxd" path="res://scenes/player/player.tscn" id="2_kk3bs"]
@@ -20,6 +20,7 @@
 [ext_resource type="Script" uid="uid://da22mwvum17c8" path="res://scripts/managers/schedule_manager.gd" id="27_schedule_manager"]
 [ext_resource type="PackedScene" path="res://scenes/ui/schedule_debug_ui.tscn" id="28_schedule_debug"]
 [ext_resource type="Script" uid="uid://8qh6tgliy0iw" path="res://scripts/managers/waypoint_network_manager.gd" id="29_waypoint_network"]
+[ext_resource type="Script" path="res://scripts/managers/navigation_setup_manager.gd" id="30_nav_setup"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.1, 0.15, 0.25, 1)
@@ -492,6 +493,9 @@ script = ExtResource("27_schedule_manager")
 
 [node name="WaypointNetworkManager" type="Node" parent="GameManagement"]
 script = ExtResource("29_waypoint_network")
+
+[node name="NavigationSetupManager" type="Node" parent="GameManagement"]
+script = ExtResource("30_nav_setup")
 
 [node name="UIOverlay" type="CanvasLayer" parent="."]
 
