@@ -32,16 +32,16 @@ func _ready():
 func _on_story_mode_pressed():
     print("Starting Story Mode...")
     GameStateManager.set_story_mode("story1")
-    get_tree().change_scene_to_file("res://scenes/levels/aurora_station.tscn")
+    get_tree().change_scene_to_file("res://scenes/levels/NewStation.tscn")
 
 func _on_random_mode_pressed():
     print("Starting Random Mode...")
     GameStateManager.set_random_mode()
-    get_tree().change_scene_to_file("res://scenes/levels/aurora_station.tscn")
+    get_tree().change_scene_to_file("res://scenes/levels/NewStation.tscn")
 
 func _on_unified_station_pressed():
     print("Loading Unified Station...")
-    get_tree().change_scene_to_file("res://scenes/levels/unified_station.tscn")
+    get_tree().change_scene_to_file("res://scenes/levels/NewStation.tscn")
 
 func _on_settings_pressed():
     print("Settings not yet implemented")

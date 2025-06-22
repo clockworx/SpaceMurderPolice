@@ -4,21 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b44c900f-9122-4514-84db-e293651bd7a0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+    <list default="true" id="7ba0bc43-672e-4562-8a9f-5141d0b59474" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project.godot" beforeDir="false" afterPath="$PROJECT_DIR$/project.godot" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/environment/sliding_door.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/environment/sliding_door.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scenes/levels/NewStation.tscn.backup" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/NewStation.tscn.backup" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_debug_visualizer.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/debug/navigation_debug_visualizer.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/environment/sliding_door.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/environment/sliding_door.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_setup_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/navigation_setup_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/managers/waypoint_network_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/waypoint_network_manager.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/npcs/navmesh_movement.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/navmesh_movement.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/player/player_controller.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/player/player_controller.gd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/ui/schedule_debug_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/schedule_debug_ui.gd" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,33 +24,27 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/clockworx/SpaceMurderPolice.git&quot;,
-    &quot;accountId&quot;: &quot;d505079c-4f0d-4d54-b8c3-b6efda071bcb&quot;
+    &quot;accountId&quot;: &quot;2c09b47b-1cba-49ae-976d-dcf975dae6b0&quot;
   }
 }</component>
-  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 7
+  &quot;associatedIndex&quot;: 1
 }</component>
-  <component name="ProjectId" id="2xyIn8D07jfy2rt17WrvR9myq0C" />
+  <component name="ProjectId" id="2xyXLYq5mfnXqYIpsGYNt8aM5yD" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;SolutionBuilderGeneralOptionsPage&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -81,7 +62,7 @@
     <configuration name="Editor" type="RunNativeExe" factoryName="Native Executable">
       <option name="EXE_PATH" value="$USER_HOME$/Desktop/Godot_v4.4.1.exe" />
       <option name="PROGRAM_PARAMETERS" value="--path &quot;./&quot; --editor" />
-      <option name="WORKING_DIRECTORY" value="C:\Users\marinavr\Documents\GitHub\SpaceMurderPolice" />
+      <option name="WORKING_DIRECTORY" value="C:\Users\marin\Documents\GitHub\SpaceMurderPolice" />
       <option name="PASS_PARENT_ENVS" value="1" />
       <option name="USE_EXTERNAL_CONSOLE" value="0" />
       <option name="ENV_FILE_PATHS" value="" />
@@ -92,68 +73,24 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="b44c900f-9122-4514-84db-e293651bd7a0" name="Changes" comment="" />
-      <created>1732317387193</created>
+      <changelist id="7ba0bc43-672e-4562-8a9f-5141d0b59474" name="Changes" comment="" />
+      <created>1748911235220</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1732317387193</updated>
-      <workItem from="1732317390227" duration="382000" />
-      <workItem from="1748904053316" duration="5518000" />
-      <workItem from="1749068343505" duration="1031000" />
-      <workItem from="1749069428954" duration="30229000" />
-      <workItem from="1749104088246" duration="49000" />
-      <workItem from="1749153141157" duration="11731000" />
-      <workItem from="1749169670332" duration="7356000" />
-      <workItem from="1749178956856" duration="747000" />
-      <workItem from="1749231250384" duration="12680000" />
-      <workItem from="1749250536956" duration="26992000" />
-      <workItem from="1749409388213" duration="12051000" />
-      <workItem from="1749447627711" duration="4127000" />
-      <workItem from="1749492544995" duration="33298000" />
-      <workItem from="1749578729427" duration="4745000" />
-      <workItem from="1749668461896" duration="12953000" />
-      <workItem from="1749682799947" duration="6417000" />
-      <workItem from="1749689369918" duration="155000" />
-      <workItem from="1750392389996" duration="38811000" />
+      <updated>1748911235220</updated>
+      <workItem from="1748911239055" duration="641000" />
+      <workItem from="1748912346991" duration="875000" />
+      <workItem from="1748916272950" duration="13967000" />
+      <workItem from="1750553180689" duration="140000" />
     </task>
-    <task id="LOCAL-00001" summary="Adding a bunch of new stuff">
-      <option name="closed" value="true" />
-      <created>1749096353558</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1749096353559</updated>
-    </task>
-    <task id="LOCAL-00002" summary="another million things">
-      <option name="closed" value="true" />
-      <created>1749104112145</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1749104112146</updated>
-    </task>
-    <task id="LOCAL-00003" summary="Adding a whole bunch of other things">
-      <option name="closed" value="true" />
-      <created>1749178998492</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1749178998492</updated>
-    </task>
-    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
-  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
-    <MESSAGE value="Adding a bunch of new stuff" />
-    <MESSAGE value="another million things" />
-    <MESSAGE value="Adding a whole bunch of other things" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adding a whole bunch of other things" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

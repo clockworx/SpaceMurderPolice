@@ -1,5 +1,8 @@
 extends CharacterBody3D
 
+# Preload movement system
+const DirectMovement = preload("res://scripts/npcs/direct_movement.gd")
+
 const WALK_SPEED = 3.5
 const RUN_SPEED = 6.0
 const CROUCH_SPEED = 1.5
@@ -107,75 +110,24 @@ func _input(event):
             print("DEBUG: Forcing arrival phase")
             phase_manager.force_phase(phase_manager.Phase.ARRIVAL)
     
-    # NPC Navigation Testing - Number Keys
-    if event is InputEventKey and event.pressed:
-        # Find Dr. Marcus Webb specifically
-        var npc = null
-        var all_npcs = get_tree().get_nodes_in_group("npcs")
-        for test_npc in all_npcs:
-            if test_npc.has_method("get") and test_npc.get("npc_name") == "Dr. Marcus Webb":
-                npc = test_npc
-                break
+    # DEBUG: Toggle navigation path visualization with P key
+    if event is InputEventKey and event.pressed and event.keycode == KEY_P:
+        # Simple toggle for NavigationServer3D debug
+        var currently_enabled = NavigationServer3D.get_debug_enabled()
+        NavigationServer3D.set_debug_enabled(not currently_enabled)
         
-        if not npc:
-            npc = get_tree().get_first_node_in_group("npcs")
-            
-        if npc:
-            var nav_system = null
+        print("DEBUG: Navigation visualization ", "ON" if not currently_enabled else "OFF")
+        
+        # Enable debug on all NavigationAgent3D nodes
+        var npcs = get_tree().get_nodes_in_group("npcs")
+        for npc in npcs:
             for child in npc.get_children():
-                # Check if it's the navigation node by checking for navigation methods
-                if child.has_method("navigate_to_room") or child.has_method("navigate_to"):
-                    nav_system = child
-                    break
-            
-            if nav_system:
-                match event.keycode:
-                    KEY_0:  # Full tour
-                        print("Starting full station tour...")
-                        nav_system.navigate_to_room("FullTour")
-                    KEY_1:
-                        print("Navigating to Medical Bay...")
-                        nav_system.navigate_to_room("MedicalBay_Waypoint")
-                    KEY_2:
-                        print("Starting full station tour...")
-                        nav_system.navigate_to_room("FullTour")
-                    KEY_3:
-                        print("Navigating to Engineering...")
-                        nav_system.navigate_to_room("Engineering_Waypoint")
-                    KEY_4:
-                        print("Navigating to Crew Quarters...")
-                        nav_system.navigate_to_room("CrewQuarters_Waypoint")
-                    KEY_5:
-                        print("Navigating to Cafeteria...")
-                        nav_system.navigate_to_room("Cafeteria_Waypoint")
-                    KEY_6:
-                        print("Navigating to Laboratory...")
-                        nav_system.navigate_to_room("Laboratory_Waypoint")
-                    KEY_9:  # Test simple direct navigation
-                        print("\nTesting simple direct navigation...")
-                        
-                        # Remove existing navigation
-                        for child in npc.get_children():
-                            if child.has_method("navigate_to_room"):
-                                print("Removing existing navigation: ", child.name)
-                                child.queue_free()
-                        
-                        # Add simple direct navigation
-                        var SimpleNav = preload("res://scripts/npcs/simple_direct_navigation.gd")
-                        var simple_nav = SimpleNav.new(npc)
-                        npc.add_child(simple_nav)
-                        
-                        print("Added simple direct navigation")
-                        
-                        # Start the tour
-                        if simple_nav.navigate_to_room("FullTour"):
-                            print("Started full tour with simple navigation!")
-                        else:
-                            print("Failed to start navigation")
-            else:
-                print("DEBUG: No navigation system found on NPC!")
-        else:
-            print("DEBUG: No NPC found!")
+                if child is NavigationAgent3D:
+                    child.debug_enabled = not currently_enabled
+                    print("  Updated debug on ", npc.name, "'s NavigationAgent3D")
+    
+    # NPC Navigation Testing is now handled directly in NPC script
+    # Use keys 1-6 to test navigation with Dr. Marcus Webb, P for debug visualization
 
 func _physics_process(delta):
     if not can_move and not is_hidden:

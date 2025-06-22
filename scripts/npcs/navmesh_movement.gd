@@ -63,10 +63,11 @@ func _setup_nav_agent() -> void:
 
 func move_to_position(position: Vector3) -> void:
 	if not nav_agent:
+		print("NavMeshMovement: ERROR - NavigationAgent3D not initialized")
 		movement_failed.emit("NavigationAgent3D not initialized")
 		return
 	
-	print("NavMeshMovement: move_to_position called with ", position)
+	print("NavMeshMovement: Moving to ", position)
 	
 	# Check if navigation map exists
 	var nav_map = nav_agent.get_navigation_map()
@@ -79,6 +80,7 @@ func move_to_position(position: Vector3) -> void:
 	nav_agent.target_position = position
 	is_active = true
 	set_physics_process(true)
+	print("NavMeshMovement: Navigation started, is_active = ", is_active)
 	
 	# Wait a frame for navigation to update
 	await character.get_tree().process_frame
@@ -86,17 +88,8 @@ func move_to_position(position: Vector3) -> void:
 	# Check if target is reachable
 	if nav_agent.is_target_reachable():
 		print("NavMeshMovement: Target is reachable")
-		var path = nav_agent.get_current_navigation_path()
-		print("NavMeshMovement: Path has ", path.size(), " points")
-		if path.size() > 0:
-			print("  First point: ", path[0])
-			print("  Last point: ", path[path.size()-1])
 	else:
 		print("NavMeshMovement: WARNING - Target may not be reachable!")
-		# Try to get closest point on navmesh
-		var closest = NavigationServer3D.map_get_closest_point(nav_map, position)
-		print("  Closest point on navmesh: ", closest)
-		print("  Distance to target: ", position.distance_to(closest))
 
 func stop_movement() -> void:
 	is_active = false
@@ -119,11 +112,8 @@ func _physics_process(delta: float) -> void:
 	var distance_to_target = character.global_position.distance_to(nav_agent.target_position)
 	
 	if nav_agent.is_navigation_finished():
-		print("NavMeshMovement: Navigation finished, distance to target: ", distance_to_target)
 		if distance_to_target <= nav_agent.target_desired_distance:
 			return
-		else:
-			print("NavMeshMovement: Still moving to final position")
 	
 	var next_position = nav_agent.get_next_path_position()
 	var current_pos = character.global_position
@@ -162,15 +152,7 @@ func _apply_movement(velocity: Vector3, delta: float) -> void:
 			character.transform = character.transform.interpolate_with(target_transform, rotation_speed * delta)
 
 func _on_navigation_finished() -> void:
-	print("NavMeshMovement: Navigation finished signal received!")
-	var distance_to_target = character.global_position.distance_to(nav_agent.target_position)
-	print("  Distance to target: ", distance_to_target)
-	print("  Character position: ", character.global_position)
-	print("  Target position: ", nav_agent.target_position)
-	
-	if distance_to_target > 2.0:
-		print("  WARNING: Navigation finished but still far from target!")
-	
+	print("NavMeshMovement: Navigation completed!")
 	stop_movement()
 	movement_completed.emit()
 
