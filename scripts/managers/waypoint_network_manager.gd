@@ -80,17 +80,62 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
 	
 	return position_path
 
+func get_waypoint_path_names(from_position: Vector3, to_room_waypoint: String) -> Array[String]:
+	# Find nearest waypoint to current position
+	var nearest_waypoint = _find_nearest_waypoint(from_position)
+	if not nearest_waypoint:
+		print("No nearest waypoint found")
+		return []
+	
+	if nearest_waypoint == to_room_waypoint:
+		# Already at destination
+		return [to_room_waypoint]
+	
+	# Use A* pathfinding to find route through waypoints
+	var path = _find_waypoint_path(nearest_waypoint, to_room_waypoint)
+	if path.is_empty():
+		print("No path found from ", nearest_waypoint, " to ", to_room_waypoint)
+		# Fallback to direct path
+		if waypoint_nodes.has(to_room_waypoint):
+			return [to_room_waypoint]
+		return []
+	
+	# Return the waypoint names as strings
+	var string_path: Array[String] = []
+	for wp_name in path:
+		string_path.append(wp_name)
+	return string_path
+
 func _find_nearest_waypoint(position: Vector3) -> String:
 	var nearest_name: String = ""
 	var nearest_distance: float = INF
+	var room_waypoint: String = ""
+	var room_distance: float = INF
 	
+	# First, try to find room waypoints (they end with _Waypoint)
 	for waypoint_name in waypoint_nodes:
 		var waypoint = waypoint_nodes[waypoint_name]
 		var distance = position.distance_to(waypoint.global_position)
+		
+		# Check if this is a room waypoint
+		if waypoint_name.ends_with("_Waypoint"):
+			# For room waypoints, check if we're within reasonable room bounds (15 units)
+			if distance < 15.0 and distance < room_distance:
+				room_distance = distance
+				room_waypoint = waypoint_name
+		
+		# Track overall nearest
 		if distance < nearest_distance:
 			nearest_distance = distance
 			nearest_name = waypoint_name
 	
+	# Prefer room waypoint if we found one within reasonable distance
+	if room_waypoint != "":
+		print("Found room waypoint: ", room_waypoint, " at distance: ", room_distance)
+		return room_waypoint
+	
+	# Otherwise return the nearest waypoint
+	print("Using nearest waypoint: ", nearest_name, " at distance: ", nearest_distance)
 	return nearest_name
 
 func _find_waypoint_path(from: String, to: String) -> Array:

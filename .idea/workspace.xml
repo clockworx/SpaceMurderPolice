@@ -6,6 +6,19 @@
   <component name="ChangeListManager">
     <list default="true" id="b44c900f-9122-4514-84db-e293651bd7a0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project.godot" beforeDir="false" afterPath="$PROJECT_DIR$/project.godot" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/environment/sliding_door.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/environment/sliding_door.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/levels/NewStation.tscn.backup" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/NewStation.tscn.backup" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_debug_visualizer.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/debug/navigation_debug_visualizer.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/environment/sliding_door.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/environment/sliding_door.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_setup_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/navigation_setup_manager.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/waypoint_network_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/waypoint_network_manager.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/navmesh_movement.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/navmesh_movement.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/player/player_controller.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/player/player_controller.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/ui/schedule_debug_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/schedule_debug_ui.gd" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -101,7 +114,7 @@
       <workItem from="1749668461896" duration="12953000" />
       <workItem from="1749682799947" duration="6417000" />
       <workItem from="1749689369918" duration="155000" />
-      <workItem from="1750392389996" duration="5914000" />
+      <workItem from="1750392389996" duration="38811000" />
     </task>
     <task id="LOCAL-00001" summary="Adding a bunch of new stuff">
       <option name="closed" value="true" />

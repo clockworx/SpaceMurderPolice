@@ -1,3 +1,4 @@
+@tool
 extends StaticBody3D
 class_name SlidingDoor
 
@@ -8,6 +9,11 @@ class_name SlidingDoor
 @export var slide_direction: Vector3 = Vector3.RIGHT  # Direction to slide in local space
 @export var detection_range: float = 3.0  # Range for automatic detection
 @export var requires_power: bool = true  # Whether this door needs power to auto-open
+
+@export_group("Navigation Waypoints")
+@export var entry_waypoint_offset: Vector3 = Vector3(0, 0, -2) : set = set_entry_waypoint_offset
+@export var exit_waypoint_offset: Vector3 = Vector3(0, 0, 2) : set = set_exit_waypoint_offset  
+@export var show_waypoint_debug: bool = true
 
 var door_mesh: MeshInstance3D
 var collision_shape: CollisionShape3D
@@ -29,9 +35,37 @@ signal door_opened
 signal door_closed
 signal power_status_changed(powered: bool)
 
+func get_door_name() -> String:
+    return door_name
+
+func set_entry_waypoint_offset(value: Vector3):
+    entry_waypoint_offset = value
+    if Engine.is_editor_hint() and is_inside_tree():
+        _update_waypoint_positions()
+
+func set_exit_waypoint_offset(value: Vector3):
+    exit_waypoint_offset = value
+    if Engine.is_editor_hint() and is_inside_tree():
+        _update_waypoint_positions()
+
+func _notification(what):
+    if Engine.is_editor_hint():
+        if what == NOTIFICATION_POST_ENTER_TREE:
+            _ensure_waypoints_exist()
+            _update_waypoint_positions()
+
 func _ready():
+    # In editor, just ensure waypoints exist
+    if Engine.is_editor_hint():
+        _ensure_waypoints_exist()
+        _update_waypoint_positions()
+        return
+    
     collision_layer = 3  # Both environment (1) and interactable (2) layers
     collision_mask = 1   # Collide with environment
+    
+    # Add to doors group for navigation
+    add_to_group("doors")
     
     # Update interactability based on initial state
     _update_interactability()
@@ -332,3 +366,26 @@ func _physics_process(_delta):
             close_timer.start()
         elif has_moving_entity and not close_timer.is_stopped():
             close_timer.stop()  # Keep door open if someone is moving
+
+func _ensure_waypoints_exist():
+    # Check if waypoints exist, add them if not
+    if not has_node("EntryWaypoint"):
+        var entry = Node3D.new()
+        entry.name = "EntryWaypoint"
+        entry.position = entry_waypoint_offset
+        add_child(entry)
+        entry.owner = get_tree().edited_scene_root
+        
+    if not has_node("ExitWaypoint"):
+        var exit = Node3D.new()
+        exit.name = "ExitWaypoint"
+        exit.position = exit_waypoint_offset
+        add_child(exit)
+        exit.owner = get_tree().edited_scene_root
+
+func _update_waypoint_positions():
+    # Update waypoint positions based on exported offsets
+    if has_node("EntryWaypoint"):
+        get_node("EntryWaypoint").position = entry_waypoint_offset
+    if has_node("ExitWaypoint"):
+        get_node("ExitWaypoint").position = exit_waypoint_offset

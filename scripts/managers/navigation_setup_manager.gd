@@ -4,7 +4,7 @@ class_name NavigationSetupManager
 # This manager sets up navigation mesh for the level
 # It can either use pre-baked navigation or generate it dynamically
 
-@export var auto_generate_navmesh: bool = true
+@export var auto_generate_navmesh: bool = false  # Disabled - use pre-baked NavMesh
 @export var navigation_mesh_settings: NavigationMesh
 
 var navigation_region: NavigationRegion3D
@@ -26,6 +26,13 @@ func _ready():
 				navigation_region = child
 				break
 	
+	if not navigation_region:
+		# Try one more method to find it
+		var regions = NavigationServer3D.get_maps()
+		if regions.size() > 0:
+			print("NavigationSetupManager: Found ", regions.size(), " navigation maps via NavigationServer3D")
+			navigation_region = get_tree().get_first_node_in_group("NavigationRegion3D")
+	
 	if not navigation_region and auto_generate_navmesh:
 		print("NavigationSetupManager: Creating NavigationRegion3D...")
 		_create_navigation_region()
@@ -34,6 +41,8 @@ func _ready():
 		_ensure_navigation_links_connected()
 	else:
 		print("NavigationSetupManager: No NavigationRegion3D found and auto-generate is disabled")
+		# Still check for navigation links
+		_ensure_navigation_links_connected()
 
 func _create_navigation_region():
 	var scene_root = get_tree().current_scene
@@ -47,23 +56,23 @@ func _create_navigation_region():
 	# Create NavigationMesh
 	var nav_mesh = NavigationMesh.new()
 	
-	# Configure navigation mesh settings
-	nav_mesh.cell_size = 0.25
-	nav_mesh.cell_height = 0.25
-	nav_mesh.agent_height = 2.0
-	nav_mesh.agent_radius = 0.5
-	nav_mesh.agent_max_climb = 0.5
-	nav_mesh.agent_max_slope = 45.0
-	nav_mesh.region_min_size = 8.0
-	nav_mesh.region_merge_size = 20.0
-	nav_mesh.edge_max_length = 12.0
-	nav_mesh.edge_max_error = 1.3
+	# Configure navigation mesh settings - CENTERED PATHS
+	nav_mesh.cell_size = 0.1  # Smaller for better detail
+	nav_mesh.cell_height = 0.05  # More precise vertical
+	nav_mesh.agent_height = 1.8  # Human height
+	nav_mesh.agent_radius = 0.8  # LARGER radius creates more centered paths
+	nav_mesh.agent_max_climb = 0.3  # Small steps
+	nav_mesh.agent_max_slope = 30.0  # Moderate slopes
+	nav_mesh.region_min_size = 4.0  # Larger regions for smoother areas
+	nav_mesh.region_merge_size = 20.0  # More aggressive merging
+	nav_mesh.edge_max_length = 0.0  # No edge length limit for smoother areas
+	nav_mesh.edge_max_error = 2.0  # Higher error = smoother, more centered paths
 	nav_mesh.vertices_per_polygon = 6.0
-	nav_mesh.detail_sample_distance = 6.0
-	nav_mesh.detail_sample_max_error = 1.0
+	nav_mesh.detail_sample_distance = 12.0  # Much less detail = smoother paths
+	nav_mesh.detail_sample_max_error = 2.0  # Higher error tolerance
 	
-	# Set geometry source
-	nav_mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_MESH_INSTANCES
+	# Set geometry source - use static colliders
+	nav_mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	nav_mesh.geometry_collision_mask = 1  # Environment layer
 	
 	navigation_region.navigation_mesh = nav_mesh

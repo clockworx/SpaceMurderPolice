@@ -94,7 +94,7 @@ enum MovementState {
 @export var talk_trigger_distance: float = 2.0  # Distance to face player
 
 @export_group("Movement System")
-@export var use_navmesh: bool = false
+@export var use_navmesh: bool = true  # Default to NavMesh
 @export var use_hybrid_movement: bool = false  # Use hybrid system that switches between Direct and NavMesh
 
 @export_group("Interaction")
@@ -193,6 +193,8 @@ var sound_waypoint_debug: MeshInstance3D  # Debug sphere for sound investigation
 
 # Movement system
 var movement_system: MovementInterface
+var waypoint_guided_nav: WaypointGuidedNavMesh = null  # New hybrid navigation system
+var simple_nav = null  # Simple navigation system as fallback
 
 func _ready():
     if Engine.is_editor_hint():
@@ -201,17 +203,20 @@ func _ready():
     collision_layer = 2  # Interactable layer
     collision_mask = 1   # Collide with environment
     
-    # Initialize movement system
-    if use_hybrid_movement:
-        movement_system = HybridMovement.new(self)
-    elif use_navmesh:
-        movement_system = NavMeshMovement.new(self)
-    else:
-        movement_system = DirectMovement.new(self)
+    # Add to npcs group for easy finding
+    add_to_group("npcs")
     
-    add_child(movement_system)
-    movement_system.movement_completed.connect(_on_movement_completed)
-    movement_system.movement_failed.connect(_on_movement_failed)
+    # COMPLETELY DISABLE ALL MOVEMENT SYSTEMS
+    # Only use clean simple navigation
+    
+    # Initialize ONLY clean simple navigation with cylinders
+    print(npc_name + ": Initializing CLEAN simple navigation with cylinders...")
+    var CleanNav = preload("res://scripts/npcs/clean_nav_with_cylinders.gd")
+    simple_nav = CleanNav.new(self)
+    add_child(simple_nav)
+    print(npc_name + ": Clean navigation with cylinders initialized successfully!")
+    
+    # DO NOT initialize any other movement systems
     
     # Ensure saboteur features are disabled if can_be_saboteur is false
     if not can_be_saboteur:
@@ -295,9 +300,64 @@ func _ready():
     
     # Debug: NPC initialized
     #print(npc_name + " initialized at position: " + str(global_position))
+    
+    # TEMPORARY TEST: Set up keyboard navigation test
+    if npc_name == "Dr. Marcus Webb":
+        print("\n=== NAVIGATION TEST READY FOR ", npc_name, " ===")
+        # Disable normal waypoint following
+        use_waypoints = false
+        # Don't process input here - let player controller handle it
+        set_process_input(false)
+
+func _input(event):
+    # TEMPORARY TEST: Handle keyboard navigation
+    if npc_name == "Dr. Marcus Webb" and event is InputEventKey and event.pressed:
+        var room_name = ""
+        var waypoint_name = ""
+        
+        match event.keycode:
+            KEY_1:
+                room_name = "Laboratory"
+                waypoint_name = "Laboratory_Waypoint"
+            KEY_2:
+                room_name = "Medical Bay"
+                waypoint_name = "MedicalBay_Waypoint"
+            KEY_3:
+                room_name = "Security Office"
+                waypoint_name = "Security_Waypoint"
+            KEY_4:
+                room_name = "Engineering"
+                waypoint_name = "Engineering_Waypoint"
+            KEY_5:
+                room_name = "Crew Quarters"
+                waypoint_name = "CrewQuarters_Waypoint"
+            KEY_6:
+                room_name = "Cafeteria"
+                waypoint_name = "Cafeteria_Waypoint"
+            KEY_7:
+                room_name = "Full Station Tour"
+                waypoint_name = "FullTour"
+        
+        if room_name != "" and waypoint_name != "":
+            print("\n=== NAVIGATING TO ", room_name, " ===")
+            stop_movement()
+            
+            # Use only clean simple navigation
+            if simple_nav:
+                print("[INPUT] Using clean simple navigation")
+                simple_nav.navigate_to_room(waypoint_name)
+            else:
+                print("ERROR: No simple navigation available!")
 
 func _physics_process(delta):
     if Engine.is_editor_hint():
+        return
+    
+    # Update debug label with navigation status
+    if state_label and simple_nav and simple_nav.is_navigating_active():
+        state_label.text = "NAV: Active"
+        state_label.modulate = Color.GREEN
+        # Skip all other processing when simple nav is active
         return
         
     if is_talking:
@@ -367,33 +427,38 @@ func _choose_new_target():
 
 # Movement system wrapper methods
 func move_to_position(position: Vector3) -> void:
-    if movement_system:
-        movement_system.move_to_position(position)
+    # DISABLED - Using simple navigation only
+    return
 
 func stop_movement() -> void:
-    if movement_system:
-        movement_system.stop_movement()
+    # DISABLED - Using simple navigation only
     velocity = Vector3.ZERO
 
 func force_move_to_position(position: Vector3) -> void:
-    # Force immediate movement, overriding current behavior
-    print(npc_name + " force moving to position: " + str(position))
+    # DISABLED - Using simple navigation only
+    print(npc_name + " force_move_to_position DISABLED")
+    return
+    var target_waypoint_name = ""
+    var waypoints = get_tree().get_nodes_in_group("Waypoints")
+    for waypoint in waypoints:
+        if waypoint is Node3D and waypoint.global_position.distance_to(position) < 0.5:
+            target_waypoint_name = waypoint.name
+            print("  Identified target as waypoint: ", target_waypoint_name)
+            break
     
-    # Clear any waypoint following
-    if use_waypoints:
-        use_waypoints = false
-        # Re-enable after reaching destination
-        call_deferred("_re_enable_waypoints", 5.0)
+    # If it's a room waypoint, use waypoint-guided navigation or waypoint network
+    if target_waypoint_name != "":
+        print("  Using navigation system to reach ", target_waypoint_name)
+        _navigate_to_room(target_waypoint_name)
+        return
     
-    # Clear pause state
-    is_paused = false
-    pause_timer = 0.0
+    # For non-waypoint positions, use waypoint-guided nav if available
+    if waypoint_guided_nav and use_navmesh:
+        print("  Using waypoint-guided navigation for direct position")
+        waypoint_guided_nav.navigate_to_position(position)
+        return
     
-    # Set to patrol state if not already
-    if current_state != MovementState.PATROL:
-        set_state(MovementState.PATROL)
-    
-    # Force movement
+    # Force direct movement only if not using any navigation aids
     move_to_position(position)
 
 func _re_enable_waypoints(delay: float = 0.0):
@@ -403,6 +468,14 @@ func _re_enable_waypoints(delay: float = 0.0):
 
 # Movement system signal handlers
 func _on_movement_completed() -> void:
+    # IMPORTANT: If simple navigation is active, ignore this signal
+    if simple_nav and simple_nav.is_navigating_active():
+        return  # Let simple navigation handle its own completion
+    
+    # IMPORTANT: If waypoint-guided navigation is active, ignore this signal
+    if waypoint_guided_nav and waypoint_guided_nav.is_navigating_active():
+        return  # Let waypoint-guided navigation handle its own completion
+    
     # Check if we're following a navigation path
     if navigation_path.size() > 0 and navigation_path_index < navigation_path.size() - 1:
         navigation_path_index += 1
@@ -454,6 +527,43 @@ func _on_movement_failed(reason: String) -> void:
                 _update_waypoint_target()
         _:
             _start_idle()
+
+func _on_waypoint_nav_completed() -> void:
+    # Called when waypoint-guided navigation completes
+    print(npc_name + ": Waypoint-guided navigation completed")
+    # The navigation system already handles movement, just update state if needed
+    if current_state == MovementState.RETURN_TO_PATROL:
+        set_state(MovementState.PATROL)
+
+func _on_waypoint_reached(waypoint_name: String) -> void:
+    # Called when a waypoint is reached during navigation
+    print(npc_name + ": Reached waypoint ", waypoint_name)
+
+func _ensure_waypoint_guided_nav_initialized():
+    # DISABLED: Using simple navigation instead
+    return
+    
+    # if waypoint_guided_nav or not use_navmesh:
+    #     return
+    # 
+    # print(npc_name + ": Runtime initialization of waypoint-guided navigation")
+    # 
+    # # Check if we have a NavMeshMovement system
+    # if movement_system and movement_system is NavMeshMovement:
+    #     var nav_agent = movement_system.nav_agent
+    #     if nav_agent:
+    #         # Find waypoint network manager if not already found
+    #         if not waypoint_network_manager:
+    #             waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
+    #         
+    #         # Create waypoint-guided navigation
+    #         waypoint_guided_nav = WaypointGuidedNavMesh.new(self, nav_agent)
+    #         add_child(waypoint_guided_nav)
+    #         waypoint_guided_nav.navigation_completed.connect(_on_waypoint_nav_completed)
+    #         waypoint_guided_nav.waypoint_reached.connect(_on_waypoint_reached)
+    #         print(npc_name + ": Runtime waypoint-guided navigation ready!")
+    #     else:
+    #         print(npc_name + ": ERROR - No NavigationAgent3D available for runtime init")
 
 func _create_relationship_indicator():
     if relationship_indicator:
@@ -1520,6 +1630,19 @@ func _on_schedule_changed(character_name: String, new_room: ScheduleManager.Room
     assigned_room = schedule_manager.get_room_name(new_room)
 
 func _navigate_to_room(room_waypoint_name: String):
+    # Ensure waypoint-guided navigation is initialized if using NavMesh
+    if use_navmesh and not waypoint_guided_nav:
+        _ensure_waypoint_guided_nav_initialized()
+    
+    # Use waypoint-guided navigation if available
+    if waypoint_guided_nav and use_navmesh:
+        print(npc_name + ": Using waypoint-guided navigation to ", room_waypoint_name)
+        if waypoint_guided_nav.navigate_to_room(room_waypoint_name):
+            return
+        else:
+            print(npc_name + ": Waypoint-guided navigation failed, falling back to standard navigation")
+    
+    # Standard waypoint network navigation
     if waypoint_network_manager:
         # Get path through waypoint network
         var path = waypoint_network_manager.get_path_to_room(global_position, room_waypoint_name)
@@ -1546,3 +1669,12 @@ func _follow_waypoint_path(path: Array[Vector3]):
     # Start moving to first waypoint
     if navigation_path.size() > 0:
         move_to_position(navigation_path[0])
+
+# Getters for external systems
+func get_waypoint_guided_nav() -> WaypointGuidedNavMesh:
+    return waypoint_guided_nav
+
+func get_navigation_agent() -> NavigationAgent3D:
+    if movement_system and movement_system is NavMeshMovement:
+        return movement_system.nav_agent
+    return null

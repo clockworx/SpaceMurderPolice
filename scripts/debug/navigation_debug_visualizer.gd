@@ -6,6 +6,7 @@ extends Node3D
 @export var nav_link_color: Color = Color(1, 1, 0, 1)
 @export var nav_link_width: float = 3.0
 @export var show_nav_regions: bool = true
+@export var show_navmesh_edges: bool = true
 @export var show_nav_links: bool = true
 @export var show_agent_paths: bool = true
 @export var agent_path_color: Color = Color(1, 0, 0, 1)
@@ -254,10 +255,24 @@ func _visualize_agent_paths():
                 for i in range(nav_path.size() - 1):
                     var color = Color(0, 1, 0, 0.8) if i >= nav_index else Color(0.5, 0.5, 0.5, 0.5)
                     _draw_debug_line(nav_path[i], nav_path[i + 1], color, agent_path_width * 0.8)
+        
+        # Visualize waypoint-guided navigation
+        if npc.has_method("get_waypoint_guided_nav"):
+            var wp_nav = npc.get_waypoint_guided_nav()
+            if wp_nav and wp_nav.is_navigating_active():
+                # Draw waypoint path in cyan
+                for i in range(wp_nav.current_path.size() - 1):
+                    var color = Color.CYAN if i >= wp_nav.current_waypoint_index else Color(0.3, 0.5, 0.5, 0.5)
+                    _draw_debug_line(wp_nav.current_path[i], wp_nav.current_path[i + 1], color, agent_path_width * 1.2)
+                
+                # Draw spheres at waypoints
+                for i in range(wp_nav.current_path.size()):
+                    var color = Color.CYAN if i == wp_nav.current_waypoint_index else Color(0.5, 0.8, 0.8)
+                    _draw_debug_sphere(wp_nav.current_path[i], 0.2, color)
                 
                 # Highlight current target waypoint
-                if nav_index < nav_path.size():
-                    _draw_temp_sphere(nav_path[nav_index], 0.2, Color(0, 1, 0, 1))
+                if wp_nav.current_waypoint_index < wp_nav.current_path.size():
+                    _draw_temp_sphere(wp_nav.current_path[wp_nav.current_waypoint_index], 0.2, Color(0, 1, 0, 1))
 
 func _draw_debug_line(from: Vector3, to: Vector3, color: Color, width: float):
     var mesh_instance = MeshInstance3D.new()

@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://bqn7gxm5h8yxp"]
+[gd_scene load_steps=10 format=3 uid="uid://bqn7gxm5h8yxp"]
 
 [ext_resource type="Script" path="res://scripts/environment/sliding_door.gd" id="1_door"]
+[ext_resource type="Script" path="res://scripts/environment/door_waypoint_visualizer.gd" id="2_waypoint"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_door"]
 albedo_color = Color(0.3, 0.4, 0.5, 1)
@@ -16,6 +17,22 @@ size = Vector3(3, 3, 0.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_door"]
 size = Vector3(3, 3, 0.2)
+
+[sub_resource type="SphereMesh" id="SphereMesh_waypoint"]
+radial_segments = 8
+rings = 4
+radius = 0.3
+height = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_entry"]
+albedo_color = Color(0, 1, 0, 0.5)
+shading_mode = 0
+no_depth_test = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_exit"]
+albedo_color = Color(1, 0, 0, 0.5)
+shading_mode = 0
+no_depth_test = true
 
 [node name="SlidingDoor" type="StaticBody3D"]
 collision_layer = 2
@@ -49,3 +66,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, -0.25)
 light_color = Color(0, 1, 0, 1)
 light_energy = 0.5
 omni_range = 1.0
+
+[node name="EntryWaypoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
+script = ExtResource("2_waypoint")
+
+[node name="DebugSphere" type="MeshInstance3D" parent="EntryWaypoint"]
+visible = false
+mesh = SubResource("SphereMesh_waypoint")
+material_override = SubResource("StandardMaterial3D_entry")
+
+[node name="ExitWaypoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+script = ExtResource("2_waypoint")
+
+[node name="DebugSphere" type="MeshInstance3D" parent="ExitWaypoint"]
+visible = false
+mesh = SubResource("SphereMesh_waypoint")
+material_override = SubResource("StandardMaterial3D_exit")
