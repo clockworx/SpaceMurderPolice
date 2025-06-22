@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://dxffoqv4y33v"]
+[gd_scene load_steps=31 format=3 uid="uid://dxffoqv4y33v"]
 
 [ext_resource type="ArrayMesh" uid="uid://bjilx5xgyvh80" path="res://scenes/ship/station_noceiling.obj" id="1_0djrh"]
 [ext_resource type="PackedScene" uid="uid://b8xn5q7y8vkxd" path="res://scenes/player/player.tscn" id="2_kk3bs"]
@@ -16,12 +16,9 @@
 [ext_resource type="PackedScene" uid="uid://dq431f482mbx8" path="res://scenes/evidence/keycard_evidence.tscn" id="17_keycard"]
 [ext_resource type="PackedScene" uid="uid://c4xh5rd7yfh8n" path="res://scenes/evidence/physical_evidence.tscn" id="18_phys_evidence"]
 [ext_resource type="PackedScene" uid="uid://b7j4nan3qwkp8" path="res://scenes/npcs/chief_scientist_npc.tscn" id="20_scientist"]
-[ext_resource type="Script" uid="uid://dpj5pc2jdggan" path="res://scripts/debug/navigation_debug_visualizer.gd" id="26_nav_debug"]
 [ext_resource type="Script" uid="uid://da22mwvum17c8" path="res://scripts/managers/schedule_manager.gd" id="27_schedule_manager"]
 [ext_resource type="PackedScene" path="res://scenes/ui/schedule_debug_ui.tscn" id="28_schedule_debug"]
 [ext_resource type="Script" uid="uid://8qh6tgliy0iw" path="res://scripts/managers/waypoint_network_manager.gd" id="29_waypoint_network"]
-[ext_resource type="Script" uid="uid://dw428c4r2bcvu" path="res://scripts/managers/navigation_setup_manager.gd" id="30_nav_setup"]
-[ext_resource type="Script" uid="uid://jrfm1gdrnuvb" path="res://scripts/debug/navigation_link_visualizer.gd" id="32_nav_link_vis"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_0djrh"]
 vertices = PackedVector3Array(4.9, -9.71196, -22.6, 6.9, -9.71196, -24.1, 6.9, -9.71196, -25.1, 2.9, -9.71196, -25.6, -15.1, -9.71196, -23.1, 2.9, -9.71196, -37.1, -15.1, -9.71196, -37.1, 4.9, -9.71196, -5.1, 6.9, -9.71196, -5.1, 2.4, -9.71196, -1.1, 2.4, -9.71196, 0.400002, 3.9, -9.71196, 0.900002, 6.9, -9.71196, -1.6, 4.9, -9.71196, -1.6, 11.4, -9.71196, 2.9, 10.9, -9.71196, -1.1, 4.4, -9.71196, 5.4, 10.9, -9.71196, 5.9, 3.9, -9.71196, 2.9, 1.9, -9.71196, 3.4, 1.9, -9.71196, 4.9, 3.4, -9.71196, 6.9, 3.9, -9.71196, 8.9, 4.9, -9.71196, 9.4, 4.9, -9.71196, 16.4, 6.9, -9.71196, 16.9, 6.9, -9.71196, 13.9, 11.9, -9.71196, 4.9, 15.4, -9.71196, 4.9, 14.9, -9.71196, 2.9, 7.9, -9.71196, 12.9, 10.9, -9.71196, 12.9, 36.4, -9.71196, 2.9, 37.4, -9.71196, 4.9, 38.9, -9.71196, 4.9, 38.9, -9.71196, 1.9, 39.9, -9.71196, 0.900002, 46.9, -9.71196, 0.900002, 46.9, -9.71196, -5.1, 36.9, -9.71196, -5.1, 0.899998, -9.71196, 2.9, -3.1, -9.71196, 2.4, -2.6, -9.71196, 4.9, 0.899998, -9.71196, 0.900002, -3.1, -9.71196, -1.1, 1.9, -6.71196, 1.4, 1.9, -6.71196, 2.4, 2.9, -6.71196, 2.4, 2.9, -6.71196, 1.4, -37.1, -9.71196, 2.9, -37.1, -9.71196, 5.9, -36.1, -9.71196, 4.9, -14.6, -9.71196, 4.9, -14.6, -9.71196, 6.9, -11.6, -9.71196, 6.9, -11.6, -9.71196, 4.9, -47.1, -9.71196, 2.9, -47.1, -9.71196, 12.9, -37.1, -9.71196, 12.9, -9.1, -9.71196, 12.9, -9.1, -9.71196, 6.9, -19.1, -9.71196, 6.9, -19.1, -9.71196, 12.9, 2.9, -9.71196, 9.4, -3.1, -9.71196, 6.9, -3.1, -9.71196, 12.9, 2.9, -9.71196, 12.9, 4.9, -9.71196, 36.9, 6.9, -9.71196, 36.9)
@@ -141,13 +138,6 @@ transform = Transform3D(-5.96046e-08, 0, 1, 0, 1, 2.98023e-08, -1, 0, -2.98023e-
 use_collision = true
 size = Vector3(0.257359, 3.04004, 5.15122)
 metadata/_edit_lock_ = true
-
-[node name="NavigationDebugVisualizer" type="Node3D" parent="."]
-script = ExtResource("26_nav_debug")
-show_nav_regions = false
-
-[node name="NavigationLinkVisualizer" type="Node3D" parent="."]
-script = ExtResource("32_nav_link_vis")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1")
@@ -568,9 +558,6 @@ script = ExtResource("27_schedule_manager")
 
 [node name="WaypointNetworkManager" type="Node" parent="GameManagement"]
 script = ExtResource("29_waypoint_network")
-
-[node name="NavigationSetupManager" type="Node" parent="GameManagement"]
-script = ExtResource("30_nav_setup")
 
 [node name="UIOverlay" type="CanvasLayer" parent="."]
 

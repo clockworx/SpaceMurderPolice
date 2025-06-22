@@ -30,7 +30,7 @@ enum MovementState {
 @export var return_to_patrol_speed: float = 3.0
 
 @export_group("Movement System")
-@export var use_navmesh: bool = false
+@export var use_direct_movement: bool = true
 
 @export_group("Movement")
 @export var walk_speed: float = 2.0
@@ -121,10 +121,7 @@ func _ready():
     collision_mask = 1   # Collide with environment
     
     # Initialize movement system
-    if use_navmesh:
-        movement_system = NavMeshMovement.new(self)
-    else:
-        movement_system = DirectMovement.new(self)
+    movement_system = DirectMovement.new(self)
     
     add_child(movement_system)
     movement_system.movement_completed.connect(_on_movement_completed)

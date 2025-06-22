@@ -6,11 +6,11 @@ class_name NPCBase
 
 # Movement states
 enum MovementState {
-	PATROL,  # Move between waypoints or wander
-	IDLE,    # Stop at current position
-	TALK,     # Face toward a target position
-	INVESTIGATE,  # Stop and look around when player detected
-	RETURN_TO_PATROL  # Go back to waypoint route after investigation
+    PATROL,  # Move between waypoints or wander
+    IDLE,    # Stop at current position
+    TALK,     # Face toward a target position
+    INVESTIGATE,  # Stop and look around when player detected
+    RETURN_TO_PATROL  # Go back to waypoint route after investigation
 }
 
 @export_group("NPC Properties")
@@ -20,16 +20,16 @@ enum MovementState {
 @export var is_suspicious: bool = false
 @export var has_alibi: bool = true
 @export var can_be_saboteur: bool = false:  # For NPCs that can switch modes
-	set(value):
-		can_be_saboteur = value
-		if not value:
-			# Disable all saboteur features when can_be_saboteur is turned off
-			enable_saboteur_behavior = false
-			enable_sound_detection = false
-			if show_sound_detection_area and sound_detection_sphere:
-				sound_detection_sphere.visible = false
-		if Engine.is_editor_hint():
-			notify_property_list_changed()
+    set(value):
+        can_be_saboteur = value
+        if not value:
+            # Disable all saboteur features when can_be_saboteur is turned off
+            enable_saboteur_behavior = false
+            enable_sound_detection = false
+            if show_sound_detection_area and sound_detection_sphere:
+                sound_detection_sphere.visible = false
+        if Engine.is_editor_hint():
+            notify_property_list_changed()
 
 @export_group("Saboteur Mode")
 @export var enable_saboteur_behavior: bool = false
@@ -45,14 +45,14 @@ enum MovementState {
 @export var running_sound_radius_multiplier: float = 1.5  # 150% of normal radius when running
 @export var sound_investigation_duration: float = 2.0
 @export var show_sound_detection_area: bool = false:
-	set(value):
-		show_sound_detection_area = value
-		if Engine.is_editor_hint():
-			return
-		if value and not sound_detection_sphere:
-			_create_sound_detection_visualization()
-		elif sound_detection_sphere:
-			sound_detection_sphere.visible = value
+    set(value):
+        show_sound_detection_area = value
+        if Engine.is_editor_hint():
+            return
+        if value and not sound_detection_sphere:
+            _create_sound_detection_visualization()
+        elif sound_detection_sphere:
+            sound_detection_sphere.visible = value
 
 @export_group("Movement")
 @export var walk_speed: float = 2.0
@@ -66,13 +66,13 @@ enum MovementState {
 @export_group("Schedule")
 @export var use_schedule: bool = false  # Enable schedule-based movement
 @export var current_scheduled_room: String = "":  # Display current scheduled room
-	get:
-		if schedule_manager:
-			var room = schedule_manager.get_npc_scheduled_room(npc_name)
-			return schedule_manager.get_room_name(room)
-		return ""
-	set(value):
-		pass  # Read-only
+    get:
+        if schedule_manager:
+            var room = schedule_manager.get_npc_scheduled_room(npc_name)
+            return schedule_manager.get_room_name(room)
+        return ""
+    set(value):
+        pass  # Read-only
 
 @export_group("Waypoint Settings")
 @export var use_waypoints: bool = false
@@ -82,10 +82,10 @@ enum MovementState {
 @export var pause_duration_min: float = 2.0
 @export var pause_duration_max: float = 5.0
 @export var show_current_waypoint_index: int = -1:  # Read-only display of current waypoint
-	get:
-		return current_waypoint_index
-	set(value):
-		pass  # Read-only
+    get:
+        return current_waypoint_index
+    set(value):
+        pass  # Read-only
 
 @export_group("State Settings")
 @export var current_state: MovementState = MovementState.PATROL
@@ -96,8 +96,7 @@ enum MovementState {
 @export var talk_trigger_distance: float = 2.0  # Distance to face player
 
 @export_group("Movement System")
-@export var use_navmesh: bool = true  # Default to NavMesh
-@export var use_hybrid_movement: bool = false  # Use hybrid system that switches between Direct and NavMesh
+@export var use_waypoint_movement: bool = true  # Use pure waypoint-based movement
 
 @export_group("Interaction")
 @export var interaction_distance: float = 3.0
@@ -106,27 +105,27 @@ enum MovementState {
 @export_group("Line of Sight Detection")
 @export var enable_los_detection: bool = true
 @export var detection_range: float = 10.0:  # Maximum detection distance
-	set(value):
-		detection_range = value
-		if vision_cone_mesh:
-			_update_vision_cone_mesh()
+    set(value):
+        detection_range = value
+        if vision_cone_mesh:
+            _update_vision_cone_mesh()
 @export var detection_angle: float = 45.0:  # Half angle of vision cone (degrees)
-	set(value):
-		detection_angle = value
-		if vision_cone_mesh:
-			_update_vision_cone_mesh()
+    set(value):
+        detection_angle = value
+        if vision_cone_mesh:
+            _update_vision_cone_mesh()
 @export var show_detection_indicator: bool = true:
-	set(value):
-		show_detection_indicator = value
-		if detection_indicator:
-			detection_indicator.visible = value
+    set(value):
+        show_detection_indicator = value
+        if detection_indicator:
+            detection_indicator.visible = value
 @export var show_vision_cone: bool = false:  # Debug visualization of vision cone
-	set(value):
-		show_vision_cone = value
-		if vision_cone_mesh:
-			vision_cone_mesh.visible = value
-		elif value:
-			_create_vision_cone()
+    set(value):
+        show_vision_cone = value
+        if vision_cone_mesh:
+            vision_cone_mesh.visible = value
+        elif value:
+            _create_vision_cone()
 @export var detection_indicator_color: Color = Color.RED
 @export var undetected_indicator_color: Color = Color.GREEN
 
@@ -193,1277 +192,1378 @@ var sound_detected: bool = false
 var is_investigating_sound: bool = false
 var sound_waypoint_debug: MeshInstance3D  # Debug sphere for sound investigation point
 
-# Simple movement system
-var nav_agent: NavigationAgent3D
+# Simple waypoint movement system
 var is_moving: bool = false
 var movement_speed: float = 3.0
 var target_position: Vector3
+
+# Movement tracking for visualization
+var current_target_indicator: MeshInstance3D
+var current_path_line: MeshInstance3D
+var last_visualized_target: Vector3 = Vector3.ZERO
 
 # Path visualization
 var path_line: Node3D
 var path_spheres: Array[MeshInstance3D] = []
 
-# Navigation variables (for compatibility with debug UI)
-var navigation_path: Array = []
-var navigation_path_index: int = 0
+# Waypoint navigation variables
+var waypoint_path: Array[Vector3] = []
+var waypoint_path_index: int = 0
 
 func _ready():
-	if Engine.is_editor_hint():
-		return
-		
-	collision_layer = 2  # Interactable layer
-	collision_mask = 1   # Collide with environment
-	
-	# Add to npcs group for easy finding
-	add_to_group("npcs")
-	
-	# Initialize simple movement system
-	_setup_navigation()
-	
-	# Ensure saboteur features are disabled if can_be_saboteur is false
-	if not can_be_saboteur:
-		enable_saboteur_behavior = false
-		enable_sound_detection = false
-	
-	# Clean up any existing detection indicator if it shouldn't be shown
-	if not show_detection_indicator:
-		var existing_indicator = get_node_or_null("DetectionIndicator")
-		if existing_indicator:
-			existing_indicator.queue_free()
-	
-	# Ensure physics processing is enabled
-	set_physics_process(true)
-	
-	initial_position = global_position
-	current_target = global_position
-	last_position = global_position
-	
-	# Start with a short idle
-	idle_timer = 0.5
-	is_idle = true
-	
-	# Add to NPC group
-	add_to_group("npcs")
-	
-	# Update name and role labels to match exported properties
-	var name_label = get_node_or_null("Head/NameLabel")
-	if name_label:
-		name_label.text = npc_name
-	
-	var role_label = get_node_or_null("Head/RoleLabel")
-	if role_label:
-		role_label.text = role
-	
-	# Get relationship manager
-	relationship_manager = get_tree().get_first_node_in_group("relationship_manager")
-	
-	# Get schedule manager
-	schedule_manager = get_tree().get_first_node_in_group("schedule_manager")
-	
-	# Get waypoint network manager
-	waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
-	
-	# Create face indicator
-	_create_face_indicator()
-	if not relationship_manager:
-		relationship_manager = RelationshipManager.new()
-		relationship_manager.add_to_group("relationship_manager")
-		get_tree().root.add_child.call_deferred(relationship_manager)
-	
-	# Create relationship indicator
-	_create_relationship_indicator()
-	
-	# Create state label for debugging
-	_create_state_label()
-	
-	# Create line of sight detection system
-	_create_detection_system()
-	
-	# Ensure detection indicator visibility matches the setting
-	if detection_indicator:
-		detection_indicator.visible = show_detection_indicator
-	
-	# Create sound detection visualization
-	_create_sound_detection_visualization()
-	
-	# Initialize waypoint system if enabled
-	if use_waypoints and waypoint_nodes.size() > 0:
-		_update_waypoint_target()
-		# Debug: NPC initialized with waypoints
-		#print(npc_name + " initialized with ", waypoint_nodes.size(), " waypoint nodes")
-	
-	# Connect to relationship changes if manager exists
-	if relationship_manager and relationship_manager.has_signal("relationship_changed"):
-		relationship_manager.relationship_changed.connect(_on_relationship_changed)
-	
-	# Connect to schedule changes if manager exists
-	if schedule_manager and schedule_manager.has_signal("schedule_changed"):
-		schedule_manager.schedule_changed.connect(_on_schedule_changed)
-	
-	# Debug: NPC initialized
-	#print(npc_name + " initialized at position: " + str(global_position))
-	
-	# Setup keyboard navigation test
-	if npc_name == "Dr. Marcus Webb":
-		print("=== NAVIGATION TEST READY FOR ", npc_name, " ===")
-		set_process_input(true)
+    if Engine.is_editor_hint():
+        return
+        
+    collision_layer = 2  # Interactable layer
+    collision_mask = 1   # Collide with environment
+    
+    # Add to npcs group for easy finding
+    add_to_group("npcs")
+    
+    # Initialize waypoint movement system
+    _setup_waypoint_movement()
+    
+    # Ensure saboteur features are disabled if can_be_saboteur is false
+    if not can_be_saboteur:
+        enable_saboteur_behavior = false
+        enable_sound_detection = false
+    
+    # Clean up any existing detection indicator if it shouldn't be shown
+    if not show_detection_indicator:
+        var existing_indicator = get_node_or_null("DetectionIndicator")
+        if existing_indicator:
+            existing_indicator.queue_free()
+    
+    # Ensure physics processing is enabled
+    set_physics_process(true)
+    
+    initial_position = global_position
+    current_target = global_position
+    last_position = global_position
+    
+    # Start with a short idle
+    idle_timer = 0.5
+    is_idle = true
+    
+    # Add to NPC group
+    add_to_group("npcs")
+    
+    # Update name and role labels to match exported properties
+    var name_label = get_node_or_null("Head/NameLabel")
+    if name_label:
+        name_label.text = npc_name
+    
+    var role_label = get_node_or_null("Head/RoleLabel")
+    if role_label:
+        role_label.text = role
+    
+    # Get relationship manager
+    relationship_manager = get_tree().get_first_node_in_group("relationship_manager")
+    
+    # Get schedule manager
+    schedule_manager = get_tree().get_first_node_in_group("schedule_manager")
+    
+    # Get waypoint network manager
+    waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
+    
+    # Create face indicator
+    _create_face_indicator()
+    if not relationship_manager:
+        relationship_manager = RelationshipManager.new()
+        relationship_manager.add_to_group("relationship_manager")
+        get_tree().root.add_child.call_deferred(relationship_manager)
+    
+    # Create relationship indicator
+    _create_relationship_indicator()
+    
+    # Create state label for debugging
+    _create_state_label()
+    
+    # Create line of sight detection system
+    _create_detection_system()
+    
+    # Ensure detection indicator visibility matches the setting
+    if detection_indicator:
+        detection_indicator.visible = show_detection_indicator
+    
+    # Create sound detection visualization
+    _create_sound_detection_visualization()
+    
+    # Initialize waypoint system if enabled
+    if use_waypoints and waypoint_nodes.size() > 0:
+        _update_waypoint_target()
+        # Debug: NPC initialized with waypoints
+        #print(npc_name + " initialized with ", waypoint_nodes.size(), " waypoint nodes")
+    
+    # Connect to relationship changes if manager exists
+    if relationship_manager and relationship_manager.has_signal("relationship_changed"):
+        relationship_manager.relationship_changed.connect(_on_relationship_changed)
+    
+    # Connect to schedule changes if manager exists
+    if schedule_manager and schedule_manager.has_signal("schedule_changed"):
+        schedule_manager.schedule_changed.connect(_on_schedule_changed)
+    
+    # Debug: NPC initialized
+    #print(npc_name + " initialized at position: " + str(global_position))
+    
+    # Setup keyboard navigation test
+    if npc_name == "Dr. Marcus Webb":
+        # print("=== NAVIGATION TEST READY FOR ", npc_name, " ===")
+        set_process_input(true)
 
 func _input(event):
-	# Test navigation with keyboard
-	if npc_name == "Dr. Marcus Webb" and event is InputEventKey and event.pressed:
-		match event.keycode:
-			KEY_1:
-				navigate_to_room("Laboratory_Waypoint")
-			KEY_2:
-				navigate_to_room("MedicalBay_Waypoint")
-			KEY_3:
-				navigate_to_room("Security_Waypoint")
-			KEY_4:
-				navigate_to_room("Engineering_Waypoint")
-			KEY_5:
-				navigate_to_room("CrewQuarters_Waypoint")
-			KEY_6:
-				navigate_to_room("Cafeteria_Waypoint")
-			KEY_P:
-				# Toggle NavigationServer3D debug visualization
-				var enabled = NavigationServer3D.get_debug_enabled()
-				NavigationServer3D.set_debug_enabled(not enabled)
-				print("Navigation debug visualization: ", "ON" if not enabled else "OFF")
+    # Test navigation with keyboard
+    if npc_name == "Dr. Marcus Webb" and event is InputEventKey and event.pressed:
+        match event.keycode:
+            KEY_1:
+                navigate_to_room("Laboratory_Center")
+            KEY_2:
+                navigate_to_room("MedicalBay_Center")
+            KEY_3:
+                navigate_to_room("Security_Center")
+            KEY_4:
+                navigate_to_room("Engineering_Center")
+            KEY_5:
+                navigate_to_room("CrewQuarters_Center")
+            KEY_6:
+                navigate_to_room("Cafeteria_Center")
+            KEY_P:
+                # Toggle waypoint path visualization
+                _visualize_waypoint_path()
+                # print("Waypoint path visualization updated")
 
 func _physics_process(delta):
-	if Engine.is_editor_hint():
-		return
-	
-	# Handle dialogue facing
-	if is_talking:
-		if face_player_when_talking:
-			var player = get_tree().get_first_node_in_group("player")
-			if player:
-				var look_position = player.global_position
-				look_position.y = global_position.y
-				look_at(look_position, Vector3.UP)
-				rotation.x = 0
-				rotation.z = 0
-		return
-	
-	# Handle movement
-	if is_moving and nav_agent:
-		_handle_movement(delta)
-	else:
-		# Apply gravity when not moving
-		if not is_on_floor():
-			velocity.y -= 9.8 * delta
-		else:
-			velocity.y = 0
-		velocity.x = 0
-		velocity.z = 0
-		move_and_slide()
+    if Engine.is_editor_hint():
+        return
+    
+    # Handle dialogue facing
+    if is_talking:
+        if face_player_when_talking:
+            var player = get_tree().get_first_node_in_group("player")
+            if player:
+                var look_position = player.global_position
+                look_position.y = global_position.y
+                look_at(look_position, Vector3.UP)
+                rotation.x = 0
+                rotation.z = 0
+        return
+    
+    # Handle movement
+    if is_moving:
+        _handle_waypoint_movement(delta)
+    else:
+        # Apply gravity when not moving
+        if not is_on_floor():
+            velocity.y -= 9.8 * delta
+        else:
+            velocity.y = 0
+        velocity.x = 0
+        velocity.z = 0
+        move_and_slide()
 
-# Simple navigation system
-func _setup_navigation():
-	# Find existing NavigationAgent3D or create one
-	nav_agent = get_node_or_null("NavigationAgent3D")
-	if not nav_agent:
-		nav_agent = NavigationAgent3D.new()
-		add_child(nav_agent)
-	
-	# Configure navigation agent for door navigation
-	nav_agent.path_desired_distance = 0.5
-	nav_agent.target_desired_distance = 0.5
-	nav_agent.max_speed = movement_speed
-	nav_agent.debug_enabled = true
-	nav_agent.use_3d_avoidance = false  # Simpler movement for single NPC testing
-	nav_agent.neighbor_distance = 0.0   # Disable neighbor avoidance for cleaner door transitions
-	
-	# Connect signals
-	nav_agent.navigation_finished.connect(_on_navigation_finished)
-	
-	print(npc_name, ": Navigation system ready - Use keys 1-6 to test movement, P for debug visualization")
+# Simple waypoint movement system
+func _setup_waypoint_movement():
+    # print(npc_name, ": Waypoint movement system ready - Use keys 1-6 to test movement")
+    pass
 
 func navigate_to_room(room_waypoint_name: String):
-	print(npc_name, ": Navigating to ", room_waypoint_name)
-	
-	# Find the waypoint
-	var waypoint = get_tree().get_first_node_in_group(room_waypoint_name)
-	if not waypoint:
-		print("  ERROR: Waypoint not found: ", room_waypoint_name)
-		return false
-	
-	# Set target and start moving
-	target_position = waypoint.global_position
-	nav_agent.target_position = target_position
-	is_moving = true
-	
-	print("  Target position: ", target_position)
-	
-	# Wait a frame for navigation to update, then visualize path
-	await get_tree().process_frame
-	_visualize_path()
-	
-	return true
+    # print(npc_name, ": Navigating to ", room_waypoint_name)
+    
+    # Use waypoint network manager to get path
+    if not waypoint_network_manager:
+        waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
+    
+    if not waypoint_network_manager:
+        # print("  ERROR: No waypoint network manager found")
+        return false
+    
+    # Get path from current position to target room
+    var path = waypoint_network_manager.get_path_to_room(global_position, room_waypoint_name)
+    if path.is_empty():
+        # print("  ERROR: No path found to ", room_waypoint_name)
+        return false
+    
+    # Set up waypoint path
+    waypoint_path = path
+    waypoint_path_index = 0
+    is_moving = true
+    
+    # print("  Path has ", waypoint_path.size(), " waypoints")
+    _visualize_waypoint_path()
+    
+    return true
 
-func _handle_movement(delta):
-	if not nav_agent or nav_agent.is_navigation_finished():
-		is_moving = false
-		return
-	
-	# Get next position from navigation agent
-	var next_position = nav_agent.get_next_path_position()
-	var direction = (next_position - global_position).normalized()
-	
-	# Move towards target
-	velocity.x = direction.x * movement_speed
-	velocity.z = direction.z * movement_speed
-	
-	# Apply gravity
-	if not is_on_floor():
-		velocity.y -= 9.8 * delta
-	else:
-		velocity.y = 0
-	
-	move_and_slide()
-	
-	# Rotate to face movement direction
-	if direction.length() > 0.1:
-		var target_rotation = atan2(direction.x, direction.z)
-		rotation.y = lerp_angle(rotation.y, target_rotation, 5.0 * delta)
+func _handle_waypoint_movement(delta):
+    if waypoint_path.is_empty() or waypoint_path_index >= waypoint_path.size():
+        is_moving = false
+        _on_waypoint_navigation_finished()
+        return
+    
+    # Get current target waypoint
+    var current_waypoint = waypoint_path[waypoint_path_index]
+    var direction = (current_waypoint - global_position).normalized()
+    
+    # Update current target visualization
+    _update_current_target_visualization(current_waypoint)
+    
+    # Check if we've reached current waypoint
+    var distance_to_waypoint = global_position.distance_to(current_waypoint)
+    if distance_to_waypoint <= waypoint_reach_distance:
+        waypoint_path_index += 1
+        if waypoint_path_index >= waypoint_path.size():
+            is_moving = false
+            _on_waypoint_navigation_finished()
+            return
+        # Move to next waypoint
+        current_waypoint = waypoint_path[waypoint_path_index]
+        direction = (current_waypoint - global_position).normalized()
+        _update_current_target_visualization(current_waypoint)
+    
+    # Move towards target
+    velocity.x = direction.x * movement_speed
+    velocity.z = direction.z * movement_speed
+    
+    # Apply gravity
+    if not is_on_floor():
+        velocity.y -= 9.8 * delta
+    else:
+        velocity.y = 0
+    
+    move_and_slide()
+    
+    # Rotate to face movement direction
+    if direction.length() > 0.1:
+        var target_rotation = atan2(direction.x, direction.z)
+        rotation.y = lerp_angle(rotation.y, target_rotation, 5.0 * delta)
 
-func _on_navigation_finished():
-	print(npc_name, ": Navigation completed!")
-	is_moving = false
-	velocity = Vector3.ZERO
-	_clear_path_visualization()
+func _on_waypoint_navigation_finished():
+    # print(npc_name, ": Waypoint navigation completed!")
+    is_moving = false
+    velocity = Vector3.ZERO
+    _clear_path_visualization()
 
-func _visualize_path():
-	# Clear existing visualization
-	_clear_path_visualization()
-	
-	# Get the current navigation path
-	var path = nav_agent.get_current_navigation_path()
-	if path.size() == 0:
-		print("  No path available for visualization")
-		return
-	
-	print("  Path has ", path.size(), " points:")
-	for i in range(path.size()):
-		print("    Point ", i, ": ", path[i])
-	
-	# Check for navigation links in the path
-	_check_navigation_links_in_path(path)
-	
-	# Create path spheres at each point
-	for i in range(path.size()):
-		var sphere = MeshInstance3D.new()
-		sphere.mesh = SphereMesh.new()
-		sphere.mesh.radius = 0.2
-		sphere.mesh.height = 0.4
-		
-		# Create material - red for start, green for end, yellow for middle, blue for nav links
-		var material = StandardMaterial3D.new()
-		if i == 0:
-			material.albedo_color = Color.RED  # Start point
-		elif i == path.size() - 1:
-			material.albedo_color = Color.GREEN  # End point
-		elif _is_near_navigation_link(path[i]):
-			material.albedo_color = Color.BLUE  # Navigation link points
-		else:
-			material.albedo_color = Color.YELLOW  # Path points
-		
-		material.emission_enabled = true
-		material.emission = material.albedo_color
-		material.emission_energy = 0.5
-		sphere.material_override = material
-		
-		# Position the sphere
-		get_tree().current_scene.add_child(sphere)
-		sphere.global_position = path[i]
-		path_spheres.append(sphere)
-	
-	# Store path for debug UI compatibility
-	navigation_path.clear()
-	for point in path:
-		navigation_path.append(point)
-	navigation_path_index = 0
+func _visualize_waypoint_path():
+    # Clear existing visualization
+    _clear_path_visualization()
+    
+    if waypoint_path.is_empty():
+        # print("  No waypoint path available for visualization")
+        return
+    
+    # print("  Waypoint path has ", waypoint_path.size(), " points:")
+    # for i in range(waypoint_path.size()):
+        # print("    Point ", i, ": ", waypoint_path[i])
+    
+    # Create path spheres at each waypoint
+    for i in range(waypoint_path.size()):
+        var sphere = MeshInstance3D.new()
+        sphere.mesh = SphereMesh.new()
+        sphere.mesh.radius = 0.5  # Larger spheres for better visibility
+        sphere.mesh.height = 1.0
+        
+        # Create material - red for start, green for end, blue for middle, purple for current target
+        var material = StandardMaterial3D.new()
+        if i == 0:
+            material.albedo_color = Color.RED  # Start point
+        elif i == waypoint_path.size() - 1:
+            material.albedo_color = Color.GREEN  # End point
+        elif i == waypoint_path_index:
+            material.albedo_color = Color.PURPLE  # Current target waypoint
+        else:
+            material.albedo_color = Color.BLUE  # Waypoint points
+        
+        material.emission_enabled = true
+        material.emission = material.albedo_color
+        material.emission_energy = 1.0  # Brighter emission
+        material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        material.albedo_color.a = 0.8  # Slightly transparent
+        sphere.material_override = material
+        
+        # Position the sphere higher for better visibility
+        get_tree().current_scene.add_child(sphere)
+        sphere.global_position = waypoint_path[i] + Vector3(0, 1.0, 0)  # Raise 1 unit up
+        path_spheres.append(sphere)
+        
+        # Add a label showing waypoint number
+        var label = Label3D.new()
+        label.text = str(i + 1)
+        label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+        label.no_depth_test = true
+        label.font_size = 24
+        label.outline_size = 4
+        label.position.y = 1.2  # Above the sphere
+        sphere.add_child(label)
+    
+    # Create lines between waypoints
+    for i in range(waypoint_path.size() - 1):
+        var line_mesh = MeshInstance3D.new()
+        var array_mesh = ArrayMesh.new()
+        var arrays = []
+        arrays.resize(Mesh.ARRAY_MAX)
+        
+        var vertices = PackedVector3Array()
+        var start_pos = waypoint_path[i] + Vector3(0, 1.0, 0)
+        var end_pos = waypoint_path[i + 1] + Vector3(0, 1.0, 0)
+        
+        # Create a thick line using multiple vertices
+        var direction = (end_pos - start_pos).normalized()
+        var perpendicular = Vector3.UP.cross(direction).normalized() * 0.1
+        
+        vertices.append(start_pos + perpendicular)
+        vertices.append(start_pos - perpendicular)
+        vertices.append(end_pos + perpendicular)
+        vertices.append(end_pos - perpendicular)
+        
+        var indices = PackedInt32Array([0, 1, 2, 1, 3, 2])
+        
+        arrays[Mesh.ARRAY_VERTEX] = vertices
+        arrays[Mesh.ARRAY_INDEX] = indices
+        
+        array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+        line_mesh.mesh = array_mesh
+        
+        # Create bright yellow material for lines
+        var line_material = StandardMaterial3D.new()
+        line_material.albedo_color = Color.YELLOW
+        line_material.emission_enabled = true
+        line_material.emission = Color.YELLOW
+        line_material.emission_energy = 0.8
+        line_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        line_material.albedo_color.a = 0.9
+        line_mesh.material_override = line_material
+        
+        get_tree().current_scene.add_child(line_mesh)
+        path_spheres.append(line_mesh)  # Add to cleanup list
 
-func _check_navigation_links_in_path(path: PackedVector3Array):
-	# Find all navigation links and check if they're being used
-	var nav_links = get_tree().get_nodes_in_group("navigation_links")
-	var links_used = 0
-	
-	for link in nav_links:
-		if link is NavigationLink3D:
-			var link_global_start = link.global_position + link.start_position
-			var link_global_end = link.global_position + link.end_position
-			
-			# Check if any path points are near this navigation link
-			for point in path:
-				if point.distance_to(link_global_start) < 1.0 or point.distance_to(link_global_end) < 1.0:
-					links_used += 1
-					print("  Using NavigationLink3D: ", link.get_parent().name if link.get_parent() else "Unknown")
-					break
-	
-	print("  Navigation links used: ", links_used, "/", nav_links.size())
-
-func _is_near_navigation_link(point: Vector3) -> bool:
-	# Check if a point is near any navigation link
-	var nav_links = get_tree().get_nodes_in_group("navigation_links")
-	
-	for link in nav_links:
-		if link is NavigationLink3D:
-			var link_global_start = link.global_position + link.start_position
-			var link_global_end = link.global_position + link.end_position
-			
-			if point.distance_to(link_global_start) < 1.0 or point.distance_to(link_global_end) < 1.0:
-				return true
-	
-	return false
 
 func _clear_path_visualization():
-	# Remove all path spheres
-	for sphere in path_spheres:
-		if is_instance_valid(sphere):
-			sphere.queue_free()
-	path_spheres.clear()
-	
-	# Clear navigation path
-	navigation_path.clear()
-	navigation_path_index = 0
+    # Remove all path spheres
+    for sphere in path_spheres:
+        if is_instance_valid(sphere):
+            sphere.queue_free()
+    path_spheres.clear()
+    
+    # Clear current target visualization
+    if current_target_indicator:
+        current_target_indicator.queue_free()
+        current_target_indicator = null
+    
+    if current_path_line:
+        current_path_line.queue_free()
+        current_path_line = null
+
+func _update_current_target_visualization(target_pos: Vector3):
+    # Ensure we're in the scene tree
+    if not is_inside_tree():
+        return
+    
+    # Only update if target has changed significantly
+    if last_visualized_target.distance_to(target_pos) < 0.1:
+        return
+    
+    last_visualized_target = target_pos
+        
+    # Remove old visualizations immediately
+    if current_target_indicator and is_instance_valid(current_target_indicator):
+        if current_target_indicator.get_parent():
+            current_target_indicator.get_parent().remove_child(current_target_indicator)
+        current_target_indicator.queue_free()
+        current_target_indicator = null
+    if current_path_line and is_instance_valid(current_path_line):
+        if current_path_line.get_parent():
+            current_path_line.get_parent().remove_child(current_path_line)
+        current_path_line.queue_free()
+        current_path_line = null
+    
+    # print("Creating red line from ", global_position, " to ", target_pos)
+    
+    # Clean up old indicator if it exists
+    if current_target_indicator and is_instance_valid(current_target_indicator):
+        current_target_indicator.queue_free()
+        current_target_indicator = null
+    
+    # Create target indicator - bright orange sphere
+    current_target_indicator = MeshInstance3D.new()
+    current_target_indicator.mesh = SphereMesh.new()
+    current_target_indicator.mesh.radius = 0.6
+    current_target_indicator.mesh.height = 1.2
+    
+    var material = StandardMaterial3D.new()
+    material.albedo_color = Color.ORANGE
+    material.emission_enabled = true
+    material.emission = Color.ORANGE
+    material.emission_energy = 2.0
+    current_target_indicator.material_override = material
+    
+    if current_target_indicator.get_parent():
+        current_target_indicator.get_parent().remove_child(current_target_indicator)
+    get_tree().current_scene.add_child(current_target_indicator)
+    current_target_indicator.global_position = target_pos + Vector3(0, 1.5, 0)
+    
+    # Clean up old path line if it exists  
+    if current_path_line and is_instance_valid(current_path_line):
+        current_path_line.queue_free()
+        current_path_line = null
+    
+    # Create RED LINE using a simple cylinder approach
+    current_path_line = MeshInstance3D.new()
+    current_path_line.mesh = CylinderMesh.new()
+    current_path_line.mesh.top_radius = 0.2
+    current_path_line.mesh.bottom_radius = 0.2
+    
+    var start_pos = global_position + Vector3(0, 1.0, 0)
+    var end_pos = target_pos + Vector3(0, 1.0, 0)
+    var distance = start_pos.distance_to(end_pos)
+    var midpoint = (start_pos + end_pos) / 2.0
+    
+    current_path_line.mesh.height = distance
+    
+    # Add the line to the scene before setting position
+    if current_path_line.get_parent():
+        current_path_line.get_parent().remove_child(current_path_line)
+    get_tree().current_scene.add_child(current_path_line)
+    current_path_line.global_position = midpoint
+    
+    # Point the cylinder toward the target
+    var direction = (end_pos - start_pos).normalized()
+    if direction.length() > 0.1:
+        # Calculate the rotation needed to point the cylinder along the direction
+        var transform_basis = Basis.looking_at(direction, Vector3.UP)
+        current_path_line.transform.basis = transform_basis
+        # Rotate cylinder to align with its length axis (cylinder points along Y by default)
+        current_path_line.rotate_object_local(Vector3.RIGHT, PI/2)
+    
+    # Bright red material for the line
+    var line_material = StandardMaterial3D.new()
+    line_material.albedo_color = Color.RED
+    line_material.emission_enabled = true
+    line_material.emission = Color.RED
+    line_material.emission_energy = 3.0  # Very bright
+    line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    current_path_line.material_override = line_material
+    
+    # Check if already has a parent before adding
+    if current_path_line.get_parent():
+        current_path_line.get_parent().remove_child(current_path_line)
+    get_tree().current_scene.add_child(current_path_line)
+    # print("Red line created with distance: ", distance)
 
 func _start_idle():
-	is_idle = true
-	idle_timer = randf_range(idle_time_min, idle_time_max)
-	velocity = Vector3.ZERO
+    is_idle = true
+    idle_timer = randf_range(idle_time_min, idle_time_max)
+    velocity = Vector3.ZERO
 
 func _choose_new_target():
-	# Simple random wandering within radius
-	var random_offset = Vector3(
-		randf_range(-wander_radius, wander_radius),
-		0,
-		randf_range(-wander_radius, wander_radius)
-	)
-	
-	current_target = initial_position + random_offset
-	current_target.y = global_position.y  # Keep same height
-	
-	is_idle = false
+    # Simple random wandering within radius
+    var random_offset = Vector3(
+        randf_range(-wander_radius, wander_radius),
+        0,
+        randf_range(-wander_radius, wander_radius)
+    )
+    
+    current_target = initial_position + random_offset
+    current_target.y = global_position.y  # Keep same height
+    
+    is_idle = false
 
 # Movement system wrapper methods
 func move_to_position(position: Vector3) -> void:
-	if nav_agent:
-		target_position = position
-		nav_agent.target_position = target_position
-		is_moving = true
-		print(npc_name, ": Moving to position ", position)
+    # For direct position movement, create a simple path
+    waypoint_path = [position]
+    waypoint_path_index = 0
+    is_moving = true
+    # print(npc_name, ": Moving to position ", position)
 
 func stop_movement() -> void:
-	is_moving = false
-	velocity = Vector3.ZERO
+    is_moving = false
+    velocity = Vector3.ZERO
 
 func force_move_to_position(position: Vector3) -> void:
-	move_to_position(position)
+    move_to_position(position)
 
 func _re_enable_waypoints(delay: float = 0.0):
-	if delay > 0:
-		await get_tree().create_timer(delay).timeout
-	use_waypoints = true
+    if delay > 0:
+        await get_tree().create_timer(delay).timeout
+    use_waypoints = true
 
 # Movement system signal handlers
 # Movement callbacks disabled - NPCs are stationary
 
 # Waypoint callbacks disabled - NPCs are stationary
-	
-	# if waypoint_guided_nav or not use_navmesh:
-	#     return
-	# 
-	# print(npc_name + ": Runtime initialization of waypoint-guided navigation")
-	# 
-	# # Check if we have a NavMeshMovement system
-	# if movement_system and movement_system is NavMeshMovement:
-	#     var nav_agent = movement_system.nav_agent
-	#     if nav_agent:
-	#         # Find waypoint network manager if not already found
-	#         if not waypoint_network_manager:
-	#             waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
-	#         
-	#         # Create waypoint-guided navigation
-	#         waypoint_guided_nav = WaypointGuidedNavMesh.new(self, nav_agent)
-	#         add_child(waypoint_guided_nav)
-	#         waypoint_guided_nav.navigation_completed.connect(_on_waypoint_nav_completed)
-	#         waypoint_guided_nav.waypoint_reached.connect(_on_waypoint_reached)
-	#         print(npc_name + ": Runtime waypoint-guided navigation ready!")
-	#     else:
-	#         print(npc_name + ": ERROR - No NavigationAgent3D available for runtime init")
 
 func _create_relationship_indicator():
-	if relationship_indicator:
-		return
-		
-	relationship_indicator = Label3D.new()
-	relationship_indicator.name = "RelationshipIndicator"
-	relationship_indicator.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	relationship_indicator.no_depth_test = true
-	relationship_indicator.modulate = Color.WHITE
-	relationship_indicator.outline_modulate = Color.BLACK
-	relationship_indicator.outline_size = 2
-	relationship_indicator.font_size = 16
-	relationship_indicator.visible = false
-	
-	var head = get_node_or_null("Head")
-	if head:
-		head.add_child(relationship_indicator)
-		relationship_indicator.position.y = 0.3
-	else:
-		add_child(relationship_indicator)
-		relationship_indicator.position.y = 2.3
+    if relationship_indicator:
+        return
+        
+    relationship_indicator = Label3D.new()
+    relationship_indicator.name = "RelationshipIndicator"
+    relationship_indicator.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+    relationship_indicator.no_depth_test = true
+    relationship_indicator.modulate = Color.WHITE
+    relationship_indicator.outline_modulate = Color.BLACK
+    relationship_indicator.outline_size = 2
+    relationship_indicator.font_size = 16
+    relationship_indicator.visible = false
+    
+    var head = get_node_or_null("Head")
+    if head:
+        head.add_child(relationship_indicator)
+        relationship_indicator.position.y = 0.3
+    else:
+        add_child(relationship_indicator)
+        relationship_indicator.position.y = 2.3
 
 func _on_relationship_changed(character_name: String, new_level: int):
-	if character_name != npc_name:
-		return
-		
-	if not relationship_indicator:
-		return
-	
-	# Update indicator based on relationship level
-	match new_level:
-		-2:
-			relationship_indicator.text = "⚔️ Hostile"
-			relationship_indicator.modulate = Color.RED
-		-1:
-			relationship_indicator.text = "😠 Unfriendly"
-			relationship_indicator.modulate = Color.ORANGE
-		0:
-			relationship_indicator.text = "😐 Neutral"
-			relationship_indicator.modulate = Color.YELLOW
-		1:
-			relationship_indicator.text = "🙂 Friendly"
-			relationship_indicator.modulate = Color.LIGHT_GREEN
-		2:
-			relationship_indicator.text = "😊 Trusted"
-			relationship_indicator.modulate = Color.GREEN
-	
-	# Show indicator briefly
-	relationship_indicator.visible = true
-	await get_tree().create_timer(3.0).timeout
-	relationship_indicator.visible = false
+    if character_name != npc_name:
+        return
+        
+    if not relationship_indicator:
+        return
+    
+    # Update indicator based on relationship level
+    match new_level:
+        -2:
+            relationship_indicator.text = "⚔️ Hostile"
+            relationship_indicator.modulate = Color.RED
+        -1:
+            relationship_indicator.text = "😠 Unfriendly"
+            relationship_indicator.modulate = Color.ORANGE
+        0:
+            relationship_indicator.text = "😐 Neutral"
+            relationship_indicator.modulate = Color.YELLOW
+        1:
+            relationship_indicator.text = "🙂 Friendly"
+            relationship_indicator.modulate = Color.LIGHT_GREEN
+        2:
+            relationship_indicator.text = "😊 Trusted"
+            relationship_indicator.modulate = Color.GREEN
+    
+    # Show indicator briefly
+    relationship_indicator.visible = true
+    await get_tree().create_timer(3.0).timeout
+    relationship_indicator.visible = false
 
 # State handler functions removed - NPCs are stationary
 
 func interact():
-	# This is called when the player interacts with the NPC
-	if is_talking:
-		return
-	
-	# Switch to TALK state and face the player
-	var player = get_tree().get_first_node_in_group("player")
-	if player:
-		set_talk_state(player.global_position)
-	
-	is_talking = true
-	emit_signal("dialogue_started", self)
-	
-	# Open dialogue UI
-	var dialogue_ui = get_tree().get_first_node_in_group("dialogue_ui")
-	if dialogue_ui:
-		dialogue_ui.start_dialogue(self, initial_dialogue_id)
+    # This is called when the player interacts with the NPC
+    if is_talking:
+        return
+    
+    # Switch to TALK state and face the player
+    var player = get_tree().get_first_node_in_group("player")
+    if player:
+        set_talk_state(player.global_position)
+    
+    is_talking = true
+    emit_signal("dialogue_started", self)
+    
+    # Open dialogue UI
+    var dialogue_ui = get_tree().get_first_node_in_group("dialogue_ui")
+    if dialogue_ui:
+        dialogue_ui.start_dialogue(self, initial_dialogue_id)
 
 func end_dialogue():
-	is_talking = false
-	has_been_interviewed = true
-	emit_signal("dialogue_ended", self)
-	
-	# Return to previous state
-	resume_previous_state()
+    is_talking = false
+    has_been_interviewed = true
+    emit_signal("dialogue_ended", self)
+    
+    # Return to previous state
+    resume_previous_state()
 
 func get_interaction_prompt() -> String:
-	return "Talk to " + npc_name
+    return "Talk to " + npc_name
 
 func set_suspicious(suspicious: bool):
-	if is_suspicious != suspicious:
-		is_suspicious = suspicious
-		emit_signal("suspicion_changed", self, is_suspicious)
+    if is_suspicious != suspicious:
+        is_suspicious = suspicious
+        emit_signal("suspicion_changed", self, is_suspicious)
 
 func get_current_relationship_level() -> int:
-	if relationship_manager:
-		return relationship_manager.get_relationship(npc_name)
-	return 0
+    if relationship_manager:
+        return relationship_manager.get_relationship(npc_name)
+    return 0
 
 func _create_face_indicator():
-	if not show_face_indicator:
-		return
-	
-	match face_indicator_type:
-		"Cone":
-			_create_cone_indicator()
-		"Eyes":
-			_create_eye_indicators()
-		"Nose":
-			_create_nose_indicator()
-		"Arrow":
-			_create_arrow_indicator()
+    if not show_face_indicator:
+        return
+    
+    match face_indicator_type:
+        "Cone":
+            _create_cone_indicator()
+        "Eyes":
+            _create_eye_indicators()
+        "Nose":
+            _create_nose_indicator()
+        "Arrow":
+            _create_arrow_indicator()
 
 func _create_cone_indicator():
-	# Create the face indicator mesh
-	face_indicator_mesh = MeshInstance3D.new()
-	face_indicator_mesh.name = "FaceIndicator"
-	
-	# Create a cone mesh to show direction
-	var cone = CylinderMesh.new()
-	cone.top_radius = 0.0  # Makes it a cone
-	cone.bottom_radius = face_indicator_size
-	cone.height = face_indicator_size * 2
-	cone.radial_segments = 8
-	cone.rings = 1
-	
-	face_indicator_mesh.mesh = cone
-	
-	# Create material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = face_indicator_color
-	material.emission_enabled = true
-	material.emission = face_indicator_color
-	material.emission_energy = 0.3
-	material.no_depth_test = false  # Ensure it's occluded by geometry
-	material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
-	face_indicator_mesh.material_override = material
-	
-	# Position it in front of the character at head height (forward is -Z in Godot)
-	face_indicator_mesh.position = Vector3(0, 1.6, -0.5)
-	face_indicator_mesh.rotation_degrees = Vector3(90, 0, 0)  # Point forward
-	
-	add_child(face_indicator_mesh)
+    # Create the face indicator mesh
+    face_indicator_mesh = MeshInstance3D.new()
+    face_indicator_mesh.name = "FaceIndicator"
+    
+    # Create a cone mesh to show direction
+    var cone = CylinderMesh.new()
+    cone.top_radius = 0.0  # Makes it a cone
+    cone.bottom_radius = face_indicator_size
+    cone.height = face_indicator_size * 2
+    cone.radial_segments = 8
+    cone.rings = 1
+    
+    face_indicator_mesh.mesh = cone
+    
+    # Create material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = face_indicator_color
+    material.emission_enabled = true
+    material.emission = face_indicator_color
+    material.emission_energy = 0.3
+    material.no_depth_test = false  # Ensure it's occluded by geometry
+    material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+    face_indicator_mesh.material_override = material
+    
+    # Position it in front of the character at head height (forward is -Z in Godot)
+    face_indicator_mesh.position = Vector3(0, 1.6, -0.5)
+    face_indicator_mesh.rotation_degrees = Vector3(90, 0, 0)  # Point forward
+    
+    add_child(face_indicator_mesh)
 
 func _create_eye_indicators():
-	# Create two small spheres for eyes
-	var eye_distance = 0.1
-	var eye_size = 0.05
-	var eye_height = 1.7
-	var eye_forward = -0.4  # Forward is -Z in Godot
-	
-	for i in range(2):
-		var eye = MeshInstance3D.new()
-		eye.name = "Eye" + str(i + 1)
-		
-		var sphere = SphereMesh.new()
-		sphere.radial_segments = 8
-		sphere.rings = 4
-		sphere.radius = eye_size
-		sphere.height = eye_size * 2
-		
-		eye.mesh = sphere
-		
-		# Create glowing material
-		var mat = StandardMaterial3D.new()
-		mat.albedo_color = Color.WHITE
-		mat.emission_enabled = true
-		mat.emission = Color.WHITE
-		mat.emission_energy = 1.0
-		mat.no_depth_test = false  # Ensure it's occluded by geometry
-		eye.material_override = mat
-		
-		# Position eyes
-		var x_offset = eye_distance if i == 0 else -eye_distance
-		eye.position = Vector3(x_offset, eye_height, eye_forward)
-		
-		add_child(eye)
+    # Create two small spheres for eyes
+    var eye_distance = 0.1
+    var eye_size = 0.05
+    var eye_height = 1.7
+    var eye_forward = -0.4  # Forward is -Z in Godot
+    
+    for i in range(2):
+        var eye = MeshInstance3D.new()
+        eye.name = "Eye" + str(i + 1)
+        
+        var sphere = SphereMesh.new()
+        sphere.radial_segments = 8
+        sphere.rings = 4
+        sphere.radius = eye_size
+        sphere.height = eye_size * 2
+        
+        eye.mesh = sphere
+        
+        # Create glowing material
+        var mat = StandardMaterial3D.new()
+        mat.albedo_color = Color.WHITE
+        mat.emission_enabled = true
+        mat.emission = Color.WHITE
+        mat.emission_energy = 1.0
+        mat.no_depth_test = false  # Ensure it's occluded by geometry
+        eye.material_override = mat
+        
+        # Position eyes
+        var x_offset = eye_distance if i == 0 else -eye_distance
+        eye.position = Vector3(x_offset, eye_height, eye_forward)
+        
+        add_child(eye)
 
 func _create_nose_indicator():
-	# Create a simple box for nose
-	var nose = MeshInstance3D.new()
-	nose.name = "NoseIndicator"
-	
-	var box = BoxMesh.new()
-	box.size = Vector3(face_indicator_size * 0.5, face_indicator_size * 0.8, face_indicator_size * 1.5)
-	
-	nose.mesh = box
-	
-	# Create material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = face_indicator_color
-	material.emission_enabled = true
-	material.emission = face_indicator_color
-	material.emission_energy = 0.5
-	material.no_depth_test = false  # Ensure it's occluded by geometry
-	nose.material_override = material
-	
-	# Position at face level (forward is -Z)
-	nose.position = Vector3(0, 1.65, -0.45)
-	
-	add_child(nose)
+    # Create a simple box for nose
+    var nose = MeshInstance3D.new()
+    nose.name = "NoseIndicator"
+    
+    var box = BoxMesh.new()
+    box.size = Vector3(face_indicator_size * 0.5, face_indicator_size * 0.8, face_indicator_size * 1.5)
+    
+    nose.mesh = box
+    
+    # Create material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = face_indicator_color
+    material.emission_enabled = true
+    material.emission = face_indicator_color
+    material.emission_energy = 0.5
+    material.no_depth_test = false  # Ensure it's occluded by geometry
+    nose.material_override = material
+    
+    # Position at face level (forward is -Z)
+    nose.position = Vector3(0, 1.65, -0.45)
+    
+    add_child(nose)
 
 func _create_arrow_indicator():
-	# Create an arrow using a cone
-	var arrow = MeshInstance3D.new()
-	arrow.name = "ArrowIndicator"
-	
-	# Create arrow shape
-	var cone = CylinderMesh.new()
-	cone.top_radius = 0.0
-	cone.bottom_radius = face_indicator_size * 1.5
-	cone.height = face_indicator_size * 3
-	cone.radial_segments = 3  # Triangle shape
-	
-	arrow.mesh = cone
-	
-	# Create material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = face_indicator_color
-	material.emission_enabled = true
-	material.emission = face_indicator_color
-	material.emission_energy = 0.8
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color.a = 0.8
-	material.no_depth_test = false  # Ensure it's occluded by geometry
-	arrow.material_override = material
-	
-	# Position above head pointing forward (forward is -Z)
-	arrow.position = Vector3(0, 2.2, -0.3)
-	arrow.rotation_degrees = Vector3(-90, 0, 0)
-	
-	add_child(arrow)
+    # Create an arrow using a cone
+    var arrow = MeshInstance3D.new()
+    arrow.name = "ArrowIndicator"
+    
+    # Create arrow shape
+    var cone = CylinderMesh.new()
+    cone.top_radius = 0.0
+    cone.bottom_radius = face_indicator_size * 1.5
+    cone.height = face_indicator_size * 3
+    cone.radial_segments = 3  # Triangle shape
+    
+    arrow.mesh = cone
+    
+    # Create material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = face_indicator_color
+    material.emission_enabled = true
+    material.emission = face_indicator_color
+    material.emission_energy = 0.8
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.albedo_color.a = 0.8
+    material.no_depth_test = false  # Ensure it's occluded by geometry
+    arrow.material_override = material
+    
+    # Position above head pointing forward (forward is -Z)
+    arrow.position = Vector3(0, 2.2, -0.3)
+    arrow.rotation_degrees = Vector3(-90, 0, 0)
+    
+    add_child(arrow)
 
 # State management functions
 func set_state(new_state: MovementState, target_position: Vector3 = Vector3.ZERO):
-	if current_state == new_state:
-		return
-	
-	# Store previous state for resuming
-	if current_state != MovementState.IDLE and current_state != MovementState.TALK:
-		previous_state = current_state
-	
-	current_state = new_state
-	
-	if debug_state_changes:
-		print(npc_name + " state changed to: ", MovementState.keys()[new_state])
-	
-	# Update state label
-	_update_state_label()
-	
-	# Handle state-specific setup
-	match new_state:
-		MovementState.PATROL:
-			# Resume patrol, no special setup needed
-			pass
-		MovementState.IDLE:
-			# Stop movement
-			velocity = Vector3.ZERO
-		MovementState.TALK:
-			# Set target to face
-			talk_target_position = target_position
-			velocity = Vector3.ZERO
-		MovementState.INVESTIGATE:
-			investigation_position = target_position
-			investigation_position.y = global_position.y  # Keep at same height
-			investigation_timer = 0.0
-			velocity = Vector3.ZERO
-			# Remember current waypoint
-			if use_waypoints:
-				last_patrol_waypoint_index = current_waypoint_index
-		MovementState.RETURN_TO_PATROL:
-			returning_to_patrol = true
+    if current_state == new_state:
+        return
+    
+    # Store previous state for resuming
+    if current_state != MovementState.IDLE and current_state != MovementState.TALK:
+        previous_state = current_state
+    
+    current_state = new_state
+    
+    if debug_state_changes:
+        # print(npc_name + " state changed to: ", MovementState.keys()[new_state])
+        pass
+    
+    # Update state label
+    _update_state_label()
+    
+    # Handle state-specific setup
+    match new_state:
+        MovementState.PATROL:
+            # Resume patrol, no special setup needed
+            pass
+        MovementState.IDLE:
+            # Stop movement
+            velocity = Vector3.ZERO
+        MovementState.TALK:
+            # Set target to face
+            talk_target_position = target_position
+            velocity = Vector3.ZERO
+        MovementState.INVESTIGATE:
+            investigation_position = target_position
+            investigation_position.y = global_position.y  # Keep at same height
+            investigation_timer = 0.0
+            velocity = Vector3.ZERO
+            # Remember current waypoint
+            if use_waypoints:
+                last_patrol_waypoint_index = current_waypoint_index
+        MovementState.RETURN_TO_PATROL:
+            returning_to_patrol = true
 
 func resume_previous_state():
-	set_state(previous_state)
+    set_state(previous_state)
 
 func set_patrol_state():
-	set_state(MovementState.PATROL)
+    set_state(MovementState.PATROL)
 
 func set_idle_state():
-	set_state(MovementState.IDLE)
+    set_state(MovementState.IDLE)
 
 func set_talk_state(target_position: Vector3):
-	set_state(MovementState.TALK, target_position)
+    set_state(MovementState.TALK, target_position)
 
 # Helper function to get current state as string
 func get_state_name() -> String:
-	return MovementState.keys()[current_state]
+    return MovementState.keys()[current_state]
 
 # State label functions
 func _create_state_label():
-	if not show_state_label:
-		return
-		
-	state_label = Label3D.new()
-	state_label.name = "StateLabel"
-	
-	# Configure label appearance
-	state_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	state_label.no_depth_test = false  # Allow geometry to occlude
-	state_label.fixed_size = true
-	state_label.pixel_size = 0.001  # Much smaller
-	
-	# Position above head (closer to name)
-	state_label.position = Vector3(0, 2.2, 0)
-	
-	# Set initial text
-	state_label.text = "[" + get_state_name() + "]"
-	
-	# Style the label (smaller font)
-	state_label.modulate = Color.WHITE
-	state_label.outline_modulate = Color.BLACK
-	state_label.outline_size = 4
-	state_label.font_size = 16  # Smaller than name label
-	
-	add_child(state_label)
-	
-	# Set initial color
-	_update_state_label()
+    if not show_state_label:
+        return
+        
+    state_label = Label3D.new()
+    state_label.name = "StateLabel"
+    
+    # Configure label appearance
+    state_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+    state_label.no_depth_test = false  # Allow geometry to occlude
+    state_label.fixed_size = true
+    state_label.pixel_size = 0.001  # Much smaller
+    
+    # Position above head (closer to name)
+    state_label.position = Vector3(0, 2.2, 0)
+    
+    # Set initial text
+    state_label.text = "[" + get_state_name() + "]"
+    
+    # Style the label (smaller font)
+    state_label.modulate = Color.WHITE
+    state_label.outline_modulate = Color.BLACK
+    state_label.outline_size = 4
+    state_label.font_size = 16  # Smaller than name label
+    
+    add_child(state_label)
+    
+    # Set initial color
+    _update_state_label()
 
 func _update_state_label():
-	if not state_label:
-		return
-	
-	var state_name = get_state_name()
-	state_label.text = "[" + state_name + "]"
-	
-	# Color code by state
-	match current_state:
-		MovementState.PATROL:
-			state_label.modulate = Color.GREEN
-		MovementState.IDLE:
-			state_label.modulate = Color.YELLOW
-		MovementState.TALK:
-			state_label.modulate = Color.CYAN
-		MovementState.INVESTIGATE:
-			state_label.modulate = Color.RED
-		MovementState.RETURN_TO_PATROL:
-			state_label.modulate = Color.ORANGE
-	
-	# Add additional info for certain states
-	if current_state == MovementState.PATROL and use_waypoints and waypoint_nodes.size() > 0:
-		state_label.text += "\nWP: " + str(current_waypoint_index + 1) + "/" + str(waypoint_nodes.size())
-		if is_paused:
-			state_label.text += " (Paused)"
-	elif current_state == MovementState.INVESTIGATE:
-		state_label.text += "\n[!]"
-	elif current_state == MovementState.RETURN_TO_PATROL:
-		state_label.text += "\n→WP" + str(last_patrol_waypoint_index + 1)
+    if not state_label:
+        return
+    
+    var state_name = get_state_name()
+    state_label.text = "[" + state_name + "]"
+    
+    # Color code by state
+    match current_state:
+        MovementState.PATROL:
+            state_label.modulate = Color.GREEN
+        MovementState.IDLE:
+            state_label.modulate = Color.YELLOW
+        MovementState.TALK:
+            state_label.modulate = Color.CYAN
+        MovementState.INVESTIGATE:
+            state_label.modulate = Color.RED
+        MovementState.RETURN_TO_PATROL:
+            state_label.modulate = Color.ORANGE
+    
+    # Add additional info for certain states
+    if current_state == MovementState.PATROL and use_waypoints and waypoint_nodes.size() > 0:
+        state_label.text += "\nWP: " + str(current_waypoint_index + 1) + "/" + str(waypoint_nodes.size())
+        if is_paused:
+            state_label.text += " (Paused)"
+    elif current_state == MovementState.INVESTIGATE:
+        state_label.text += "\n[!]"
+    elif current_state == MovementState.RETURN_TO_PATROL:
+        state_label.text += "\n→WP" + str(last_patrol_waypoint_index + 1)
 
 func _check_player_proximity():
-	var player = get_tree().get_first_node_in_group("player")
-	if not player:
-		return
-	
-	var distance = global_position.distance_to(player.global_position)
-	
-	if distance <= talk_trigger_distance:
-		set_talk_state(player.global_position)
-	elif distance <= idle_trigger_distance:
-		set_idle_state()
+    var player = get_tree().get_first_node_in_group("player")
+    if not player:
+        return
+    
+    var distance = global_position.distance_to(player.global_position)
+    
+    if distance <= talk_trigger_distance:
+        set_talk_state(player.global_position)
+    elif distance <= idle_trigger_distance:
+        set_idle_state()
 
 # Waypoint functions
 func _update_waypoint_target():
-	if waypoint_nodes.size() == 0:
-		return
-		
-	var current_waypoint = waypoint_nodes[current_waypoint_index]
-	if is_instance_valid(current_waypoint):
-		waypoint_target = current_waypoint.global_position
-		# Always ignore Y - NPCs stay at ground level
-		waypoint_target.y = global_position.y
+    if waypoint_nodes.size() == 0:
+        return
+        
+    var current_waypoint = waypoint_nodes[current_waypoint_index]
+    if is_instance_valid(current_waypoint):
+        waypoint_target = current_waypoint.global_position
+        # Always ignore Y - NPCs stay at ground level
+        waypoint_target.y = global_position.y
 
 # Stuck detection removed - NPCs are stationary
 
 func _rotate_toward_direction(direction: Vector3, delta: float):
-	# Calculate target rotation
-	var target_transform = transform.looking_at(global_position + direction, Vector3.UP)
-	
-	if smooth_rotation:
-		# Smooth rotation using quaternion slerp
-		var current_quat = transform.basis.get_rotation_quaternion()
-		var target_quat = target_transform.basis.get_rotation_quaternion()
-		
-		# Interpolate rotation
-		var new_quat = current_quat.slerp(target_quat, rotation_speed * delta)
-		transform.basis = Basis(new_quat)
-		
-		# Keep upright
-		rotation.x = 0
-		rotation.z = 0
-	else:
-		# Instant rotation (original behavior)
-		look_at(global_position + direction, Vector3.UP)
-		rotation.x = 0
-		rotation.z = 0
+    # Calculate target rotation
+    var target_transform = transform.looking_at(global_position + direction, Vector3.UP)
+    
+    if smooth_rotation:
+        # Smooth rotation using quaternion slerp
+        var current_quat = transform.basis.get_rotation_quaternion()
+        var target_quat = target_transform.basis.get_rotation_quaternion()
+        
+        # Interpolate rotation
+        var new_quat = current_quat.slerp(target_quat, rotation_speed * delta)
+        transform.basis = Basis(new_quat)
+        
+        # Keep upright
+        rotation.x = 0
+        rotation.z = 0
+    else:
+        # Instant rotation (original behavior)
+        look_at(global_position + direction, Vector3.UP)
+        rotation.x = 0
+        rotation.z = 0
 
 # Line of sight detection functions
 func _create_detection_system():
-	if not enable_los_detection:
-		return
-	
-	# Creating detection system...
-	
-	# Create RayCast3D for line of sight
-	detection_raycast = RayCast3D.new()
-	detection_raycast.name = "DetectionRayCast"
-	detection_raycast.enabled = true
-	detection_raycast.exclude_parent = true
-	detection_raycast.collision_mask = 2  # Detect only layer 2 (player)
-	
-	# Set raycast direction and length
-	detection_raycast.target_position = Vector3(0, 0, -detection_range)  # Forward is -Z
-	
-	# Position at eye level
-	detection_raycast.position = Vector3(0, 1.6, 0)
-	
-	add_child(detection_raycast)
-	
-	# Create detection indicator ONLY if explicitly enabled
-	if show_detection_indicator and enable_los_detection:
-		_create_detection_indicator()
-	else:
-		# Make sure no indicator exists
-		if detection_indicator:
-			detection_indicator.queue_free()
-			detection_indicator = null
-	
-	# Create vision cone visualization if enabled
-	if show_vision_cone:
-		_create_vision_cone()
+    if not enable_los_detection:
+        return
+    
+    # Creating detection system...
+    
+    # Create RayCast3D for line of sight
+    detection_raycast = RayCast3D.new()
+    detection_raycast.name = "DetectionRayCast"
+    detection_raycast.enabled = true
+    detection_raycast.exclude_parent = true
+    detection_raycast.collision_mask = 2  # Detect only layer 2 (player)
+    
+    # Set raycast direction and length
+    detection_raycast.target_position = Vector3(0, 0, -detection_range)  # Forward is -Z
+    
+    # Position at eye level
+    detection_raycast.position = Vector3(0, 1.6, 0)
+    
+    add_child(detection_raycast)
+    
+    # Create detection indicator ONLY if explicitly enabled
+    if show_detection_indicator and enable_los_detection:
+        _create_detection_indicator()
+    else:
+        # Make sure no indicator exists
+        if detection_indicator:
+            detection_indicator.queue_free()
+            detection_indicator = null
+    
+    # Create vision cone visualization if enabled
+    if show_vision_cone:
+        _create_vision_cone()
 
 func _create_detection_indicator():
-	detection_indicator = MeshInstance3D.new()
-	detection_indicator.name = "DetectionIndicator"
-	
-	# Create a sphere mesh for the indicator
-	var sphere = SphereMesh.new()
-	sphere.radius = 0.1
-	sphere.height = 0.2
-	sphere.radial_segments = 8
-	sphere.rings = 4
-	
-	detection_indicator.mesh = sphere
-	
-	# Create material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = undetected_indicator_color
-	material.emission_enabled = true
-	material.emission = undetected_indicator_color
-	material.emission_energy = 0.5
-	detection_indicator.material_override = material
-	
-	# Position above head
-	detection_indicator.position = Vector3(0, 2.5, 0)
-	
-	# Set visibility based on the flag
-	detection_indicator.visible = show_detection_indicator
-	
-	add_child(detection_indicator)
+    detection_indicator = MeshInstance3D.new()
+    detection_indicator.name = "DetectionIndicator"
+    
+    # Create a sphere mesh for the indicator
+    var sphere = SphereMesh.new()
+    sphere.radius = 0.1
+    sphere.height = 0.2
+    sphere.radial_segments = 8
+    sphere.rings = 4
+    
+    detection_indicator.mesh = sphere
+    
+    # Create material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = undetected_indicator_color
+    material.emission_enabled = true
+    material.emission = undetected_indicator_color
+    material.emission_energy = 0.5
+    detection_indicator.material_override = material
+    
+    # Position above head
+    detection_indicator.position = Vector3(0, 2.5, 0)
+    
+    # Set visibility based on the flag
+    detection_indicator.visible = show_detection_indicator
+    
+    add_child(detection_indicator)
 
 func _create_vision_cone():
-	vision_cone_mesh = MeshInstance3D.new()
-	vision_cone_mesh.name = "VisionCone"
-	
-	_update_vision_cone_mesh()
-	
-	add_child(vision_cone_mesh)
+    vision_cone_mesh = MeshInstance3D.new()
+    vision_cone_mesh.name = "VisionCone"
+    
+    _update_vision_cone_mesh()
+    
+    add_child(vision_cone_mesh)
 
 func _update_vision_cone_mesh():
-	if not vision_cone_mesh:
-		return
-	
-	# Remove old range line if it exists
-	var old_line = vision_cone_mesh.get_node_or_null("RangeLine")
-	if old_line:
-		old_line.queue_free()
-	
-	# Create a custom cone mesh for the vision area
-	var arrays = []
-	arrays.resize(Mesh.ARRAY_MAX)
-	
-	var vertices = PackedVector3Array()
-	var uvs = PackedVector2Array()
-	var normals = PackedVector3Array()
-	
-	# Create cone vertices
-	var segments = 16
-	var cone_height = detection_range
-	var cone_radius = tan(deg_to_rad(detection_angle)) * cone_height
-	
-	# Apex of cone (at NPC position)
-	vertices.push_back(Vector3.ZERO)
-	uvs.push_back(Vector2(0.5, 0.5))
-	normals.push_back(Vector3.UP)
-	
-	# Base of cone vertices
-	for i in range(segments + 1):
-		var angle = 2.0 * PI * i / segments
-		var x = cos(angle) * cone_radius
-		var y = sin(angle) * cone_radius
-		vertices.push_back(Vector3(x, y, -cone_height))  # -Z is forward
-		uvs.push_back(Vector2(cos(angle) * 0.5 + 0.5, sin(angle) * 0.5 + 0.5))
-		normals.push_back(Vector3.UP)
-	
-	# Create faces
-	var faces = PackedInt32Array()
-	for i in range(segments):
-		# Triangle from apex to base edge
-		faces.push_back(0)  # Apex
-		faces.push_back(i + 1)
-		faces.push_back(i + 2)
-	
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arrays[Mesh.ARRAY_TEX_UV] = uvs
-	arrays[Mesh.ARRAY_NORMAL] = normals
-	arrays[Mesh.ARRAY_INDEX] = faces
-	
-	# Create the mesh
-	var array_mesh = ArrayMesh.new()
-	array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	
-	vision_cone_mesh.mesh = array_mesh
-	
-	# Create material for filled cone
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.5, 0.5, 1.0, 0.3)  # Semi-transparent blue
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.no_depth_test = false  # Ensure it's occluded by geometry
-	vision_cone_mesh.material_override = material
-	
-	# Add thick red line on ground showing range
-	var range_line = MeshInstance3D.new()
-	range_line.name = "RangeLine"
-	
-	# Create cylinder for thick line
-	var cylinder = CylinderMesh.new()
-	cylinder.height = detection_range
-	cylinder.top_radius = 0.1  # Thick line
-	cylinder.bottom_radius = 0.1
-	cylinder.radial_segments = 8
-	
-	range_line.mesh = cylinder
-	range_line.position = Vector3(0, -1.6, -detection_range / 2.0)  # Center the cylinder
-	range_line.rotation_degrees = Vector3(90, 0, 0)  # Rotate to lie flat
-	
-	# Bright red material
-	var line_material = StandardMaterial3D.new()
-	line_material.albedo_color = Color(1.0, 0.0, 0.0, 1.0)  # Pure red
-	line_material.emission_enabled = true
-	line_material.emission = Color(1.0, 0.0, 0.0)
-	line_material.emission_energy = 1.0
-	line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	range_line.material_override = line_material
-	
-	vision_cone_mesh.add_child(range_line)
-	
-	# Position at eye level
-	vision_cone_mesh.position = Vector3(0, 1.6, 0)
+    if not vision_cone_mesh:
+        return
+    
+    # Remove old range line if it exists
+    var old_line = vision_cone_mesh.get_node_or_null("RangeLine")
+    if old_line:
+        old_line.queue_free()
+    
+    # Create a custom cone mesh for the vision area
+    var arrays = []
+    arrays.resize(Mesh.ARRAY_MAX)
+    
+    var vertices = PackedVector3Array()
+    var uvs = PackedVector2Array()
+    var normals = PackedVector3Array()
+    
+    # Create cone vertices
+    var segments = 16
+    var cone_height = detection_range
+    var cone_radius = tan(deg_to_rad(detection_angle)) * cone_height
+    
+    # Apex of cone (at NPC position)
+    vertices.push_back(Vector3.ZERO)
+    uvs.push_back(Vector2(0.5, 0.5))
+    normals.push_back(Vector3.UP)
+    
+    # Base of cone vertices
+    for i in range(segments + 1):
+        var angle = 2.0 * PI * i / segments
+        var x = cos(angle) * cone_radius
+        var y = sin(angle) * cone_radius
+        vertices.push_back(Vector3(x, y, -cone_height))  # -Z is forward
+        uvs.push_back(Vector2(cos(angle) * 0.5 + 0.5, sin(angle) * 0.5 + 0.5))
+        normals.push_back(Vector3.UP)
+    
+    # Create faces
+    var faces = PackedInt32Array()
+    for i in range(segments):
+        # Triangle from apex to base edge
+        faces.push_back(0)  # Apex
+        faces.push_back(i + 1)
+        faces.push_back(i + 2)
+    
+    arrays[Mesh.ARRAY_VERTEX] = vertices
+    arrays[Mesh.ARRAY_TEX_UV] = uvs
+    arrays[Mesh.ARRAY_NORMAL] = normals
+    arrays[Mesh.ARRAY_INDEX] = faces
+    
+    # Create the mesh
+    var array_mesh = ArrayMesh.new()
+    array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+    
+    vision_cone_mesh.mesh = array_mesh
+    
+    # Create material for filled cone
+    var material = StandardMaterial3D.new()
+    material.albedo_color = Color(0.5, 0.5, 1.0, 0.3)  # Semi-transparent blue
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    material.no_depth_test = false  # Ensure it's occluded by geometry
+    vision_cone_mesh.material_override = material
+    
+    # Add thick red line on ground showing range
+    var range_line = MeshInstance3D.new()
+    range_line.name = "RangeLine"
+    
+    # Create cylinder for thick line
+    var cylinder = CylinderMesh.new()
+    cylinder.height = detection_range
+    cylinder.top_radius = 0.1  # Thick line
+    cylinder.bottom_radius = 0.1
+    cylinder.radial_segments = 8
+    
+    range_line.mesh = cylinder
+    range_line.position = Vector3(0, -1.6, -detection_range / 2.0)  # Center the cylinder
+    range_line.rotation_degrees = Vector3(90, 0, 0)  # Rotate to lie flat
+    
+    # Bright red material
+    var line_material = StandardMaterial3D.new()
+    line_material.albedo_color = Color(1.0, 0.0, 0.0, 1.0)  # Pure red
+    line_material.emission_enabled = true
+    line_material.emission = Color(1.0, 0.0, 0.0)
+    line_material.emission_energy = 1.0
+    line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    range_line.material_override = line_material
+    
+    vision_cone_mesh.add_child(range_line)
+    
+    # Position at eye level
+    vision_cone_mesh.position = Vector3(0, 1.6, 0)
 
 func _update_detection():
-	if not detection_raycast:
-		if enable_los_detection:
-			_create_detection_system()
-		else:
-			return
-	
-	var player = get_tree().get_first_node_in_group("player")
-	if not player:
-		_set_detection_state(false)
-		return
-	
-	# Check if player is within detection range
-	var distance_to_player = global_position.distance_to(player.global_position)
-	if distance_to_player > detection_range:
-		_set_detection_state(false)
-		return
-	
-	# Player is within range, continue checking angle
-	
-	# Check if player is within vision cone angle
-	var to_player = (player.global_position - global_position).normalized()
-	to_player.y = 0  # Ignore vertical component
-	
-	var forward = -transform.basis.z.normalized()
-	forward.y = 0
-	
-	var angle = rad_to_deg(forward.angle_to(to_player))
-	if angle > detection_angle:
-		_set_detection_state(false)
-		return
-	
-	# Player is within angle, continue to raycast
-	
-	# Point raycast at player
-	var local_player_pos = to_local(player.global_position)
-	# Don't override the Y, use actual relative position
-	detection_raycast.target_position = local_player_pos
-	
-	# Aim raycast at player
-	
-	# Force raycast update
-	detection_raycast.force_raycast_update()
-	
-	# Check if raycast hit the player
-	if detection_raycast.is_colliding():
-		var collider = detection_raycast.get_collider()
-		# Raycast hit something
-		if collider and collider.is_in_group("player"):
-			_set_detection_state(true)
-		else:
-			# Something is blocking line of sight
-			_set_detection_state(false)
-	else:
-		# Raycast not hitting anything
-		_set_detection_state(false)
+    if not detection_raycast:
+        if enable_los_detection:
+            _create_detection_system()
+        else:
+            return
+    
+    var player = get_tree().get_first_node_in_group("player")
+    if not player:
+        _set_detection_state(false)
+        return
+    
+    # Check if player is within detection range
+    var distance_to_player = global_position.distance_to(player.global_position)
+    if distance_to_player > detection_range:
+        _set_detection_state(false)
+        return
+    
+    # Player is within range, continue checking angle
+    
+    # Check if player is within vision cone angle
+    var to_player = (player.global_position - global_position).normalized()
+    to_player.y = 0  # Ignore vertical component
+    
+    var forward = -transform.basis.z.normalized()
+    forward.y = 0
+    
+    var angle = rad_to_deg(forward.angle_to(to_player))
+    if angle > detection_angle:
+        _set_detection_state(false)
+        return
+    
+    # Player is within angle, continue to raycast
+    
+    # Point raycast at player
+    var local_player_pos = to_local(player.global_position)
+    # Don't override the Y, use actual relative position
+    detection_raycast.target_position = local_player_pos
+    
+    # Aim raycast at player
+    
+    # Force raycast update
+    detection_raycast.force_raycast_update()
+    
+    # Check if raycast hit the player
+    if detection_raycast.is_colliding():
+        var collider = detection_raycast.get_collider()
+        # Raycast hit something
+        if collider and collider.is_in_group("player"):
+            _set_detection_state(true)
+        else:
+            # Something is blocking line of sight
+            _set_detection_state(false)
+    else:
+        # Raycast not hitting anything
+        _set_detection_state(false)
 
 func _set_detection_state(detected: bool):
-	# Only update if state changed
-	if player_detected != detected:
-		player_detected = detected
-	
-	last_detection_state = detected
-	
-	# Create indicator if it doesn't exist but should be shown
-	if show_detection_indicator and not detection_indicator:
-		_create_detection_indicator()
-	
-	# Update indicator color only if it should be visible
-	if detection_indicator and detection_indicator.material_override and show_detection_indicator:
-		detection_indicator.visible = true
-		var material = detection_indicator.material_override
-		if detected:
-			material.albedo_color = detection_indicator_color
-			material.emission = detection_indicator_color
-		else:
-			material.albedo_color = undetected_indicator_color
-			material.emission = undetected_indicator_color
-	elif detection_indicator and not show_detection_indicator:
-		detection_indicator.visible = false
+    # Only update if state changed
+    if player_detected != detected:
+        player_detected = detected
+    
+    last_detection_state = detected
+    
+    # Create indicator if it doesn't exist but should be shown
+    if show_detection_indicator and not detection_indicator:
+        _create_detection_indicator()
+    
+    # Update indicator color only if it should be visible
+    if detection_indicator and detection_indicator.material_override and show_detection_indicator:
+        detection_indicator.visible = true
+        var material = detection_indicator.material_override
+        if detected:
+            material.albedo_color = detection_indicator_color
+            material.emission = detection_indicator_color
+        else:
+            material.albedo_color = undetected_indicator_color
+            material.emission = undetected_indicator_color
+    elif detection_indicator and not show_detection_indicator:
+        detection_indicator.visible = false
 
 func is_player_detected() -> bool:
-	return player_detected
+    return player_detected
 
 func get_detection_info() -> Dictionary:
-	return {
-		"detected": player_detected,
-		"range": detection_range,
-		"angle": detection_angle,
-		"last_known_position": detection_raycast.get_collision_point() if player_detected and detection_raycast else Vector3.ZERO
-	}
+    return {
+        "detected": player_detected,
+        "range": detection_range,
+        "angle": detection_angle,
+        "last_known_position": detection_raycast.get_collision_point() if player_detected and detection_raycast else Vector3.ZERO
+    }
 
 # Debug visibility toggle functions
 func set_detection_indicator_visible(visible: bool):
-	show_detection_indicator = visible
-	if detection_indicator:
-		detection_indicator.visible = visible
+    show_detection_indicator = visible
+    if detection_indicator:
+        detection_indicator.visible = visible
 
 func set_vision_cone_visible(visible: bool):
-	show_vision_cone = visible
-	if vision_cone_mesh:
-		vision_cone_mesh.visible = visible
-	elif visible:
-		# Create it if it doesn't exist and we want to show it
-		_create_vision_cone()
+    show_vision_cone = visible
+    if vision_cone_mesh:
+        vision_cone_mesh.visible = visible
+    elif visible:
+        # Create it if it doesn't exist and we want to show it
+        _create_vision_cone()
 
 func toggle_detection_debug():
-	set_detection_indicator_visible(!show_detection_indicator)
-	set_vision_cone_visible(!show_vision_cone)
+    set_detection_indicator_visible(!show_detection_indicator)
+    set_vision_cone_visible(!show_vision_cone)
 
 # Sound detection visualization
 func _create_sound_detection_visualization():
-	if not show_sound_detection_area:
-		return
-	
-	sound_detection_sphere = MeshInstance3D.new()
-	sound_detection_sphere.name = "SoundDetectionArea"
-	
-	var sphere_mesh = SphereMesh.new()
-	sphere_mesh.radial_segments = 32
-	sphere_mesh.rings = 16
-	sphere_mesh.radius = sound_detection_radius
-	sphere_mesh.height = sound_detection_radius * 2
-	
-	sound_detection_sphere.mesh = sphere_mesh
-	
-	# Create transparent material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0, 1, 1, 0.1)  # Cyan color for sound
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.no_depth_test = true
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	
-	sound_detection_sphere.material_override = material
-	sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	
-	add_child(sound_detection_sphere)
+    if not show_sound_detection_area:
+        return
+    
+    sound_detection_sphere = MeshInstance3D.new()
+    sound_detection_sphere.name = "SoundDetectionArea"
+    
+    var sphere_mesh = SphereMesh.new()
+    sphere_mesh.radial_segments = 32
+    sphere_mesh.rings = 16
+    sphere_mesh.radius = sound_detection_radius
+    sphere_mesh.height = sound_detection_radius * 2
+    
+    sound_detection_sphere.mesh = sphere_mesh
+    
+    # Create transparent material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = Color(0, 1, 1, 0.1)  # Cyan color for sound
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.no_depth_test = true
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    
+    sound_detection_sphere.material_override = material
+    sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    
+    add_child(sound_detection_sphere)
 
 func _update_sound_detection_visualization():
-	if not sound_detection_sphere:
-		return
-	
-	sound_detection_sphere.visible = show_sound_detection_area and enable_sound_detection
-	
-	if sound_detection_sphere.visible:
-		# Update size based on current detection radius
-		var mesh = sound_detection_sphere.mesh as SphereMesh
-		if mesh:
-			mesh.radius = sound_detection_radius
-			mesh.height = sound_detection_radius * 2
-		
-		# Update color based on detection state
-		var mat = sound_detection_sphere.material_override as StandardMaterial3D
-		if mat:
-			if sound_detected:
-				mat.albedo_color = Color(1, 1, 0, 0.2)  # Yellow when sound detected
-			else:
-				mat.albedo_color = Color(0, 1, 1, 0.1)  # Cyan normally
+    if not sound_detection_sphere:
+        return
+    
+    sound_detection_sphere.visible = show_sound_detection_area and enable_sound_detection
+    
+    if sound_detection_sphere.visible:
+        # Update size based on current detection radius
+        var mesh = sound_detection_sphere.mesh as SphereMesh
+        if mesh:
+            mesh.radius = sound_detection_radius
+            mesh.height = sound_detection_radius * 2
+        
+        # Update color based on detection state
+        var mat = sound_detection_sphere.material_override as StandardMaterial3D
+        if mat:
+            if sound_detected:
+                mat.albedo_color = Color(1, 1, 0, 0.2)  # Yellow when sound detected
+            else:
+                mat.albedo_color = Color(0, 1, 1, 0.1)  # Cyan normally
 
 func _create_sound_waypoint_debug(position: Vector3):
-	# Remove old debug sphere if it exists
-	if sound_waypoint_debug:
-		sound_waypoint_debug.queue_free()
-	
-	# Create new debug sphere
-	sound_waypoint_debug = MeshInstance3D.new()
-	sound_waypoint_debug.name = "SoundWaypointDebug"
-	
-	# Create sphere mesh
-	var sphere_mesh = SphereMesh.new()
-	sphere_mesh.radial_segments = 16
-	sphere_mesh.rings = 8
-	sphere_mesh.radius = 0.3
-	sphere_mesh.height = 0.6
-	
-	sound_waypoint_debug.mesh = sphere_mesh
-	
-	# Create bright red material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(1, 0, 0, 1)  # Bright red
-	material.emission_enabled = true
-	material.emission = Color(1, 0, 0)
-	material.emission_energy = 0.5
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	
-	sound_waypoint_debug.material_override = material
-	sound_waypoint_debug.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	
-	# Add to scene at investigation position
-	get_tree().current_scene.add_child(sound_waypoint_debug)
-	sound_waypoint_debug.global_position = position
-	
-	# Add a timer to remove it after investigation is done
-	await get_tree().create_timer(sound_investigation_duration + 2.0).timeout
-	if sound_waypoint_debug:
-		sound_waypoint_debug.queue_free()
+    # Remove old debug sphere if it exists
+    if sound_waypoint_debug:
+        sound_waypoint_debug.queue_free()
+    
+    # Create new debug sphere
+    sound_waypoint_debug = MeshInstance3D.new()
+    sound_waypoint_debug.name = "SoundWaypointDebug"
+    
+    # Create sphere mesh
+    var sphere_mesh = SphereMesh.new()
+    sphere_mesh.radial_segments = 16
+    sphere_mesh.rings = 8
+    sphere_mesh.radius = 0.3
+    sphere_mesh.height = 0.6
+    
+    sound_waypoint_debug.mesh = sphere_mesh
+    
+    # Create bright red material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = Color(1, 0, 0, 1)  # Bright red
+    material.emission_enabled = true
+    material.emission = Color(1, 0, 0)
+    material.emission_energy = 0.5
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    
+    sound_waypoint_debug.material_override = material
+    sound_waypoint_debug.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    
+    # Add to scene at investigation position
+    get_tree().current_scene.add_child(sound_waypoint_debug)
+    sound_waypoint_debug.global_position = position
+    
+    # Add a timer to remove it after investigation is done
+    await get_tree().create_timer(sound_investigation_duration + 2.0).timeout
+    if sound_waypoint_debug:
+        sound_waypoint_debug.queue_free()
 
 # Hide Saboteur Mode properties when can_be_saboteur is false
 func _validate_property(property: Dictionary):
-	# List of properties to hide when can_be_saboteur is false
-	var saboteur_properties = [
-		"enable_saboteur_behavior",
-		"saboteur_detection_range",
-		"vision_angle",
-		"investigation_duration",
-		"return_to_patrol_speed",
-		"enable_sound_detection",
-		"sound_detection_radius",
-		"crouched_sound_radius_multiplier",
-		"running_sound_radius_multiplier",
-		"sound_investigation_duration",
-		"show_sound_detection_area"
-	]
-	
-	# Hide saboteur properties if can_be_saboteur is false
-	if property.name in saboteur_properties and not can_be_saboteur:
-		property.usage = PROPERTY_USAGE_NO_EDITOR
+    # List of properties to hide when can_be_saboteur is false
+    var saboteur_properties = [
+        "enable_saboteur_behavior",
+        "saboteur_detection_range",
+        "vision_angle",
+        "investigation_duration",
+        "return_to_patrol_speed",
+        "enable_sound_detection",
+        "sound_detection_radius",
+        "crouched_sound_radius_multiplier",
+        "running_sound_radius_multiplier",
+        "sound_investigation_duration",
+        "show_sound_detection_area"
+    ]
+    
+    # Hide saboteur properties if can_be_saboteur is false
+    if property.name in saboteur_properties and not can_be_saboteur:
+        property.usage = PROPERTY_USAGE_NO_EDITOR
 
 # Saboteur detection system
 func _check_for_saboteur_detection():
-	var player = get_tree().get_first_node_in_group("player")
-	if not player:
-		return
-	
-	var distance = global_position.distance_to(player.global_position)
-	
-	# Check if in detection range
-	if distance > saboteur_detection_range:
-		return
-	
-	# Check line of sight
-	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(
-		global_position + Vector3.UP * 1.5,
-		player.global_position + Vector3.UP * 1.0
-	)
-	query.exclude = [self]
-	query.collision_mask = 1  # Environment layer
-	
-	var result = space_state.intersect_ray(query)
-	if result:
-		# Something blocking view
-		return
-	
-	# Check vision angle
-	var to_player = (player.global_position - global_position).normalized()
-	var forward = -global_transform.basis.z
-	var angle = rad_to_deg(forward.angle_to(to_player))
-	
-	if angle <= vision_angle / 2.0:
-		# Player detected!
-		print(npc_name + ": Who's there? I see you!")
-		player_detected = true
-		set_state(MovementState.INVESTIGATE, player.global_position)
+    var player = get_tree().get_first_node_in_group("player")
+    if not player:
+        return
+    
+    var distance = global_position.distance_to(player.global_position)
+    
+    # Check if in detection range
+    if distance > saboteur_detection_range:
+        return
+    
+    # Check line of sight
+    var space_state = get_world_3d().direct_space_state
+    var query = PhysicsRayQueryParameters3D.create(
+        global_position + Vector3.UP * 1.5,
+        player.global_position + Vector3.UP * 1.0
+    )
+    query.exclude = [self]
+    query.collision_mask = 1  # Environment layer
+    
+    var result = space_state.intersect_ray(query)
+    if result:
+        # Something blocking view
+        return
+    
+    # Check vision angle
+    var to_player = (player.global_position - global_position).normalized()
+    var forward = -global_transform.basis.z
+    var angle = rad_to_deg(forward.angle_to(to_player))
+    
+    if angle <= vision_angle / 2.0:
+        # Player detected!
+        # print(npc_name + ": Who's there? I see you!")
+        player_detected = true
+        set_state(MovementState.INVESTIGATE, player.global_position)
 
 # Sound detection methods
 func hear_sound(sound_position: Vector3, sound_radius: float):
-	if not can_be_saboteur or not enable_sound_detection:
-		return
-	
-	# Don't react to sounds if already investigating or in wrong state
-	if current_state != MovementState.PATROL:
-		return
-	
-	var distance = global_position.distance_to(sound_position)
-	
-	# Check if within hearing range
-	if distance <= sound_radius:
-		# Check line of sight to determine if it's a direct sound or muffled
-		var space_state = get_world_3d().direct_space_state
-		var query = PhysicsRayQueryParameters3D.create(
-			global_position + Vector3.UP * 1.5,
-			sound_position + Vector3.UP * 0.5
-		)
-		query.exclude = [self]
-		query.collision_mask = 1  # Environment layer
-		
-		var result = space_state.intersect_ray(query)
-		
-		if result:
-			# Sound is muffled by walls, slightly randomize investigation point
-			var offset = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1))
-			sound_position += offset
-			print(npc_name + ": What was that noise?")
-		else:
-			print(npc_name + ": I heard something!")
-		
-		sound_detected = true
-		is_investigating_sound = true
-		set_state(MovementState.INVESTIGATE, sound_position)
-		
-		# Create debug sphere at investigation point
-		_create_sound_waypoint_debug(sound_position)
+    if not can_be_saboteur or not enable_sound_detection:
+        return
+    
+    # Don't react to sounds if already investigating or in wrong state
+    if current_state != MovementState.PATROL:
+        return
+    
+    var distance = global_position.distance_to(sound_position)
+    
+    # Check if within hearing range
+    if distance <= sound_radius:
+        # Check line of sight to determine if it's a direct sound or muffled
+        var space_state = get_world_3d().direct_space_state
+        var query = PhysicsRayQueryParameters3D.create(
+            global_position + Vector3.UP * 1.5,
+            sound_position + Vector3.UP * 0.5
+        )
+        query.exclude = [self]
+        query.collision_mask = 1  # Environment layer
+        
+        var result = space_state.intersect_ray(query)
+        
+        if result:
+            # Sound is muffled by walls, slightly randomize investigation point
+            var offset = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1))
+            sound_position += offset
+            # print(npc_name + ": What was that noise?")
+            pass
+        else:
+            # print(npc_name + ": I heard something!")
+            pass
+        
+        sound_detected = true
+        is_investigating_sound = true
+        set_state(MovementState.INVESTIGATE, sound_position)
+        
+        # Create debug sphere at investigation point
+        _create_sound_waypoint_debug(sound_position)
 
 func _on_schedule_changed(character_name: String, new_room: ScheduleManager.Room):
-	if character_name != npc_name:
-		return
-	
-	if not use_schedule:
-		return
-	
-	# Get the waypoint for the scheduled room
-	var waypoint_name = schedule_manager.get_room_waypoint_name(new_room)
-	if waypoint_name.is_empty():
-		print("Warning: No waypoint defined for room ", schedule_manager.get_room_name(new_room))
-		return
-	
-	# Movement disabled - NPCs are stationary
-	assigned_room = schedule_manager.get_room_name(new_room)
+    if character_name != npc_name:
+        return
+    
+    if not use_schedule:
+        return
+    
+    # Get the waypoint for the scheduled room
+    var waypoint_name = schedule_manager.get_room_waypoint_name(new_room)
+    if waypoint_name.is_empty():
+        # print("Warning: No waypoint defined for room ", schedule_manager.get_room_name(new_room))
+        return
+    
+    # Movement disabled - NPCs are stationary
+    assigned_room = schedule_manager.get_room_name(new_room)
 
 # Navigation functions disabled - NPCs are stationary
 
 # Getters for external systems
 
-func get_navigation_agent() -> NavigationAgent3D:
-	return nav_agent
+func get_waypoint_path() -> Array[Vector3]:
+    return waypoint_path

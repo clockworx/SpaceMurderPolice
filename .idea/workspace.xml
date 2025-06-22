@@ -6,6 +6,34 @@
   <component name="ChangeListManager">
     <list default="true" id="7ba0bc43-672e-4562-8a9f-5141d0b59474" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/test/debug_movement_test.tscn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/test/hybrid_movement_test.tscn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenes/test/npc_movement_test.tscn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_debug_visualizer.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_debug_visualizer.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_diagnostics.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_diagnostics.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_link_visualizer.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_link_visualizer.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_scene_analyzer.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/debug/navigation_scene_analyzer.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/evidence_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/evidence_manager.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_map_fixer.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_map_fixer.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_setup_manager.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/navigation_setup_manager.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/waypoint_network_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/waypoint_network_manager.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/hybrid_movement.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/hybrid_movement.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/navmesh_movement.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/navmesh_movement.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/room_navigation_config.gd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/room_navigation_config.gd.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/unified_npc.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/unified_npc.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/ui/evidence_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/evidence_ui.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/ui/schedule_debug_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/schedule_debug_ui.gd" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,12 +49,13 @@
     &quot;assignee&quot;: &quot;clockworx&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/clockworx/SpaceMurderPolice.git&quot;,
-    &quot;accountId&quot;: &quot;2c09b47b-1cba-49ae-976d-dcf975dae6b0&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/clockworx/SpaceMurderPolice.git",
+    "accountId": "d505079c-4f0d-4d54-b8c3-b6efda071bcb"
   }
-}</component>
+}]]></component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="false" />
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 1
 }</component>
@@ -62,7 +91,7 @@
     <configuration name="Editor" type="RunNativeExe" factoryName="Native Executable">
       <option name="EXE_PATH" value="$USER_HOME$/Desktop/Godot_v4.4.1.exe" />
       <option name="PROGRAM_PARAMETERS" value="--path &quot;./&quot; --editor" />
-      <option name="WORKING_DIRECTORY" value="C:\Users\marin\Documents\GitHub\SpaceMurderPolice" />
+      <option name="WORKING_DIRECTORY" value="C:\Users\marinavr\Documents\GitHub\SpaceMurderPolice" />
       <option name="PASS_PARENT_ENVS" value="1" />
       <option name="USE_EXTERNAL_CONSOLE" value="0" />
       <option name="ENV_FILE_PATHS" value="" />
@@ -82,12 +111,14 @@
       <workItem from="1748912346991" duration="875000" />
       <workItem from="1748916272950" duration="13967000" />
       <workItem from="1750553180689" duration="140000" />
+      <workItem from="1750619584768" duration="13313000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="false" />
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />

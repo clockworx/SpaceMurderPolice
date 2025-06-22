@@ -1,0 +1,56 @@
+# Aurora Station Waypoint Analysis
+
+## Station Bounds Analysis
+
+Based on the waypoint positions extracted from the scene file:
+
+### X-Axis Range:
+- Westernmost: Engineering_Center at x = -45.271
+- Easternmost: MedicalBay_Center at x = 42.5678
+- Total X range: ~87.8 units
+
+### Z-Axis Range:
+- Main hallway runs along z = 4.0 (most hallway waypoints)
+- Northernmost: Engineering_Center at z = 11.2007
+- Southernmost: CrewQuarters_Center at z = -28.5239
+- Total Z range: ~39.7 units
+
+### Room Positions:
+1. **Laboratory**: (-1.27, 0, 8.77) - North of main hallway
+2. **Medical Bay**: (42.57, 0, -2.45) - Far east, slightly south
+3. **Security**: (-13.86, 0, 9.91) - Northwest area
+4. **Engineering**: (-45.27, 0, 11.20) - Far west, north
+5. **Crew Quarters**: (-5.40, 0, -28.52) - Central, far south
+6. **Cafeteria**: (6.0, 0, 3.71) - Central, near main hallway
+
+### Main Hallway Points:
+- Runs primarily at z = 4.0
+- X range: from -24.54 (Hallway_West) to 38.71 (Hallway_MedicalApproach)
+- South branch: Goes down to z = -23.74 (Hallway_CrewTurn)
+
+## Problematic Waypoints
+
+Based on the layout analysis, the following waypoints appear to be outside reasonable bounds:
+
+1. **Crew_Door_Green** (if at z = -24.0289):
+   - This is only 4.5 units from CrewQuarters_Center
+   - Should likely be around z = -20 to -22 (between hallway and room)
+
+2. **Any waypoints with z < -30 or z > 15**:
+   - Would be outside the reasonable station bounds
+
+3. **Any waypoints with x < -50 or x > 45**:
+   - Would be beyond the east-west extent of the station
+
+## Recommended Station Mesh Bounds
+
+For the navigation mesh, reasonable bounds would be:
+- X-axis: -50 to 45 (with 5-unit padding)
+- Z-axis: -30 to 15 (with 2-unit padding)
+- Y-axis: -1 to 3 (typical floor to ceiling height)
+
+## Waypoint Corrections Needed
+
+1. Check all door waypoints to ensure they're between their room and the hallway
+2. Verify no waypoints are floating outside these bounds
+3. Ensure door waypoints have proper clearance (at least 2 units from walls)
