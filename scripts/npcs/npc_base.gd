@@ -403,12 +403,9 @@ func navigate_to_room(room_waypoint_name: String):
         print("  Available waypoints: ", waypoint_network_manager.waypoint_nodes.keys())
         return false
     
-    # Debug for Zara
-    if npc_name == "Dr. Zara Okafor":
-        print("  Zara's path has ", path.size(), " waypoints")
-        # Show ALL waypoints to see the full path
-        for i in range(path.size()):
-            print("    Waypoint ", i, ": ", path[i])
+    # Debug for Zara - only show if path seems inefficient
+    if npc_name == "Dr. Zara Okafor" and path.size() > 8:
+        print("  Zara's path seems long (", path.size(), " waypoints) - may need optimization")
     
     # The waypoint network should now handle cafeteria to lab paths efficiently
     
@@ -1633,10 +1630,6 @@ func _on_schedule_changed(character_name: String, new_room: ScheduleManager.Room
     var room_center_waypoint = waypoint_name.replace("_Waypoint", "_Center")
     
     print(npc_name + ": Schedule changed - heading to " + assigned_room + " (waypoint: " + room_center_waypoint + ")")
-    
-    # Special debug for Zara to see why she's getting stuck
-    if npc_name == "Dr. Zara Okafor":
-        print("  Zara's current position: ", global_position)
     
     # Navigate to the scheduled room
     if not navigate_to_room(room_center_waypoint):
