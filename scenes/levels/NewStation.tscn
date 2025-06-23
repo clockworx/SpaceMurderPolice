@@ -385,7 +385,7 @@ material_override = SubResource("StandardMaterial3D_fbe7h")
 mesh = SubResource("SphereMesh_g673t")
 
 [node name="MedicalOfficer" parent="NPCs" instance=ExtResource("21_medical")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 38, 0.144, 2)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 43.1768, 0.144, -2.79754)
 show_current_waypoint_index = 0
 
 [node name="Engineer" parent="NPCs" instance=ExtResource("22_engineer")]

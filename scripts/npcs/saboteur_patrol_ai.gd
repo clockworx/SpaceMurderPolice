@@ -8,6 +8,13 @@ class_name SaboteurPatrolAI
 @export var hearing_range: float = 10.0
 @export var patrol_wait_time: float = 3.0
 
+@export_group("Debug Visualization")
+@export var show_awareness_sphere: bool = false
+@export var show_vision_cone: bool = false
+@export var show_state_indicators: bool = false
+@export var show_patrol_path: bool = false
+@export var show_sound_detection: bool = false
+
 # Room definitions with door positions
 var rooms = {
     "lab3": {"inside": Vector3(-7, 1.0, 10), "door": Vector3(-3, 1.0, 10), "hallway": Vector3(0, 1.0, 10)},
@@ -46,6 +53,8 @@ var state_light: OmniLight3D
 var state_label: Label3D
 var awareness_sphere: MeshInstance3D
 var vision_cone_mesh: MeshInstance3D
+var sound_detection_sphere: MeshInstance3D
+var patrol_path_line: MeshInstance3D
 
 # States
 enum State {
@@ -61,6 +70,7 @@ var current_state: State = State.PATROLLING
 var is_active: bool = true  # Whether the AI is currently active
 var sabotage_target: Vector3  # Target position for sabotage
 var sabotage_complete: bool = false  # Whether sabotage task is done
+var caught_player: bool = false  # To prevent spam messages
 
 signal player_spotted(player_position: Vector3)
 signal player_lost()
@@ -92,9 +102,15 @@ func _ready():
     else:
         push_warning("SaboteurPatrolAI: Player not found!")
     
-    # Debug visualizations disabled
-    # _create_state_indicators()
-    # _create_awareness_visualization()
+    # Create debug visualizations based on settings
+    if show_state_indicators:
+        _create_state_indicators()
+    if show_awareness_sphere or show_vision_cone:
+        _create_awareness_visualization()
+    if show_sound_detection:
+        _create_sound_detection_visualization()
+    if show_patrol_path:
+        _create_patrol_path_visualization()
     
     # Start patrolling
     # Debug: Starting patrol route
@@ -316,8 +332,9 @@ func _handle_chasing(_delta):
     
     var distance = npc_base.global_position.distance_to(player.global_position)
     
-    if distance < 1.5:
+    if distance < 1.5 and not caught_player:
         # Caught the player!
+        caught_player = true
         _on_player_caught()
         return
     
@@ -543,6 +560,10 @@ func _change_state(new_state: State):
     # Debug print
     print("SaboteurPatrolAI: State changed to ", State.keys()[new_state])
     
+    # Reset caught flag when not chasing
+    if new_state != State.CHASING:
+        caught_player = false
+    
     # Update state indicators
     match new_state:
         State.CHASING:
@@ -671,10 +692,8 @@ func investigate_position(pos: Vector3):
     print("SaboteurPatrolAI: Investigating position ", pos)
 
 func _create_state_indicators():
-    pass  # Disabled - no debug indicators
-    # return  # Disabled
-    # # Create overhead light
-    # state_light = OmniLight3D.new()
+    # Create overhead light
+    state_light = OmniLight3D.new()
     state_light.light_color = Color.GREEN
     state_light.light_energy = 2.0
     state_light.omni_range = 5.0
@@ -758,17 +777,44 @@ func set_active(active: bool):
         # Stop all movement
         if npc_base:
             npc_base.velocity = Vector3.ZERO
-        # Hide debug indicators
+        # Hide all visualizations
         if state_light:
             state_light.visible = false
         if state_label:
             state_label.visible = false
+        if awareness_sphere:
+            awareness_sphere.visible = false
+        if vision_cone_mesh:
+            vision_cone_mesh.visible = false
+        if sound_detection_sphere:
+            sound_detection_sphere.visible = false
+        if patrol_path_line:
+            patrol_path_line.visible = false
     else:
-        # Show debug indicators
+        # Always create visualizations when activating (they will be shown/hidden based on settings)
+        if not state_light:
+            _create_state_indicators()
+        if not awareness_sphere:
+            _create_awareness_visualization()
+        if not sound_detection_sphere:
+            _create_sound_detection_visualization()
+        if not patrol_path_line:
+            _create_patrol_path_visualization()
+            
+        # Show visualizations based on current settings
         if state_light:
-            state_light.visible = true
+            state_light.visible = show_state_indicators
         if state_label:
-            state_label.visible = true
+            state_label.visible = show_state_indicators
+        if awareness_sphere:
+            awareness_sphere.visible = show_awareness_sphere
+        if vision_cone_mesh:
+            vision_cone_mesh.visible = show_vision_cone
+        if sound_detection_sphere:
+            sound_detection_sphere.visible = show_sound_detection
+        if patrol_path_line:
+            patrol_path_line.visible = show_patrol_path
+            
         # Start patrolling when activated
         _change_state(State.PATROLLING)
         _set_next_patrol_target()
@@ -787,87 +833,84 @@ func end_sabotage_mission():
     sabotage_complete = false
 
 func _create_awareness_visualization():
-    pass  # Disabled - no debug visualization
-    # return  # Disabled
-    # # Create awareness sphere (wireframe)
-    # awareness_sphere = MeshInstance3D.new()
-    awareness_sphere.name = "AwarenessSphere"
+    # Create awareness sphere if enabled
+    if show_awareness_sphere:
+        awareness_sphere = MeshInstance3D.new()
+        awareness_sphere.name = "AwarenessSphere"
+        
+        var sphere_mesh = SphereMesh.new()
+        sphere_mesh.radial_segments = 16
+        sphere_mesh.rings = 8
+        sphere_mesh.radius = detection_range
+        sphere_mesh.height = detection_range * 2
+        awareness_sphere.mesh = sphere_mesh
+        
+        # Create wireframe material
+        var sphere_material = StandardMaterial3D.new()
+        sphere_material.albedo_color = Color(0, 1, 0, 0.2)
+        sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        sphere_material.vertex_color_use_as_albedo = true
+        sphere_material.no_depth_test = true
+        sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        sphere_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+        
+        awareness_sphere.material_override = sphere_material
+        awareness_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        
+        npc_base.add_child(awareness_sphere)
     
-    var sphere_mesh = SphereMesh.new()
-    sphere_mesh.radial_segments = 16
-    sphere_mesh.rings = 8
-    sphere_mesh.radius = detection_range
-    sphere_mesh.height = detection_range * 2
-    awareness_sphere.mesh = sphere_mesh
-    
-    # Create wireframe material
-    var sphere_material = StandardMaterial3D.new()
-    sphere_material.albedo_color = Color(0, 1, 0, 0.2)
-    sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    sphere_material.vertex_color_use_as_albedo = true
-    # sphere_material.wireframe = true  # Not available in Godot 4
-    sphere_material.no_depth_test = true
-    sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    sphere_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-    
-    awareness_sphere.material_override = sphere_material
-    awareness_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-    
-    npc_base.add_child(awareness_sphere)
-    
-    # Create vision cone
-    vision_cone_mesh = MeshInstance3D.new()
-    vision_cone_mesh.name = "VisionCone"
-    
-    # Create a simple pyramid mesh for vision cone
-    var arrays = []
-    arrays.resize(Mesh.ARRAY_MAX)
-    
-    var vertices = PackedVector3Array()
-    # var _normals = PackedVector3Array()
-    # var _uvs = PackedVector2Array()
-    
-    # Vision cone vertices
-    var cone_length = detection_range * 0.8
-    var cone_width = tan(deg_to_rad(vision_angle / 2)) * cone_length
-    
-    vertices.push_back(Vector3.ZERO)  # Origin
-    vertices.push_back(Vector3(-cone_width, 0, -cone_length))  # Left
-    vertices.push_back(Vector3(cone_width, 0, -cone_length))   # Right
-    vertices.push_back(Vector3(0, cone_width, -cone_length))    # Top
-    vertices.push_back(Vector3(0, -cone_width, -cone_length))   # Bottom
-    
-    # Create triangles for the cone
-    var indices = PackedInt32Array([
-        0, 1, 2,  # Horizontal plane
-        0, 3, 4,  # Vertical plane
-        0, 1, 3,  # Left-top
-        0, 3, 2,  # Right-top
-        0, 2, 4,  # Right-bottom
-        0, 4, 1   # Left-bottom
-    ])
-    
-    arrays[Mesh.ARRAY_VERTEX] = vertices
-    arrays[Mesh.ARRAY_INDEX] = indices
-    
-    var array_mesh = ArrayMesh.new()
-    array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-    
-    vision_cone_mesh.mesh = array_mesh
-    
-    # Create vision cone material
-    var cone_material = StandardMaterial3D.new()
-    cone_material.albedo_color = Color(1, 1, 0, 0.15)
-    cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    cone_material.no_depth_test = true
-    cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-    
-    vision_cone_mesh.material_override = cone_material
-    vision_cone_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-    vision_cone_mesh.position.y = 1.5  # Eye level
-    
-    npc_base.add_child(vision_cone_mesh)
+    # Create vision cone if enabled
+    if show_vision_cone:
+        vision_cone_mesh = MeshInstance3D.new()
+        vision_cone_mesh.name = "VisionCone"
+        
+        # Create a simple pyramid mesh for vision cone
+        var arrays = []
+        arrays.resize(Mesh.ARRAY_MAX)
+        
+        var vertices = PackedVector3Array()
+        
+        # Vision cone vertices
+        var cone_length = detection_range * 0.8
+        var cone_width = tan(deg_to_rad(vision_angle / 2)) * cone_length
+        
+        vertices.push_back(Vector3.ZERO)  # Origin
+        vertices.push_back(Vector3(-cone_width, 0, -cone_length))  # Left
+        vertices.push_back(Vector3(cone_width, 0, -cone_length))   # Right
+        vertices.push_back(Vector3(0, cone_width, -cone_length))    # Top
+        vertices.push_back(Vector3(0, -cone_width, -cone_length))   # Bottom
+        
+        # Create triangles for the cone
+        var indices = PackedInt32Array([
+            0, 1, 2,  # Horizontal plane
+            0, 3, 4,  # Vertical plane
+            0, 1, 3,  # Left-top
+            0, 3, 2,  # Right-top
+            0, 2, 4,  # Right-bottom
+            0, 4, 1   # Left-bottom
+        ])
+        
+        arrays[Mesh.ARRAY_VERTEX] = vertices
+        arrays[Mesh.ARRAY_INDEX] = indices
+        
+        var array_mesh = ArrayMesh.new()
+        array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+        
+        vision_cone_mesh.mesh = array_mesh
+        
+        # Create vision cone material
+        var cone_material = StandardMaterial3D.new()
+        cone_material.albedo_color = Color(1, 1, 0, 0.15)
+        cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        cone_material.no_depth_test = true
+        cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+        
+        vision_cone_mesh.material_override = cone_material
+        vision_cone_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        vision_cone_mesh.position.y = 1.5  # Eye level
+        
+        npc_base.add_child(vision_cone_mesh)
 
 func _update_awareness_visualization():
     if not awareness_sphere or not vision_cone_mesh:
@@ -897,8 +940,135 @@ func _update_awareness_visualization():
             sphere_material.albedo_color = Color(0, 1, 0, 0.2)
             cone_material.albedo_color = Color(1, 1, 0, 0.15)
     
-    # Hide vision cone when not actively searching
-    vision_cone_mesh.visible = current_state != State.WAITING
+    # Show vision cone based on state and debug settings
+    if show_vision_cone:
+        vision_cone_mesh.visible = current_state != State.WAITING
+    else:
+        vision_cone_mesh.visible = false
 
 func get_current_state_name() -> String:
     return State.keys()[current_state]
+
+func _create_sound_detection_visualization():
+    """Create a sphere to show sound detection radius"""
+    sound_detection_sphere = MeshInstance3D.new()
+    sound_detection_sphere.name = "SoundDetectionSphere"
+    
+    var sphere_mesh = SphereMesh.new()
+    sphere_mesh.radial_segments = 16
+    sphere_mesh.rings = 8
+    sphere_mesh.radius = hearing_range
+    sphere_mesh.height = hearing_range * 2
+    sound_detection_sphere.mesh = sphere_mesh
+    
+    # Create material for sound detection
+    var sound_material = StandardMaterial3D.new()
+    sound_material.albedo_color = Color(0, 0.5, 1, 0.15)  # Blue for sound
+    sound_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    sound_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    sound_material.no_depth_test = true
+    sound_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    
+    sound_detection_sphere.material_override = sound_material
+    sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    
+    npc_base.add_child(sound_detection_sphere)
+
+func _create_patrol_path_visualization():
+    """Create lines showing the patrol path"""
+    patrol_path_line = MeshInstance3D.new()
+    patrol_path_line.name = "PatrolPathLine"
+    
+    # Update the patrol path when the route changes
+    _update_patrol_path_visualization()
+    
+    get_tree().current_scene.add_child(patrol_path_line)
+
+func _update_patrol_path_visualization():
+    """Update the patrol path lines"""
+    if not patrol_path_line or not show_patrol_path:
+        return
+    
+    # Create line mesh for patrol route
+    var vertices = PackedVector3Array()
+    
+    # Add all patrol points
+    for location in patrol_route:
+        var pos: Vector3
+        if location == "start":
+            pos = Vector3(0, 1.0, 15)
+        elif location == "end":
+            pos = Vector3(0, 1.0, -25)
+        elif rooms.has(location):
+            # Show path through room (hallway -> door -> inside -> door -> hallway)
+            var room = rooms[location]
+            vertices.append(room["hallway"])
+            vertices.append(room["door"])
+            vertices.append(room["inside"])
+            vertices.append(room["door"])
+            vertices.append(room["hallway"])
+        else:
+            pos = Vector3(0, 1.0, 0)
+        
+        if location == "start" or location == "end":
+            vertices.append(pos)
+    
+    if vertices.size() < 2:
+        return
+    
+    # Create line segments
+    var arrays = []
+    arrays.resize(Mesh.ARRAY_MAX)
+    
+    var line_vertices = PackedVector3Array()
+    for i in range(vertices.size() - 1):
+        line_vertices.append(vertices[i])
+        line_vertices.append(vertices[i + 1])
+    
+    arrays[Mesh.ARRAY_VERTEX] = line_vertices
+    
+    var array_mesh = ArrayMesh.new()
+    array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_LINES, arrays)
+    
+    patrol_path_line.mesh = array_mesh
+    
+    # Create material for the path
+    var path_material = StandardMaterial3D.new()
+    path_material.albedo_color = Color(1, 0, 1, 0.8)  # Magenta for path
+    path_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    path_material.vertex_color_use_as_albedo = true
+    
+    patrol_path_line.material_override = path_material
+
+func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: bool, sound: bool):
+    """Update debug visualization settings"""
+    show_awareness_sphere = awareness
+    show_vision_cone = vision
+    show_state_indicators = state
+    show_patrol_path = path
+    show_sound_detection = sound
+    
+    # Create visualizations if they don't exist and AI is active
+    if is_active:
+        if not state_light:
+            _create_state_indicators()
+        if not awareness_sphere:
+            _create_awareness_visualization()
+        if not sound_detection_sphere:
+            _create_sound_detection_visualization()
+        if not patrol_path_line:
+            _create_patrol_path_visualization()
+    
+    # Update visibility of existing visualizations
+    if awareness_sphere:
+        awareness_sphere.visible = show_awareness_sphere and is_active
+    if vision_cone_mesh:
+        vision_cone_mesh.visible = show_vision_cone and is_active
+    if state_light:
+        state_light.visible = show_state_indicators and is_active
+    if state_label:
+        state_label.visible = show_state_indicators and is_active
+    if patrol_path_line:
+        patrol_path_line.visible = show_patrol_path and is_active
+    if sound_detection_sphere:
+        sound_detection_sphere.visible = show_sound_detection and is_active

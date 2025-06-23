@@ -34,6 +34,10 @@ var phase_locked: bool = false  # Prevents automatic progression
 var escape_timer: float = 0.0
 var escape_time_limit: float = 300.0  # 5 minutes to escape
 
+# Saboteur selection
+var selected_saboteur: NPCBase = null
+var saboteur_candidates: Array[NPCBase] = []
+
 # Environmental threat levels per phase
 var threat_levels: Dictionary = {
     Phase.ARRIVAL: {
@@ -86,6 +90,9 @@ func _ready():
     var evidence_manager = get_tree().get_first_node_in_group("evidence_manager")
     if evidence_manager:
         evidence_manager.evidence_collected.connect(_on_evidence_collected)
+    
+    # Find all potential saboteur candidates
+    _find_saboteur_candidates()
     
     print("PhaseManager: Initialized - Starting phase: ", Phase.keys()[current_phase])
     _apply_phase_settings()
@@ -201,13 +208,24 @@ func _update_station_lighting():
                 light.light_color = Color(1.0, 0.2, 0.2)
 
 func _activate_saboteur():
-    var saboteur_ai = get_tree().get_first_node_in_group("saboteur_ai")
+    # First select a saboteur if not already selected
+    if selected_saboteur == null:
+        _select_random_saboteur()
+    
+    if selected_saboteur == null:
+        push_warning("PhaseManager: Cannot activate - no saboteur available")
+        return
+    
+    var saboteur_ai = selected_saboteur.get_node_or_null("SaboteurPatrolAI")
     if saboteur_ai and saboteur_ai.has_method("set_active"):
         saboteur_ai.set_active(true)
-        print("PhaseManager: Saboteur AI activated")
+        print("PhaseManager: Saboteur AI activated for ", selected_saboteur.npc_name)
 
 func _deactivate_saboteur():
-    var saboteur_ai = get_tree().get_first_node_in_group("saboteur_ai")
+    if selected_saboteur == null:
+        return
+        
+    var saboteur_ai = selected_saboteur.get_node_or_null("SaboteurPatrolAI")
     if saboteur_ai and saboteur_ai.has_method("set_active"):
         saboteur_ai.set_active(false)
         print("PhaseManager: Saboteur AI deactivated")
@@ -303,3 +321,93 @@ func get_escape_time_remaining() -> float:
     if current_phase == Phase.DESPERATE_ESCAPE:
         return max(0.0, escape_time_limit - escape_timer)
     return -1.0
+
+func _find_saboteur_candidates():
+    """Find all NPCs that can potentially be the saboteur"""
+    saboteur_candidates.clear()
+    var npcs = get_tree().get_nodes_in_group("npcs")
+    
+    for npc in npcs:
+        if npc is NPCBase and npc.can_be_saboteur:
+            saboteur_candidates.append(npc)
+            print("PhaseManager: Found saboteur candidate - ", npc.npc_name)
+    
+    print("PhaseManager: Total saboteur candidates: ", saboteur_candidates.size())
+
+func _select_random_saboteur():
+    """Randomly select one NPC to be the saboteur"""
+    if saboteur_candidates.is_empty():
+        push_warning("PhaseManager: No saboteur candidates available!")
+        return
+    
+    # If saboteur already selected, don't reselect
+    if selected_saboteur != null:
+        return
+    
+    # Randomly pick one candidate
+    var index = randi() % saboteur_candidates.size()
+    selected_saboteur = saboteur_candidates[index]
+    
+    print("PhaseManager: Selected saboteur - ", selected_saboteur.npc_name)
+    
+    # Attach saboteur AI components to the selected NPC
+    _attach_saboteur_components(selected_saboteur)
+
+func _attach_saboteur_components(npc: NPCBase):
+    """Attach saboteur AI and character mode components to the selected NPC"""
+    # Check if components already exist
+    if npc.has_node("SaboteurPatrolAI"):
+        return
+    
+    # Create and attach SaboteurPatrolAI
+    var patrol_ai = preload("res://scripts/npcs/saboteur_patrol_ai.gd").new()
+    patrol_ai.name = "SaboteurPatrolAI"
+    npc.add_child(patrol_ai)
+    patrol_ai.add_to_group("saboteur_ai")
+    
+    # Create and attach SaboteurCharacterModes
+    var char_modes = preload("res://scripts/npcs/saboteur_character_modes.gd").new()
+    char_modes.name = "SaboteurCharacterModes"
+    npc.add_child(char_modes)
+    
+    print("PhaseManager: Attached saboteur components to ", npc.npc_name)
+
+func activate_saboteur_manually():
+    """Manually activate the saboteur (for debug purposes)"""
+    if selected_saboteur == null:
+        _select_random_saboteur()
+    
+    if selected_saboteur == null:
+        push_warning("PhaseManager: Cannot activate - no saboteur selected")
+        return
+    
+    # Activate the saboteur AI
+    var saboteur_ai = selected_saboteur.get_node_or_null("SaboteurPatrolAI")
+    if saboteur_ai and saboteur_ai.has_method("set_active"):
+        saboteur_ai.set_active(true)
+        print("PhaseManager: Manually activated saboteur - ", selected_saboteur.npc_name)
+    
+    # Transform to saboteur mode
+    var char_modes = selected_saboteur.get_node_or_null("SaboteurCharacterModes")
+    if char_modes and char_modes.has_method("switch_to_saboteur_mode"):
+        char_modes.switch_to_saboteur_mode()
+
+func deactivate_saboteur_manually():
+    """Manually deactivate the saboteur (for debug purposes)"""
+    if selected_saboteur == null:
+        return
+    
+    # Deactivate the saboteur AI
+    var saboteur_ai = selected_saboteur.get_node_or_null("SaboteurPatrolAI")
+    if saboteur_ai and saboteur_ai.has_method("set_active"):
+        saboteur_ai.set_active(false)
+        print("PhaseManager: Manually deactivated saboteur")
+    
+    # Transform back to normal mode
+    var char_modes = selected_saboteur.get_node_or_null("SaboteurCharacterModes")
+    if char_modes and char_modes.has_method("switch_to_normal_mode"):
+        char_modes.switch_to_normal_mode()
+
+func get_current_saboteur() -> NPCBase:
+    """Get the currently selected saboteur NPC"""
+    return selected_saboteur

@@ -187,6 +187,76 @@ func _ready():
         waypoint_viz_checkbox.set_pressed(false)  # Start with visualization off
         waypoint_viz_checkbox.toggled.connect(_on_waypoint_viz_toggled)
         vbox_for_button.add_child(waypoint_viz_checkbox)
+        
+        # Add separator for saboteur controls
+        var sep2 = HSeparator.new()
+        vbox_for_button.add_child(sep2)
+        
+        # Add saboteur controls section
+        var saboteur_label = Label.new()
+        saboteur_label.text = "Saboteur Controls:"
+        vbox_for_button.add_child(saboteur_label)
+        
+        # Add activate saboteur button
+        var activate_saboteur_btn = Button.new()
+        activate_saboteur_btn.name = "ActivateSaboteurButton"
+        activate_saboteur_btn.text = "Activate Saboteur"
+        activate_saboteur_btn.pressed.connect(_on_activate_saboteur_pressed)
+        vbox_for_button.add_child(activate_saboteur_btn)
+        
+        # Add deactivate saboteur button
+        var deactivate_saboteur_btn = Button.new()
+        deactivate_saboteur_btn.name = "DeactivateSaboteurButton"
+        deactivate_saboteur_btn.text = "Deactivate Saboteur"
+        deactivate_saboteur_btn.pressed.connect(_on_deactivate_saboteur_pressed)
+        vbox_for_button.add_child(deactivate_saboteur_btn)
+        
+        # Add saboteur status label
+        var saboteur_status = Label.new()
+        saboteur_status.name = "SaboteurStatusLabel"
+        saboteur_status.text = "Saboteur: Not Selected"
+        saboteur_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        vbox_for_button.add_child(saboteur_status)
+        
+        # Add separator for saboteur visualization
+        var sep3 = HSeparator.new()
+        vbox_for_button.add_child(sep3)
+        
+        # Add saboteur visualization label
+        var viz_label = Label.new()
+        viz_label.text = "Saboteur Debug Visualization:"
+        vbox_for_button.add_child(viz_label)
+        
+        # Add visualization checkboxes
+        var awareness_checkbox = CheckBox.new()
+        awareness_checkbox.name = "AwarenessCheckbox"
+        awareness_checkbox.text = "Show Detection Range"
+        awareness_checkbox.toggled.connect(_on_awareness_toggled)
+        vbox_for_button.add_child(awareness_checkbox)
+        
+        var vision_checkbox = CheckBox.new()
+        vision_checkbox.name = "VisionCheckbox"
+        vision_checkbox.text = "Show Vision Cone"
+        vision_checkbox.toggled.connect(_on_vision_toggled)
+        vbox_for_button.add_child(vision_checkbox)
+        
+        var sound_checkbox = CheckBox.new()
+        sound_checkbox.name = "SoundCheckbox"
+        sound_checkbox.text = "Show Sound Detection"
+        sound_checkbox.toggled.connect(_on_sound_toggled)
+        vbox_for_button.add_child(sound_checkbox)
+        
+        var state_checkbox = CheckBox.new()
+        state_checkbox.name = "StateCheckbox"
+        state_checkbox.text = "Show AI State"
+        state_checkbox.toggled.connect(_on_state_toggled)
+        vbox_for_button.add_child(state_checkbox)
+        
+        var path_checkbox = CheckBox.new()
+        path_checkbox.name = "PathCheckbox"
+        path_checkbox.text = "Show Patrol Path"
+        path_checkbox.toggled.connect(_on_path_toggled)
+        vbox_for_button.add_child(path_checkbox)
     
     # Get waypoint network manager
     waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
@@ -294,8 +364,10 @@ func _input(event):
             Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _process(_delta):
-    if visible and selected_npc:
-        _update_ui()
+    if visible:
+        if selected_npc:
+            _update_ui()
+        _update_saboteur_status()
 
 func _update_ui():
     if not schedule_manager:
@@ -500,3 +572,96 @@ func _fix_positioning():
 #     # Toggle between NavMesh and Direct/Waypoint movement
 #     selected_npc.use_navmesh = not selected_npc.use_navmesh
 #     print("Toggled movement system to: ", "NavMesh" if selected_npc.use_navmesh else "Direct/Waypoint")
+
+func _on_activate_saboteur_pressed():
+    var phase_manager = get_tree().get_first_node_in_group("phase_manager")
+    if phase_manager and phase_manager.has_method("activate_saboteur_manually"):
+        phase_manager.activate_saboteur_manually()
+        _update_saboteur_status()
+
+func _on_deactivate_saboteur_pressed():
+    var phase_manager = get_tree().get_first_node_in_group("phase_manager")
+    if phase_manager and phase_manager.has_method("deactivate_saboteur_manually"):
+        phase_manager.deactivate_saboteur_manually()
+        _update_saboteur_status()
+
+func _update_saboteur_status():
+    var status_label = get_node_or_null("ScrollContainer/VBoxContainer/SaboteurStatusLabel")
+    if not status_label:
+        status_label = get_node_or_null("VBoxContainer/SaboteurStatusLabel")
+    
+    if not status_label:
+        return
+    
+    var phase_manager = get_tree().get_first_node_in_group("phase_manager")
+    if not phase_manager:
+        status_label.text = "Saboteur: No Phase Manager"
+        return
+    
+    var saboteur = phase_manager.get_current_saboteur()
+    if saboteur:
+        var saboteur_ai = saboteur.get_node_or_null("SaboteurPatrolAI")
+        var is_active = saboteur_ai != null and saboteur_ai.is_active
+        status_label.text = "Saboteur: " + saboteur.npc_name + " (" + ("Active" if is_active else "Inactive") + ")"
+    else:
+        status_label.text = "Saboteur: Not Selected"
+
+func _on_awareness_toggled(button_pressed: bool):
+    _update_saboteur_visualization()
+
+func _on_vision_toggled(button_pressed: bool):
+    _update_saboteur_visualization()
+
+func _on_sound_toggled(button_pressed: bool):
+    _update_saboteur_visualization()
+
+func _on_state_toggled(button_pressed: bool):
+    _update_saboteur_visualization()
+
+func _on_path_toggled(button_pressed: bool):
+    _update_saboteur_visualization()
+
+func _update_saboteur_visualization():
+    """Update saboteur debug visualization based on checkbox states"""
+    var phase_manager = get_tree().get_first_node_in_group("phase_manager")
+    if not phase_manager:
+        return
+    
+    var saboteur = phase_manager.get_current_saboteur()
+    if not saboteur:
+        return
+    
+    var saboteur_ai = saboteur.get_node_or_null("SaboteurPatrolAI")
+    if not saboteur_ai:
+        return
+    
+    # Get checkbox states
+    var awareness_cb = get_node_or_null("ScrollContainer/VBoxContainer/AwarenessCheckbox")
+    if not awareness_cb:
+        awareness_cb = get_node_or_null("VBoxContainer/AwarenessCheckbox")
+    
+    var vision_cb = get_node_or_null("ScrollContainer/VBoxContainer/VisionCheckbox")
+    if not vision_cb:
+        vision_cb = get_node_or_null("VBoxContainer/VisionCheckbox")
+        
+    var sound_cb = get_node_or_null("ScrollContainer/VBoxContainer/SoundCheckbox")
+    if not sound_cb:
+        sound_cb = get_node_or_null("VBoxContainer/SoundCheckbox")
+        
+    var state_cb = get_node_or_null("ScrollContainer/VBoxContainer/StateCheckbox")
+    if not state_cb:
+        state_cb = get_node_or_null("VBoxContainer/StateCheckbox")
+        
+    var path_cb = get_node_or_null("ScrollContainer/VBoxContainer/PathCheckbox")
+    if not path_cb:
+        path_cb = get_node_or_null("VBoxContainer/PathCheckbox")
+    
+    # Update visualization
+    if saboteur_ai.has_method("set_debug_visualization"):
+        saboteur_ai.set_debug_visualization(
+            awareness_cb.button_pressed if awareness_cb else false,
+            vision_cb.button_pressed if vision_cb else false,
+            state_cb.button_pressed if state_cb else false,
+            path_cb.button_pressed if path_cb else false,
+            sound_cb.button_pressed if sound_cb else false
+        )
