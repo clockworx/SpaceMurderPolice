@@ -461,6 +461,10 @@ func _handle_waypoint_movement(delta):
     
     move_and_slide()
     
+    # Debug stuck detection for Alex Chen
+    if npc_name == "Alex Chen" and velocity.length() < 0.1 and is_moving:
+        print("Alex Chen: Stuck? Velocity near zero while moving. Position: ", global_position)
+    
     # Rotate to face movement direction
     if direction.length() > 0.1:
         var target_rotation = atan2(-direction.x, -direction.z)
@@ -1655,6 +1659,13 @@ func _pick_random_room_to_visit():
     # Remove current room from options
     var current_pos = global_position
     var current_room_waypoint = waypoint_network_manager._find_nearest_waypoint(current_pos)
+    
+    # Special debug for Alex Chen
+    if npc_name == "Alex Chen" and current_room_waypoint == "Engineering_Center":
+        print("Alex Chen: Current position: ", global_position)
+        print("Alex Chen: Current waypoint: ", current_room_waypoint)
+        print("Alex Chen: Is moving: ", is_moving)
+        print("Alex Chen: Current state: ", current_state)
     
     # Filter out the current room
     var available_rooms = []
