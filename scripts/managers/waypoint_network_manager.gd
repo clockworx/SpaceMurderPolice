@@ -208,9 +208,20 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
     var position_path: Array[Vector3] = []
     var previous_pos: Vector3 = from_position
     
-    # Debug path for Zara
-    if from_position.distance_to(Vector3(-5, 0, -28)) < 2.0:
-        print("  Path waypoint names: ", path)
+    # Debug path for NPCs in rooms
+    var in_room = false
+    for room_center in ["Engineering_Center", "Security_Center", "Laboratory_Center", "MedicalBay_Center"]:
+        var room_node = waypoint_nodes.get(room_center)
+        if room_node:
+            var room_pos = room_node.position
+            if from_position.distance_to(room_pos) < 10.0:
+                in_room = true
+                if path.size() > 1 and path[0] == room_center:
+                    var expected_door = room_center.replace("_Center", "_Door_Red")
+                    if path[1] != expected_door:
+                        print("  ERROR: NPC in ", room_center, " not using door! Path: ", path)
+                        print("  Expected next waypoint: ", expected_door, " but got: ", path[1])
+                break
     
     # print("Converting path to positions with diagonal fixes:")
     for i in range(path.size()):
@@ -310,6 +321,10 @@ func _find_nearest_waypoint(position: Vector3) -> String:
     if room_center != "" and room_center_distance < 5.0:
         # print("Inside room: ", room_center, " at distance: ", room_center_distance)
         return room_center
+    
+    # Special case: If we're at a door waypoint, return it instead of room center
+    if nearest_name.contains("_Door_") and nearest_distance < 1.0:
+        return nearest_name
     
     # Otherwise return the nearest waypoint
     # print("Using nearest waypoint: ", nearest_name, " at distance: ", nearest_distance)
