@@ -39,9 +39,9 @@ var room_connections: Dictionary = {
     # Main hallway connections
     "Hallway_Central": ["Hallway_West", "Hallway_LabTurn", "Hallway_CafeteriaTurn", "Hallway_East", "Hallway_SecurityTurn"],
     "Hallway_LabTurn": ["Lab_Door_Green", "Hallway_Central", "Hallway_South", "Hallway_East", "Cafeteria_Center"],
-    "Hallway_South": ["Hallway_LabTurn", "Hallway_CrewCorner"],
+    "Hallway_South": ["Hallway_LabTurn", "Hallway_CrewCorner", "Hallway_CrewApproach"],
     "Hallway_CrewCorner": ["Hallway_CrewApproach", "Hallway_South", "Hallway_DirectToCafe"],
-    "Hallway_CrewApproach": ["Crew_Door_Green", "Hallway_CrewCorner"],
+    "Hallway_CrewApproach": ["Crew_Door_Green", "Hallway_CrewCorner", "Hallway_South"],
     "Hallway_DirectToCafe": ["Hallway_CrewCorner", "Hallway_CafeteriaTurn"],
     "Hallway_CafeteriaTurn": ["Cafeteria_Door_Green", "Hallway_Central", "Hallway_DirectToCafe"],
     "Hallway_MedicalTurn": ["Medical_Door_Green", "Hallway_FarEast"],
@@ -208,6 +208,9 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
     var position_path: Array[Vector3] = []
     var previous_pos: Vector3 = from_position
     
+    # Debug path for Zara
+    if from_position.distance_to(Vector3(-5, 0, -28)) < 2.0:
+        print("  Path waypoint names: ", path)
     
     # print("Converting path to positions with diagonal fixes:")
     for i in range(path.size()):
