@@ -102,15 +102,8 @@ func _ready():
     else:
         push_warning("SaboteurPatrolAI: Player not found!")
     
-    # Create debug visualizations based on settings
-    if show_state_indicators:
-        _create_state_indicators()
-    if show_awareness_sphere or show_vision_cone:
-        _create_awareness_visualization()
-    if show_sound_detection:
-        _create_sound_detection_visualization()
-    if show_patrol_path:
-        _create_patrol_path_visualization()
+    # Don't create visualizations in _ready since they start disabled
+    # They will be created when activated or when debug settings change
     
     # Start patrolling
     # Debug: Starting patrol route
@@ -1042,6 +1035,9 @@ func _update_patrol_path_visualization():
 
 func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: bool, sound: bool):
     """Update debug visualization settings"""
+    print("SaboteurPatrolAI: Setting debug visualization - awareness:", awareness, " vision:", vision, " state:", state, " path:", path, " sound:", sound)
+    print("  Current is_active:", is_active)
+    
     show_awareness_sphere = awareness
     show_vision_cone = vision
     show_state_indicators = state
@@ -1050,25 +1046,35 @@ func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: b
     
     # Create visualizations if they don't exist and AI is active
     if is_active:
-        if not state_light:
+        if not state_light and (state or not (awareness or vision or path or sound)):
+            print("  Creating state indicators")
             _create_state_indicators()
-        if not awareness_sphere:
+        if not awareness_sphere and (awareness or vision):
+            print("  Creating awareness visualization")
             _create_awareness_visualization()
-        if not sound_detection_sphere:
+        if not sound_detection_sphere and sound:
+            print("  Creating sound detection visualization")
             _create_sound_detection_visualization()
-        if not patrol_path_line:
+        if not patrol_path_line and path:
+            print("  Creating patrol path visualization")
             _create_patrol_path_visualization()
     
     # Update visibility of existing visualizations
     if awareness_sphere:
         awareness_sphere.visible = show_awareness_sphere and is_active
+        print("  Awareness sphere visible:", awareness_sphere.visible)
     if vision_cone_mesh:
         vision_cone_mesh.visible = show_vision_cone and is_active
+        print("  Vision cone visible:", vision_cone_mesh.visible)
     if state_light:
         state_light.visible = show_state_indicators and is_active
+        print("  State light visible:", state_light.visible)
     if state_label:
         state_label.visible = show_state_indicators and is_active
+        print("  State label visible:", state_label.visible)
     if patrol_path_line:
         patrol_path_line.visible = show_patrol_path and is_active
+        print("  Patrol path visible:", patrol_path_line.visible)
     if sound_detection_sphere:
         sound_detection_sphere.visible = show_sound_detection and is_active
+        print("  Sound detection visible:", sound_detection_sphere.visible)

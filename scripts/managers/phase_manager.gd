@@ -386,6 +386,11 @@ func activate_saboteur_manually():
     if saboteur_ai and saboteur_ai.has_method("set_active"):
         saboteur_ai.set_active(true)
         print("PhaseManager: Manually activated saboteur - ", selected_saboteur.npc_name)
+        
+        # Update debug visualizations based on current UI settings
+        var debug_ui = get_tree().get_first_node_in_group("schedule_debug_ui")
+        if debug_ui and debug_ui.has_method("_update_saboteur_visualization"):
+            debug_ui._update_saboteur_visualization()
     
     # Transform to saboteur mode
     var char_modes = selected_saboteur.get_node_or_null("SaboteurCharacterModes")

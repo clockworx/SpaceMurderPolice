@@ -27,6 +27,9 @@ var available_npcs: Array[NPCBase] = []
 func _ready():
     # print("Schedule Debug UI: Initializing...")
     
+    # Add to group so it can be found
+    add_to_group("schedule_debug_ui")
+    
     if not schedule_manager:
         # print("Schedule Debug UI: ERROR - No schedule manager found!")
         queue_free()
