@@ -38,9 +38,10 @@ var room_connections: Dictionary = {
     
     # Main hallway connections
     "Hallway_Central": ["Hallway_West", "Hallway_LabTurn", "Hallway_CafeteriaTurn", "Hallway_East", "Hallway_SecurityTurn"],
-    "Hallway_LabTurn": ["Lab_Door_Green", "Hallway_Central", "Hallway_South", "Hallway_East", "Cafeteria_Center", "Hallway_CrewCorner"],
-    "Hallway_South": ["Hallway_LabTurn", "Hallway_CrewCorner"],
-    "Hallway_CrewCorner": ["Hallway_CrewApproach", "Hallway_South", "Hallway_DirectToCafe", "Hallway_LabTurn"],
+    "Hallway_LabTurn": ["Lab_Door_Green", "Hallway_Central", "Hallway_SouthBend", "Hallway_East", "Cafeteria_Center"],
+    "Hallway_SouthBend": ["Hallway_LabTurn", "Hallway_South"],
+    "Hallway_South": ["Hallway_SouthBend", "Hallway_CrewCorner"],
+    "Hallway_CrewCorner": ["Hallway_CrewApproach", "Hallway_South", "Hallway_DirectToCafe"],
     "Hallway_CrewApproach": ["Crew_Door_Green", "Hallway_CrewCorner"],
     "Hallway_DirectToCafe": ["Hallway_CrewCorner", "Hallway_CafeteriaTurn"],
     "Hallway_CafeteriaTurn": ["Cafeteria_Door_Green", "Hallway_Central", "Hallway_DirectToCafe"],
@@ -112,9 +113,12 @@ func _initialize_waypoints():
     _create_corner_waypoint("Hallway_LabTurn", Vector3(5.67, 0, 4))
     _create_debug_marker(Vector3(5.67, 0, 4), Color.YELLOW, "Hallway_LabTurn")
     
-    # South hallway connection
-    _create_corner_waypoint("Hallway_South", Vector3(5.67, 0, -10))
-    _create_debug_marker(Vector3(5.67, 0, -10), Color.YELLOW, "Hallway_South")
+    # South hallway connections - create a smoother path
+    _create_corner_waypoint("Hallway_SouthBend", Vector3(5.67, 0, -5))
+    _create_debug_marker(Vector3(5.67, 0, -5), Color.YELLOW, "Hallway_SouthBend")
+    
+    _create_corner_waypoint("Hallway_South", Vector3(4.5, 0, -15))
+    _create_debug_marker(Vector3(4.5, 0, -15), Color.YELLOW, "Hallway_South")
     
     # Crew quarters corner - must be west of door to prevent backtracking
     _create_corner_waypoint("Hallway_CrewCorner", Vector3(3, 0, -20))
