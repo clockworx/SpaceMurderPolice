@@ -102,17 +102,18 @@ func _ready():
         time_speed_slider.value_changed.connect(_on_time_speed_changed)
     else:
         # print("Schedule Debug UI: Warning - time_speed_slider not found")
-        
+        pass
     if pause_button:
         pause_button.pressed.connect(_on_pause_pressed)
     else:
         # print("Schedule Debug UI: Warning - pause_button not found")
-        
+        pass
     if force_move_button:
         force_move_button.pressed.connect(_on_force_move_pressed)
         # print("Schedule Debug UI: Force move button connected")
     else:
         # print("Schedule Debug UI: ERROR - force_move_button not found!")
+        pass
     
     # Add movement toggle button if it doesn't exist
     # if not movement_toggle_button:
@@ -257,6 +258,7 @@ func _input(event):
             if force_move_button:
                 # print("  Button text: ", force_move_button.text)
                 # print("  Button disabled: ", force_move_button.disabled)
+                pass
             
             # Make sure the UI is visible
             z_index = 100
@@ -272,12 +274,12 @@ func _input(event):
                 # print("Force move button position: ", force_move_button.position)
                 # print("Force move button size: ", force_move_button.size)
                 # print("Force move button visible: ", force_move_button.visible)
-                
+                pass
             # Debug room dropdown
             if room_option_button:
                 # print("Room dropdown selected: ", room_option_button.selected)
                 # print("Room dropdown item count: ", room_option_button.get_item_count())
-                
+                pass
             # Debug VBox position
             var vbox_debug = get_node_or_null("ScrollContainer/VBoxContainer")
             if not vbox_debug:
@@ -286,6 +288,7 @@ func _input(event):
                 # print("VBox global position: ", vbox_debug.global_position)
                 # print("VBox position: ", vbox_debug.position)
                 # print("VBox size: ", vbox_debug.size)
+                pass
         else:
             # Capture mouse when hiding debug UI
             Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)

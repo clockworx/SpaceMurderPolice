@@ -234,15 +234,10 @@ var was_navigating_before_interrupt: bool = false
 func _ready():
     if Engine.is_editor_hint():
         return
-
-func _exit_tree():
-    # Clean up static reference if this NPC was talking
-    if npc_currently_talking == self:
-        npc_currently_talking = null
         
     collision_layer = 2  # Interactable layer
     collision_mask = 1   # Collide with environment
-    
+
     # Add to npcs group for easy finding
     add_to_group("npcs")
     
@@ -335,6 +330,11 @@ func _exit_tree():
     if npc_name == "Dr. Marcus Webb":
         # print("=== NAVIGATION TEST READY FOR ", npc_name, " ===")
         set_process_input(true)
+
+func _exit_tree():
+    # Clean up static reference if this NPC was talking
+    if npc_currently_talking == self:
+        npc_currently_talking = null
 
 func _input(event):
     # Test navigation with keyboard
@@ -527,8 +527,11 @@ func _on_waypoint_navigation_finished():
         # Wait 5 seconds before checking schedule again
         await get_tree().create_timer(5.0).timeout
         
-        # After pause, pick a new room to visit
-        if use_schedule:  # Double-check in case it was disabled during wait
+        # After pause, check schedule for next location
+        if use_schedule and schedule_manager:  # Double-check in case it was disabled during wait
+            schedule_manager.update_npc_schedule(npc_name)
+        else:
+            # Only pick random room if not using schedule
             _pick_random_room_to_visit()
 
 func _calculate_avoidance_vector() -> Vector3:
@@ -545,6 +548,7 @@ func _calculate_avoidance_vector() -> Vector3:
             
             if debug_avoidance:
                 # print(npc_name, ": Avoiding ", other_npc.npc_name, " at distance ", distance)
+                pass
     
     # Normalize but preserve some magnitude based on number of NPCs to avoid
     if avoidance.length() > 0:
@@ -577,6 +581,7 @@ func _apply_personal_space():
             
             if debug_avoidance:
                 # print(npc_name, ": Adjusting position away from ", other_npc.npc_name)
+                pass
 
 func _update_avoidance_visualization():
     if show_avoidance_radius:
@@ -1787,11 +1792,12 @@ func _on_schedule_changed(character_name: String, new_room: ScheduleManager.Room
     # Use the waypoint name with _Center suffix for all rooms
     var room_center_waypoint = waypoint_name.replace("_Waypoint", "_Center")
     
-    print(npc_name + ": Schedule changed - heading to " + assigned_room + " (waypoint: " + room_center_waypoint + ")")
+    # print(npc_name + ": Schedule changed - heading to " + assigned_room + " (waypoint: " + room_center_waypoint + ")")
     
     # Navigate to the scheduled room
     if not navigate_to_room(room_center_waypoint):
-        print(npc_name + ": Failed to navigate to " + room_center_waypoint)
+        # print(npc_name + ": Failed to navigate to " + room_center_waypoint)
+        pass
 
 # Navigation functions disabled - NPCs are stationary
 
@@ -1812,10 +1818,11 @@ func _pick_random_room_to_visit():
     
     # Special debug for Alex Chen
     if npc_name == "Alex Chen" and current_room_waypoint == "Engineering_Center":
-        print("Alex Chen: Current position: ", global_position)
-        print("Alex Chen: Current waypoint: ", current_room_waypoint)
-        print("Alex Chen: Is moving: ", is_moving)
-        print("Alex Chen: Current state: ", current_state)
+        # print("Alex Chen: Current position: ", global_position)
+        # print("Alex Chen: Current waypoint: ", current_room_waypoint)
+        # print("Alex Chen: Is moving: ", is_moving)
+        # print("Alex Chen: Current state: ", current_state)
+        pass
     
     # Filter out the current room
     var available_rooms = []
@@ -1826,9 +1833,10 @@ func _pick_random_room_to_visit():
     # Pick a random room
     if available_rooms.size() > 0:
         var random_room = available_rooms[randi() % available_rooms.size()]
-        print(npc_name + ": Deciding to visit " + random_room)
+        # print(npc_name + ": Deciding to visit " + random_room)
         if not navigate_to_room(random_room):
-            print(npc_name + ": Failed to navigate to " + random_room)
+            # print(npc_name + ": Failed to navigate to " + random_room)
+            pass
 
 # Getters for external systems
 
@@ -1846,12 +1854,13 @@ func _initial_schedule_check():
     if not waypoint_network_manager:
         waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
         if not waypoint_network_manager:
-            print(npc_name + ": ERROR - No waypoint network manager found!")
+            # print(npc_name + ": ERROR - No waypoint network manager found!")
             return
     
     # Check waypoint availability and perform schedule check
     if waypoint_network_manager.waypoint_nodes.size() > 0:
-        print(npc_name + ": Schedule initialized (network ready with " + str(waypoint_network_manager.waypoint_nodes.size()) + " waypoints)")
+        # print(npc_name + ": Schedule initialized (network ready with " + str(waypoint_network_manager.waypoint_nodes.size()) + " waypoints)")
+        pass
     
     schedule_manager.update_npc_schedule(npc_name)
 
@@ -1870,7 +1879,7 @@ func _setup_schedule_manager():
             # print(npc_name + ": Found schedule manager on second attempt")
             pass
         else:
-            print(npc_name + ": ERROR: Still no schedule manager found!")
+            # print(npc_name + ": ERROR: Still no schedule manager found!")
             return
     
     # Connect to schedule changes if manager exists

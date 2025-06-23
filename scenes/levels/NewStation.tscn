@@ -377,13 +377,6 @@ crouched_sound_radius_multiplier = 1.0
 running_sound_radius_multiplier = 5.0
 sound_investigation_duration = 3.0
 use_schedule = false
-show_waypoint_path = null
-enable_npc_avoidance = null
-avoidance_radius = null
-avoidance_force = null
-personal_space_radius = null
-debug_avoidance = null
-show_avoidance_radius = null
 show_detection_indicator = false
 
 [node name="DetectionIndicator" type="MeshInstance3D" parent="NPCs/ChiefScientist"]
@@ -393,58 +386,23 @@ mesh = SubResource("SphereMesh_g673t")
 
 [node name="MedicalOfficer" parent="NPCs" instance=ExtResource("21_medical")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 38, 0.144, 2)
-show_waypoint_path = null
 show_current_waypoint_index = 0
-enable_npc_avoidance = null
-avoidance_radius = null
-avoidance_force = null
-personal_space_radius = null
-debug_avoidance = null
-show_avoidance_radius = null
 
 [node name="Engineer" parent="NPCs" instance=ExtResource("22_engineer")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -36, 0.144, 4)
-show_waypoint_path = null
 show_current_waypoint_index = 0
-enable_npc_avoidance = null
-avoidance_radius = null
-avoidance_force = null
-personal_space_radius = null
-debug_avoidance = null
-show_avoidance_radius = null
 
 [node name="SecurityChief" parent="NPCs" instance=ExtResource("23_security_chief")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -13, 0.144, 8)
-show_waypoint_path = null
 show_current_waypoint_index = 0
-enable_npc_avoidance = null
-avoidance_radius = null
-avoidance_force = null
-personal_space_radius = null
-debug_avoidance = null
-show_avoidance_radius = null
 
 [node name="AISpecialist" parent="NPCs" instance=ExtResource("24_ai_specialist")]
 transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, -5, 0.144, -28)
-show_waypoint_path = null
 show_current_waypoint_index = 0
-enable_npc_avoidance = null
-avoidance_radius = null
-avoidance_force = null
-personal_space_radius = null
-debug_avoidance = null
-show_avoidance_radius = null
 
 [node name="SecurityOfficer" parent="NPCs" instance=ExtResource("25_security")]
 transform = Transform3D(-0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, -0.707107, -13, 0.144, 10)
-show_waypoint_path = null
 show_current_waypoint_index = 0
-enable_npc_avoidance = null
-avoidance_radius = null
-avoidance_force = null
-personal_space_radius = null
-debug_avoidance = null
-show_avoidance_radius = null
 
 [node name="Waypoints" type="Node3D" parent="." groups=["waypoints"]]
 metadata/_edit_group_ = true

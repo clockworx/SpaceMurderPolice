@@ -232,6 +232,7 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
                     if expected_door != "" and path[1] != expected_door:
                         # print("  ERROR: NPC in ", room_center, " not using door! Path: ", path)
                         # print("  Expected next waypoint: ", expected_door, " but got: ", path[1])
+                        pass
                 break
     
     # print("Converting path to positions with diagonal fixes:")

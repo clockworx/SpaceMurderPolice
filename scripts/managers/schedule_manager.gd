@@ -311,3 +311,4 @@ func _enable_all_npc_schedules():
             npc.use_schedule = true
             if debug_mode:
                 # print("Enabled schedule for: ", npc.npc_name)
+                pass

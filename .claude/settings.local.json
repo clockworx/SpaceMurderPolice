@@ -30,7 +30,8 @@
       "Bash(git config:*)",
       "Bash(git commit:*)",
       "Bash(echo:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git reset:*)"
     ],
     "deny": []
   }
