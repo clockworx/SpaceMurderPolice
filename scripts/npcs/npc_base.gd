@@ -406,7 +406,8 @@ func navigate_to_room(room_waypoint_name: String):
     # Debug for Zara
     if npc_name == "Dr. Zara Okafor":
         print("  Zara's path has ", path.size(), " waypoints")
-        for i in range(min(5, path.size())):
+        # Show ALL waypoints to see the full path
+        for i in range(path.size()):
             print("    Waypoint ", i, ": ", path[i])
     
     # The waypoint network should now handle cafeteria to lab paths efficiently

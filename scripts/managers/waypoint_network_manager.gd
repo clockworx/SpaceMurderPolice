@@ -200,6 +200,11 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
     var position_path: Array[Vector3] = []
     var previous_pos: Vector3 = from_position
     
+    # Special debug for Dr. Zara Okafor
+    var debug_zara = from_position.distance_to(Vector3(-5, 0, -28)) < 2.0
+    if debug_zara:
+        print("  Path waypoint names: ", path)
+    
     # print("Converting path to positions with diagonal fixes:")
     for i in range(path.size()):
         var waypoint_name = path[i]
@@ -605,10 +610,11 @@ func _create_door_waypoints():
                 green_local_pos = Vector3(0, 0, -2)  # Maps to west (hallway)
                 red_local_pos = Vector3(0, 0, 2)     # Maps to east (inside engineering)
             "Crew Quarters":
-                # Door is rotated 90 degrees - local Z maps to world X
-                # Green should be west (1.87) in hallway, Red should be east (5.87) inside room
-                green_local_pos = Vector3(0, 0, -2)  # Maps to west (hallway)
-                red_local_pos = Vector3(0, 0, 2)     # Maps to east (inside crew)
+                # Door is rotated 90 degrees - local Z maps to world -X
+                # Room center is at (-5.39, 0, -28.52), door is at (3.87, 0, -24.03)
+                # Room is WEST of door, so red should be west, green should be east
+                red_local_pos = Vector3(0, 0, 2)     # Maps to west (inside room)
+                green_local_pos = Vector3(0, 0, -2)  # Maps to east (hallway)
             "Cafeteria":
                 # Door is rotated 180 degrees - local Z maps to world -Z
                 # Green should be south (12.4) in hallway, Red should be north (16.4) inside room
