@@ -7,6 +7,8 @@
     <list default="true" id="7ba0bc43-672e-4562-8a9f-5141d0b59474" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" beforeDir="false" afterPath="$PROJECT_DIR$/scenes/levels/NewStation.tscn" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/managers/waypoint_network_manager.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/managers/waypoint_network_manager.gd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/npc_base.gd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/ui/schedule_debug_ui.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ui/schedule_debug_ui.gd" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -86,7 +88,7 @@
       <workItem from="1748916272950" duration="13967000" />
       <workItem from="1750553180689" duration="140000" />
       <workItem from="1750619584768" duration="13436000" />
-      <workItem from="1750647781127" duration="13958000" />
+      <workItem from="1750647781127" duration="14667000" />
     </task>
     <servers />
   </component>

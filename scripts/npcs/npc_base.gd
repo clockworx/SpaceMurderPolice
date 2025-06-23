@@ -403,6 +403,12 @@ func navigate_to_room(room_waypoint_name: String):
         print("  Available waypoints: ", waypoint_network_manager.waypoint_nodes.keys())
         return false
     
+    # Debug for Zara
+    if npc_name == "Dr. Zara Okafor":
+        print("  Zara's path has ", path.size(), " waypoints")
+        for i in range(min(5, path.size())):
+            print("    Waypoint ", i, ": ", path[i])
+    
     # The waypoint network should now handle cafeteria to lab paths efficiently
     
     # Clear any existing path first
@@ -467,6 +473,15 @@ func _on_waypoint_navigation_finished():
     is_moving = false
     velocity = Vector3.ZERO
     _clear_path_visualization()
+    
+    # If using schedule, pause in the room before moving to next location
+    if use_schedule and schedule_manager:
+        # Wait 5 seconds before checking schedule again
+        await get_tree().create_timer(5.0).timeout
+        
+        # After pause, pick a new room to visit
+        if use_schedule:  # Double-check in case it was disabled during wait
+            _pick_random_room_to_visit()
 
 func _visualize_waypoint_path():
     # Clear existing visualization
@@ -1618,11 +1633,42 @@ func _on_schedule_changed(character_name: String, new_room: ScheduleManager.Room
     
     print(npc_name + ": Schedule changed - heading to " + assigned_room + " (waypoint: " + room_center_waypoint + ")")
     
+    # Special debug for Zara to see why she's getting stuck
+    if npc_name == "Dr. Zara Okafor":
+        print("  Zara's current position: ", global_position)
+    
     # Navigate to the scheduled room
     if not navigate_to_room(room_center_waypoint):
         print(npc_name + ": Failed to navigate to " + room_center_waypoint)
 
 # Navigation functions disabled - NPCs are stationary
+
+func _pick_random_room_to_visit():
+    # For now, just visit rooms randomly
+    var rooms = [
+        "Laboratory_Center",
+        "MedicalBay_Center", 
+        "Security_Center",
+        "Engineering_Center",
+        "CrewQuarters_Center",
+        "Cafeteria_Center"
+    ]
+    
+    # Remove current room from options
+    var current_pos = global_position
+    var current_room_waypoint = waypoint_network_manager._find_nearest_waypoint(current_pos)
+    
+    # Filter out the current room
+    var available_rooms = []
+    for room in rooms:
+        if not current_room_waypoint.begins_with(room.split("_")[0]):
+            available_rooms.append(room)
+    
+    # Pick a random room
+    if available_rooms.size() > 0:
+        var random_room = available_rooms[randi() % available_rooms.size()]
+        print(npc_name + ": Deciding to visit " + random_room)
+        navigate_to_room(random_room)
 
 # Getters for external systems
 
