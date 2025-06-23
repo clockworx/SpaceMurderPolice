@@ -404,10 +404,7 @@ func navigate_to_room(room_waypoint_name: String):
         return false
     
     # Debug: Check if NPCs are using doors when leaving rooms
-    if path.size() > 1:
-        var first_waypoint = path[0]
-        if first_waypoint.ends_with("_Center") and not path[1].contains("Door"):
-            print("  WARNING: ", npc_name, " not using door to exit ", first_waypoint, "! Next waypoint: ", path[1])
+    # (This check is now done in waypoint_network_manager where we have waypoint names)
     
     
     # The waypoint network should now handle cafeteria to lab paths efficiently
