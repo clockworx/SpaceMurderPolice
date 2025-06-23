@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://dxffoqv4y33v"]
+[gd_scene load_steps=36 format=3 uid="uid://dxffoqv4y33v"]
 
 [ext_resource type="ArrayMesh" uid="uid://bjilx5xgyvh80" path="res://scenes/ship/station_noceiling.obj" id="1_0djrh"]
 [ext_resource type="PackedScene" uid="uid://b8xn5q7y8vkxd" path="res://scenes/player/player.tscn" id="2_kk3bs"]
@@ -16,6 +16,11 @@
 [ext_resource type="PackedScene" uid="uid://dq431f482mbx8" path="res://scenes/evidence/keycard_evidence.tscn" id="17_keycard"]
 [ext_resource type="PackedScene" uid="uid://c4xh5rd7yfh8n" path="res://scenes/evidence/physical_evidence.tscn" id="18_phys_evidence"]
 [ext_resource type="PackedScene" uid="uid://b7j4nan3qwkp8" path="res://scenes/npcs/chief_scientist_npc.tscn" id="20_scientist"]
+[ext_resource type="PackedScene" uid="uid://c5h3m8q2nwkp7" path="res://scenes/npcs/medical_officer_npc.tscn" id="21_medical"]
+[ext_resource type="PackedScene" uid="uid://b3x5hm7qnkp8w" path="res://scenes/npcs/engineer_npc.tscn" id="22_engineer"]
+[ext_resource type="PackedScene" uid="uid://c2n6m8r5swkq0" path="res://scenes/npcs/security_chief_npc.tscn" id="23_security_chief"]
+[ext_resource type="PackedScene" uid="uid://d1k5m7p4rwkqa" path="res://scenes/npcs/ai_specialist_npc.tscn" id="24_ai_specialist"]
+[ext_resource type="PackedScene" uid="uid://cg8xj5nqm7wkp" path="res://scenes/npcs/security_npc.tscn" id="25_security"]
 [ext_resource type="Script" uid="uid://da22mwvum17c8" path="res://scripts/managers/schedule_manager.gd" id="27_schedule_manager"]
 [ext_resource type="PackedScene" path="res://scenes/ui/schedule_debug_ui.tscn" id="28_schedule_debug"]
 [ext_resource type="Script" uid="uid://8qh6tgliy0iw" path="res://scripts/managers/waypoint_network_manager.gd" id="29_waypoint_network"]
@@ -378,6 +383,26 @@ show_detection_indicator = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 material_override = SubResource("StandardMaterial3D_fbe7h")
 mesh = SubResource("SphereMesh_g673t")
+
+[node name="MedicalOfficer" parent="NPCs" instance=ExtResource("21_medical")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 38, 0.144, 2)
+show_current_waypoint_index = 0
+
+[node name="Engineer" parent="NPCs" instance=ExtResource("22_engineer")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -36, 0.144, 4)
+show_current_waypoint_index = 0
+
+[node name="SecurityChief" parent="NPCs" instance=ExtResource("23_security_chief")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -13, 0.144, 8)
+show_current_waypoint_index = 0
+
+[node name="AISpecialist" parent="NPCs" instance=ExtResource("24_ai_specialist")]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, -5, 0.144, -28)
+show_current_waypoint_index = 0
+
+[node name="SecurityOfficer" parent="NPCs" instance=ExtResource("25_security")]
+transform = Transform3D(-0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, -0.707107, -13, 0.144, 10)
+show_current_waypoint_index = 0
 
 [node name="Waypoints" type="Node3D" parent="." groups=["waypoints"]]
 metadata/_edit_group_ = true

@@ -391,15 +391,16 @@ func navigate_to_room(room_waypoint_name: String):
         return false
     
     # Debug: Print current position when navigating
-    print("  Current position: ", global_position)
-    print("  Waypoint network manager exists: ", waypoint_network_manager != null)
+    # print("  Current position: ", global_position)
+    # print("  Waypoint network manager exists: ", waypoint_network_manager != null)
     
     # Note: Cafeteria is an open area, so no special door handling needed
     
     # Get path from current position to target room
     var path = waypoint_network_manager.get_path_to_room(global_position, room_waypoint_name)
     if path.is_empty():
-        # print("  ERROR: No path found to ", room_waypoint_name)
+        print("  ERROR: No path found to ", room_waypoint_name)
+        print("  Available waypoints: ", waypoint_network_manager.waypoint_nodes.keys())
         return false
     
     # The waypoint network should now handle cafeteria to lab paths efficiently
@@ -1632,7 +1633,20 @@ func _initial_schedule_check():
     if not schedule_manager or not use_schedule:
         return
     
-    print(npc_name + ": Performing initial schedule check")
+    # Wait for waypoint network to be initialized
+    await get_tree().create_timer(0.1).timeout
+    
+    # Ensure waypoint network manager is available
+    if not waypoint_network_manager:
+        waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
+        if not waypoint_network_manager:
+            print(npc_name + ": ERROR - No waypoint network manager found!")
+            return
+    
+    # Check waypoint availability and perform schedule check
+    if waypoint_network_manager.waypoint_nodes.size() > 0:
+        print(npc_name + ": Schedule initialized (network ready with " + str(waypoint_network_manager.waypoint_nodes.size()) + " waypoints)")
+    
     schedule_manager.update_npc_schedule(npc_name)
 
 func _setup_schedule_manager():

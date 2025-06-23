@@ -16,6 +16,8 @@ extends Control
 # @onready var movement_toggle_button: Button = $VBoxContainer/MovementToggleButton
 
 var selected_npc: NPCBase
+var npc_dropdown: OptionButton
+var available_npcs: Array[NPCBase] = []
 
 func _ready():
     print("Schedule Debug UI: Initializing...")
@@ -152,23 +154,67 @@ func _ready():
     # Force proper positioning after everything is loaded
     call_deferred("_fix_positioning")
     
-    # Find NPC
+    # Find NPCs and setup selector
+    _setup_npc_selector()
+    
+    # Add toggle schedule button
+    var schedule_toggle = Button.new()
+    schedule_toggle.name = "ScheduleToggleButton"
+    schedule_toggle.text = "Schedule: " + ("ON" if selected_npc and selected_npc.use_schedule else "OFF")
+    schedule_toggle.pressed.connect(_on_schedule_toggle_pressed)
+    
+    # Find the correct VBoxContainer
+    var vbox_for_button = get_node_or_null("ScrollContainer/VBoxContainer")
+    if not vbox_for_button:
+        vbox_for_button = get_node_or_null("VBoxContainer")
+    if vbox_for_button:
+        vbox_for_button.add_child(schedule_toggle)
+
+func _setup_npc_selector():
+    # Get all NPCs
     var npcs = get_tree().get_nodes_in_group("npcs")
-    if npcs.size() > 0:
-        selected_npc = npcs[0]
+    available_npcs.clear()
+    
+    # Find or create the VBox container
+    var vbox = get_node_or_null("ScrollContainer/VBoxContainer")
+    if not vbox:
+        vbox = get_node_or_null("VBoxContainer")
+    
+    if vbox:
+        # Add separator
+        var separator = HSeparator.new()
+        vbox.add_child(separator)
+        vbox.move_child(separator, 0)
         
-        # Add toggle schedule button
-        var schedule_toggle = Button.new()
-        schedule_toggle.name = "ScheduleToggleButton"
-        schedule_toggle.text = "Schedule: " + ("ON" if selected_npc.use_schedule else "OFF")
-        schedule_toggle.pressed.connect(_on_schedule_toggle_pressed)
+        # Add NPC selector label
+        var npc_label = Label.new()
+        npc_label.text = "Select NPC:"
+        vbox.add_child(npc_label)
+        vbox.move_child(npc_label, 1)
         
-        # Find the correct VBoxContainer
-        var vbox_for_button = get_node_or_null("ScrollContainer/VBoxContainer")
-        if not vbox_for_button:
-            vbox_for_button = get_node_or_null("VBoxContainer")
-        if vbox_for_button:
-            vbox_for_button.add_child(schedule_toggle)
+        # Add NPC dropdown
+        npc_dropdown = OptionButton.new()
+        npc_dropdown.name = "NPCSelector"
+        
+        for npc in npcs:
+            if npc is NPCBase:
+                available_npcs.append(npc)
+                npc_dropdown.add_item(npc.npc_name)
+        
+        if available_npcs.size() > 0:
+            selected_npc = available_npcs[0]
+            npc_dropdown.select(0)
+            
+        npc_dropdown.item_selected.connect(_on_npc_selected)
+        vbox.add_child(npc_dropdown)
+        vbox.move_child(npc_dropdown, 2)
+        
+        # Add separator after NPC selector
+        var separator2 = HSeparator.new()
+        vbox.add_child(separator2)
+        vbox.move_child(separator2, 3)
+        
+        print("Schedule Debug UI: Found ", available_npcs.size(), " NPCs")
 
 func _setup_room_options():
     room_option_button.clear()
@@ -338,6 +384,21 @@ func _on_force_move_pressed():
         print("Debug: Navigation failed - check if waypoint exists: ", room_center_waypoint)
         # Restore schedule state if navigation failed
         selected_npc.use_schedule = original_use_schedule
+
+func _on_npc_selected(index: int):
+    if index >= 0 and index < available_npcs.size():
+        selected_npc = available_npcs[index]
+        print("Debug: Selected NPC: ", selected_npc.npc_name)
+        
+        # Update schedule toggle button text
+        var schedule_button = get_node_or_null("ScrollContainer/VBoxContainer/ScheduleToggleButton")
+        if not schedule_button:
+            schedule_button = get_node_or_null("VBoxContainer/ScheduleToggleButton")
+        if schedule_button:
+            schedule_button.text = "Schedule: " + ("ON" if selected_npc.use_schedule else "OFF")
+        
+        # Update UI
+        _update_ui()
 
 func _on_schedule_toggle_pressed():
     if not selected_npc:

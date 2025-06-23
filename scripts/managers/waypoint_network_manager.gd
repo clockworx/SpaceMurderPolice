@@ -163,9 +163,9 @@ func _initialize_waypoints():
     # Validate all waypoints are within bounds
     _validate_waypoint_bounds()
     
-    # print("Waypoint Network Manager initialized with ", waypoint_nodes.size(), " waypoints")
-    # print("Available waypoints: ", waypoint_nodes.keys())
-    # print("Configured connections for: ", room_connections.keys())
+    print("Waypoint Network Manager initialized with ", waypoint_nodes.size(), " waypoints")
+    print("Available waypoints: ", waypoint_nodes.keys())
+    print("Configured connections for: ", room_connections.keys())
 
 func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array[Vector3]:
     # Find nearest waypoint to start position
