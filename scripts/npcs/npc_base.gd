@@ -64,7 +64,7 @@ enum MovementState {
 @export var smooth_rotation: bool = true  # Enable smooth rotation
 
 @export_group("Schedule")
-@export var use_schedule: bool = false  # Enable schedule-based movement
+@export var use_schedule: bool = true  # Enable schedule-based movement by default
 @export var current_scheduled_room: String = "":  # Display current scheduled room
     get:
         if schedule_manager:
@@ -261,11 +261,11 @@ func _ready():
     # Get relationship manager
     relationship_manager = get_tree().get_first_node_in_group("relationship_manager")
     
-    # Get schedule manager
-    schedule_manager = get_tree().get_first_node_in_group("schedule_manager")
-    
     # Get waypoint network manager
     waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
+    
+    # Defer schedule manager lookup to ensure it exists
+    call_deferred("_setup_schedule_manager")
     
     # Create face indicator
     _create_face_indicator()
@@ -299,10 +299,6 @@ func _ready():
     # Connect to relationship changes if manager exists
     if relationship_manager and relationship_manager.has_signal("relationship_changed"):
         relationship_manager.relationship_changed.connect(_on_relationship_changed)
-    
-    # Connect to schedule changes if manager exists
-    if schedule_manager and schedule_manager.has_signal("schedule_changed"):
-        schedule_manager.schedule_changed.connect(_on_schedule_changed)
     
     # Debug: NPC initialized
     #print(npc_name + " initialized at position: " + str(global_position))
@@ -384,7 +380,7 @@ func _setup_waypoint_movement():
     pass
 
 func navigate_to_room(room_waypoint_name: String):
-    # print(npc_name, ": Navigating to ", room_waypoint_name)
+    # print(npc_name, ": navigate_to_room called with ", room_waypoint_name)
     
     # Use waypoint network manager to get path
     if not waypoint_network_manager:
@@ -394,18 +390,30 @@ func navigate_to_room(room_waypoint_name: String):
         # print("  ERROR: No waypoint network manager found")
         return false
     
+    # Debug: Print current position when navigating
+    print("  Current position: ", global_position)
+    print("  Waypoint network manager exists: ", waypoint_network_manager != null)
+    
+    # Note: Cafeteria is an open area, so no special door handling needed
+    
     # Get path from current position to target room
     var path = waypoint_network_manager.get_path_to_room(global_position, room_waypoint_name)
     if path.is_empty():
         # print("  ERROR: No path found to ", room_waypoint_name)
         return false
     
+    # The waypoint network should now handle cafeteria to lab paths efficiently
+    
+    # Clear any existing path first
+    _clear_path_visualization()
+    
     # Set up waypoint path
     waypoint_path = path
     waypoint_path_index = 0
     is_moving = true
     
-    # print("  Path has ", waypoint_path.size(), " waypoints")
+    # Path visualization will show the route
+    
     _visualize_waypoint_path()
     
     return true
@@ -764,9 +772,7 @@ func _on_relationship_changed(character_name: String, new_level: int):
 
 func interact():
     # This is called when the player interacts with the NPC
-    print(npc_name + ": interact() called")
     if is_talking:
-        print(npc_name + ": Already talking, ignoring interact")
         return
     
     # Switch to TALK state and face the player
@@ -780,7 +786,6 @@ func interact():
     # Open dialogue UI
     var dialogue_ui = get_tree().get_first_node_in_group("dialogue_ui")
     if dialogue_ui:
-        print(npc_name + ": Starting dialogue with UI")
         dialogue_ui.start_dialogue(self)
     else:
         print("Warning: No dialogue UI found in 'dialogue_ui' group")
@@ -1600,8 +1605,21 @@ func _on_schedule_changed(character_name: String, new_room: ScheduleManager.Room
         # print("Warning: No waypoint defined for room ", schedule_manager.get_room_name(new_room))
         return
     
-    # Movement disabled - NPCs are stationary
+    # Navigate to the new scheduled room
     assigned_room = schedule_manager.get_room_name(new_room)
+    
+    # Check if we're already heading to this room to avoid duplicate navigation
+    if assigned_room == schedule_manager.get_room_name(new_room) and is_moving:
+        return
+    
+    # Use the waypoint name with _Center suffix for all rooms
+    var room_center_waypoint = waypoint_name.replace("_Waypoint", "_Center")
+    
+    print(npc_name + ": Schedule changed - heading to " + assigned_room + " (waypoint: " + room_center_waypoint + ")")
+    
+    # Navigate to the scheduled room
+    if not navigate_to_room(room_center_waypoint):
+        print(npc_name + ": Failed to navigate to " + room_center_waypoint)
 
 # Navigation functions disabled - NPCs are stationary
 
@@ -1609,3 +1627,37 @@ func _on_schedule_changed(character_name: String, new_room: ScheduleManager.Room
 
 func get_waypoint_path() -> Array[Vector3]:
     return waypoint_path
+
+func _initial_schedule_check():
+    if not schedule_manager or not use_schedule:
+        return
+    
+    print(npc_name + ": Performing initial schedule check")
+    schedule_manager.update_npc_schedule(npc_name)
+
+func _setup_schedule_manager():
+    # Get schedule manager
+    schedule_manager = get_tree().get_first_node_in_group("schedule_manager")
+    if schedule_manager:
+        # print(npc_name + ": Found schedule manager (deferred)")
+        pass
+    else:
+        # print(npc_name + ": No schedule manager found! (deferred)")
+        # Try again after a short delay
+        await get_tree().create_timer(0.5).timeout
+        schedule_manager = get_tree().get_first_node_in_group("schedule_manager")
+        if schedule_manager:
+            # print(npc_name + ": Found schedule manager on second attempt")
+            pass
+        else:
+            print(npc_name + ": ERROR: Still no schedule manager found!")
+            return
+    
+    # Connect to schedule changes if manager exists
+    if schedule_manager and schedule_manager.has_signal("schedule_changed"):
+        schedule_manager.schedule_changed.connect(_on_schedule_changed)
+        # print(npc_name + ": Connected to schedule manager. use_schedule = " + str(use_schedule))
+        
+        # If using schedule, check initial schedule
+        if use_schedule:
+            _initial_schedule_check()

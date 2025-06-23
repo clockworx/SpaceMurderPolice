@@ -13,7 +13,8 @@ var room_connections: Dictionary = {
     "Security_Center": ["Security_Door_Red"],
     "Engineering_Center": ["Engineering_Door_Red"],
     "CrewQuarters_Center": ["Crew_Door_Red"],
-    "Cafeteria_Center": ["Cafeteria_Door_Red"],
+    # Cafeteria is a special open area - connects directly to hallway for efficient pathing
+    "Cafeteria_Center": ["Cafeteria_Door_Red", "Hallway_LabTurn"],
     
     # Door waypoints - Red (inside) connects to Green (outside)
     # When LEAVING a room: Room -> Red -> Green -> Hallway
@@ -37,7 +38,7 @@ var room_connections: Dictionary = {
     
     # Main hallway connections
     "Hallway_Central": ["Hallway_West", "Hallway_LabTurn", "Hallway_CafeteriaTurn", "Hallway_East", "Hallway_SecurityTurn"],
-    "Hallway_LabTurn": ["Lab_Door_Green", "Hallway_Central", "Hallway_South", "Hallway_East"],
+    "Hallway_LabTurn": ["Lab_Door_Green", "Hallway_Central", "Hallway_South", "Hallway_East", "Cafeteria_Center"],
     "Hallway_South": ["Hallway_LabTurn", "Hallway_CrewCorner"],
     "Hallway_CrewCorner": ["Hallway_CrewApproach", "Hallway_South", "Hallway_DirectToCafe"],
     "Hallway_CrewApproach": ["Crew_Door_Green", "Hallway_CrewCorner"],

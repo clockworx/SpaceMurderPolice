@@ -371,6 +371,7 @@ sound_detection_radius = 3.0
 crouched_sound_radius_multiplier = 1.0
 running_sound_radius_multiplier = 5.0
 sound_investigation_duration = 3.0
+use_schedule = false
 show_detection_indicator = false
 
 [node name="DetectionIndicator" type="MeshInstance3D" parent="NPCs/ChiefScientist"]

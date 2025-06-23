@@ -1,0 +1,107 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/schedule_debug_ui.gd" id="1_debug_ui"]
+
+[node name="ScheduleDebugUI" type="Control"]
+anchor_right = 0.3
+anchor_bottom = 0.5
+script = ExtResource("1_debug_ui")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+modulate = Color(1, 1, 1, 0.9)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Title" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Schedule Debug Controls"
+
+[node name="HSeparator" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TimeLabel" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Time: 08:00"
+
+[node name="PeriodLabel" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Period: Morning"
+
+[node name="HSeparator2" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TimeSpeedContainer" type="HBoxContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/TimeSpeedContainer"]
+layout_mode = 2
+text = "Time Speed:"
+
+[node name="TimeSpeedSlider" type="HSlider" parent="ScrollContainer/VBoxContainer/TimeSpeedContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 300.0
+value = 60.0
+
+[node name="TimeSpeedLabel" type="Label" parent="ScrollContainer/VBoxContainer/TimeSpeedContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(50, 0)
+text = "60.0x"
+
+[node name="PauseButton" type="Button" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Pause"
+
+[node name="HSeparator3" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Jump to Time Period:"
+
+[node name="TimePeriodButtons" type="GridContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+columns = 3
+
+[node name="HSeparator4" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Force NPC Movement:"
+
+[node name="RoomContainer" type="VBoxContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="RoomOptionButton" type="OptionButton" parent="ScrollContainer/VBoxContainer/RoomContainer"]
+layout_mode = 2
+
+[node name="ForceMoveButton" type="Button" parent="ScrollContainer/VBoxContainer/RoomContainer"]
+layout_mode = 2
+text = "Move NPC"
+
+[node name="HSeparator5" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="NPCStatusLabel" type="Label" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "NPC Status"
+autowrap_mode = 2

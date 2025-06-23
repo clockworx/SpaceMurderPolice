@@ -3,33 +3,109 @@ extends Control
 @export var toggle_key: String = "F1"  # Key to toggle debug UI
 
 @onready var schedule_manager: ScheduleManager = get_tree().get_first_node_in_group("schedule_manager")
-@onready var time_label: Label = $VBoxContainer/TimeLabel
-@onready var period_label: Label = $VBoxContainer/PeriodLabel
-@onready var time_speed_slider: HSlider = $VBoxContainer/TimeSpeedContainer/TimeSpeedSlider
-@onready var time_speed_label: Label = $VBoxContainer/TimeSpeedContainer/TimeSpeedLabel
-@onready var pause_button: Button = $VBoxContainer/PauseButton
-@onready var room_option_button: OptionButton = $VBoxContainer/RoomContainer/RoomOptionButton
-@onready var force_move_button: Button = $VBoxContainer/RoomContainer/ForceMoveButton
-@onready var npc_status_label: Label = $VBoxContainer/NPCStatusLabel
+
+# Try both paths for compatibility
+@onready var time_label: Label = get_node_or_null("ScrollContainer/VBoxContainer/TimeLabel") if get_node_or_null("ScrollContainer/VBoxContainer/TimeLabel") else get_node_or_null("VBoxContainer/TimeLabel")
+@onready var period_label: Label = get_node_or_null("ScrollContainer/VBoxContainer/PeriodLabel") if get_node_or_null("ScrollContainer/VBoxContainer/PeriodLabel") else get_node_or_null("VBoxContainer/PeriodLabel") 
+@onready var time_speed_slider: HSlider = get_node_or_null("ScrollContainer/VBoxContainer/TimeSpeedContainer/TimeSpeedSlider") if get_node_or_null("ScrollContainer/VBoxContainer/TimeSpeedContainer/TimeSpeedSlider") else get_node_or_null("VBoxContainer/TimeSpeedContainer/TimeSpeedSlider")
+@onready var time_speed_label: Label = get_node_or_null("ScrollContainer/VBoxContainer/TimeSpeedContainer/TimeSpeedLabel") if get_node_or_null("ScrollContainer/VBoxContainer/TimeSpeedContainer/TimeSpeedLabel") else get_node_or_null("VBoxContainer/TimeSpeedContainer/TimeSpeedLabel")
+@onready var pause_button: Button = get_node_or_null("ScrollContainer/VBoxContainer/PauseButton") if get_node_or_null("ScrollContainer/VBoxContainer/PauseButton") else get_node_or_null("VBoxContainer/PauseButton")
+@onready var room_option_button: OptionButton = get_node_or_null("ScrollContainer/VBoxContainer/RoomContainer/RoomOptionButton") if get_node_or_null("ScrollContainer/VBoxContainer/RoomContainer/RoomOptionButton") else get_node_or_null("VBoxContainer/RoomContainer/RoomOptionButton")
+@onready var force_move_button: Button = get_node_or_null("ScrollContainer/VBoxContainer/RoomContainer/ForceMoveButton") if get_node_or_null("ScrollContainer/VBoxContainer/RoomContainer/ForceMoveButton") else get_node_or_null("VBoxContainer/RoomContainer/ForceMoveButton")
+@onready var npc_status_label: Label = get_node_or_null("ScrollContainer/VBoxContainer/NPCStatusLabel") if get_node_or_null("ScrollContainer/VBoxContainer/NPCStatusLabel") else get_node_or_null("VBoxContainer/NPCStatusLabel")
 # @onready var movement_toggle_button: Button = $VBoxContainer/MovementToggleButton
 
 var selected_npc: NPCBase
 
 func _ready():
+    print("Schedule Debug UI: Initializing...")
+    
     if not schedule_manager:
+        print("Schedule Debug UI: ERROR - No schedule manager found!")
         queue_free()
         return
     
     # Start hidden
     visible = false
     
+    # Set a more visible position and size
+    # Force absolute positioning
+    set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+    position = Vector2(50, 20)  # Move further right to avoid cutoff
+    size = Vector2(450, 600)  # Make wider to accommodate content
+    
+    # Enable clipping
+    clip_contents = true
+    
+    # Make panel more visible
+    var panel = $Panel
+    if panel:
+        # Create a dark background style
+        var style = StyleBoxFlat.new()
+        style.bg_color = Color(0.1, 0.1, 0.1, 0.95)
+        style.corner_radius_top_left = 5
+        style.corner_radius_top_right = 5
+        style.corner_radius_bottom_left = 5
+        style.corner_radius_bottom_right = 5
+        panel.add_theme_stylebox_override("panel", style)
+        
+        # Ensure panel fills the control
+        panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+        panel.set_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE)
+    
+    # Fix container alignment - check for both possible paths
+    var vbox = get_node_or_null("ScrollContainer/VBoxContainer")
+    var scroll_container = get_node_or_null("ScrollContainer")
+    
+    if not vbox:
+        vbox = get_node_or_null("VBoxContainer")
+    
+    # If we have a scroll container, configure it
+    if scroll_container:
+        scroll_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+        scroll_container.offset_left = 10
+        scroll_container.offset_top = 10
+        scroll_container.offset_right = -10
+        scroll_container.offset_bottom = -10
+    
+    if vbox:
+        # Make text smaller
+        var theme = Theme.new()
+        theme.default_font_size = 12
+        vbox.theme = theme
+        
+        # Reset VBox positioning
+        if not scroll_container:
+            # If no scroll container, position VBox directly
+            vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+            vbox.position = Vector2(50, 10)  # Force positive position
+            vbox.size = Vector2(340, 580)
+        else:
+            # If in scroll container, ensure proper positioning
+            vbox.position = Vector2(0, 0)  # Reset position within scroll container
+            vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+            vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+            vbox.custom_minimum_size = Vector2(400, 0)  # Ensure minimum width
+    
     # Connect signals
     schedule_manager.time_changed.connect(_on_time_changed)
     schedule_manager.time_period_changed.connect(_on_time_period_changed)
     
-    time_speed_slider.value_changed.connect(_on_time_speed_changed)
-    pause_button.pressed.connect(_on_pause_pressed)
-    force_move_button.pressed.connect(_on_force_move_pressed)
+    if time_speed_slider:
+        time_speed_slider.value_changed.connect(_on_time_speed_changed)
+    else:
+        print("Schedule Debug UI: Warning - time_speed_slider not found")
+        
+    if pause_button:
+        pause_button.pressed.connect(_on_pause_pressed)
+    else:
+        print("Schedule Debug UI: Warning - pause_button not found")
+        
+    if force_move_button:
+        force_move_button.pressed.connect(_on_force_move_pressed)
+        print("Schedule Debug UI: Force move button connected")
+    else:
+        print("Schedule Debug UI: ERROR - force_move_button not found!")
     
     # Add movement toggle button if it doesn't exist
     # if not movement_toggle_button:
@@ -49,6 +125,20 @@ func _ready():
     # Setup room options
     _setup_room_options()
     
+    # Fix room container layout
+    var room_container = $VBoxContainer/RoomContainer
+    if room_container:
+        room_container.custom_minimum_size = Vector2(300, 40)
+        
+        # Fix the dropdown and button sizes
+        if room_option_button:
+            room_option_button.custom_minimum_size = Vector2(180, 30)
+            room_option_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+            
+        if force_move_button:
+            force_move_button.custom_minimum_size = Vector2(80, 30)
+            force_move_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+    
     # Setup time period buttons
     for i in range(ScheduleManager.TimePeriod.size()):
         var button = Button.new()
@@ -59,22 +149,77 @@ func _ready():
     # Initial update
     _update_ui()
     
+    # Force proper positioning after everything is loaded
+    call_deferred("_fix_positioning")
+    
     # Find NPC
     var npcs = get_tree().get_nodes_in_group("npcs")
     if npcs.size() > 0:
         selected_npc = npcs[0]
+        
+        # Add toggle schedule button
+        var schedule_toggle = Button.new()
+        schedule_toggle.name = "ScheduleToggleButton"
+        schedule_toggle.text = "Schedule: " + ("ON" if selected_npc.use_schedule else "OFF")
+        schedule_toggle.pressed.connect(_on_schedule_toggle_pressed)
+        
+        # Find the correct VBoxContainer
+        var vbox_for_button = get_node_or_null("ScrollContainer/VBoxContainer")
+        if not vbox_for_button:
+            vbox_for_button = get_node_or_null("VBoxContainer")
+        if vbox_for_button:
+            vbox_for_button.add_child(schedule_toggle)
 
 func _setup_room_options():
     room_option_button.clear()
     for i in range(ScheduleManager.Room.size()):
         room_option_button.add_item(schedule_manager.get_room_name(i))
+    
+    # Select first room by default
+    if room_option_button.get_item_count() > 0:
+        room_option_button.select(0)
+        print("Schedule Debug UI: Room dropdown populated with ", room_option_button.get_item_count(), " rooms")
 
 func _input(event):
     if event.is_action_pressed("toggle_schedule_debug"):
         visible = not visible
+        print("Schedule Debug UI: Toggled visibility to ", visible)
         if visible:
             # Release mouse when showing debug UI
             Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+            print("Schedule Debug UI: Force move button exists: ", force_move_button != null)
+            if force_move_button:
+                print("  Button text: ", force_move_button.text)
+                print("  Button disabled: ", force_move_button.disabled)
+            
+            # Make sure the UI is visible
+            z_index = 100
+            
+            # Print UI position and size
+            print("Schedule Debug UI position: ", position)
+            print("Schedule Debug UI size: ", size)
+            print("Schedule Debug UI global position: ", global_position)
+            
+            # Debug the button's actual position
+            if force_move_button:
+                print("Force move button global position: ", force_move_button.global_position)
+                print("Force move button position: ", force_move_button.position)
+                print("Force move button size: ", force_move_button.size)
+                print("Force move button visible: ", force_move_button.visible)
+                
+            # Debug room dropdown
+            if room_option_button:
+                print("Room dropdown selected: ", room_option_button.selected)
+                print("Room dropdown item count: ", room_option_button.get_item_count())
+                
+            # Debug VBox position
+            var vbox_debug = get_node_or_null("ScrollContainer/VBoxContainer")
+            if not vbox_debug:
+                vbox_debug = get_node_or_null("VBoxContainer")
+            if vbox_debug:
+                print("VBox global position: ", vbox_debug.global_position)
+                print("VBox position: ", vbox_debug.position)
+                print("VBox size: ", vbox_debug.size)
         else:
             # Capture mouse when hiding debug UI
             Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -87,10 +232,19 @@ func _update_ui():
     if not schedule_manager:
         return
         
-    time_label.text = "Time: " + schedule_manager.get_formatted_time()
-    period_label.text = "Period: " + schedule_manager.get_time_period_name(schedule_manager.get_current_time_period())
-    time_speed_label.text = "Speed: %.1fx" % schedule_manager.time_speed_multiplier
-    pause_button.text = "Pause" if not schedule_manager.paused else "Resume"
+    if time_label:
+        time_label.text = "Time: " + schedule_manager.get_formatted_time()
+        time_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        
+    if period_label:
+        period_label.text = "Period: " + schedule_manager.get_time_period_name(schedule_manager.get_current_time_period())
+        period_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        
+    if time_speed_label:
+        time_speed_label.text = "Speed: %.1fx" % schedule_manager.time_speed_multiplier
+        
+    if pause_button:
+        pause_button.text = "Pause" if not schedule_manager.paused else "Resume"
     
     # Update NPC status
     if selected_npc and is_instance_valid(selected_npc):
@@ -98,8 +252,8 @@ func _update_ui():
         status += "State: " + str(selected_npc.current_state) + "\n"
         status += "Room: " + selected_npc.assigned_room + "\n"
         status += "Movement: Waypoint-based\n"
-        status += "Using Waypoints: " + str(selected_npc.use_waypoints) + "\n"
-        status += "Is Paused: " + str(selected_npc.is_paused) + "\n"
+        status += "Use Schedule: " + ("✓" if selected_npc.use_schedule else "✗") + "\n"
+        status += "Is Moving: " + str(selected_npc.is_moving) + "\n"
         
         # Show waypoint path info
         if selected_npc.waypoint_path.size() > 0:
@@ -129,24 +283,104 @@ func _on_time_period_button_pressed(period: int):
         schedule_manager.force_time_period(period)
 
 func _on_force_move_pressed():
+    print("Debug: Force move button pressed")
+    
     if not selected_npc:
+        print("Debug: No NPC selected")
+        return
+    
+    if not schedule_manager:
+        print("Debug: No schedule manager found")
         return
         
     var room_index = room_option_button.selected
-    var waypoint_name = schedule_manager.get_room_waypoint_name(room_index)
+    print("Debug: Selected room index: ", room_index)
     
-    # Find waypoint
-    var waypoint = get_tree().get_first_node_in_group(waypoint_name)
-    if waypoint and waypoint is Node3D:
-        print("Debug: Force moving ", selected_npc.npc_name, " to ", schedule_manager.get_room_name(room_index))
-        
-        # Clear any current state that might interfere
-        if selected_npc.current_state != selected_npc.MovementState.PATROL:
-            selected_npc.set_state(selected_npc.MovementState.PATROL)
-        
-        # Force immediate movement using navigation
-        selected_npc.navigate_to_room(waypoint_name)
+    if room_index < 0:
+        print("Debug: No room selected in dropdown")
+        return
+    
+    var waypoint_name = schedule_manager.get_room_waypoint_name(room_index)
+    print("Debug: Waypoint name from schedule manager: ", waypoint_name)
+    
+    if waypoint_name.is_empty():
+        print("Debug: Empty waypoint name returned")
+        return
+    
+    # Use the waypoint name with _Center suffix for room centers
+    var room_center_waypoint = waypoint_name.replace("_Waypoint", "_Center")
+    
+    print("Debug: Force moving ", selected_npc.npc_name, " to ", schedule_manager.get_room_name(room_index), " (", room_center_waypoint, ")")
+    print("  Current NPC state: ", selected_npc.current_state)
+    print("  Is moving: ", selected_npc.is_moving)
+    
+    # Temporarily disable schedule to allow manual override
+    var original_use_schedule = selected_npc.use_schedule
+    selected_npc.use_schedule = false
+    
+    # Clear any current state that might interfere
+    if selected_npc.current_state != selected_npc.MovementState.PATROL:
+        selected_npc.set_state(selected_npc.MovementState.PATROL)
+    
+    # Stop any current movement first
+    selected_npc.is_moving = false
+    selected_npc.waypoint_path.clear()
+    selected_npc.waypoint_path_index = 0
+    
+    # Force immediate movement using navigation
+    if selected_npc.navigate_to_room(room_center_waypoint):
+        print("Debug: Navigation started successfully")
         selected_npc.assigned_room = schedule_manager.get_room_name(room_index)
+        
+        # Don't re-enable schedule for force move - let user control it
+        print("Debug: Force move initiated, schedule disabled for manual control")
+    else:
+        print("Debug: Navigation failed - check if waypoint exists: ", room_center_waypoint)
+        # Restore schedule state if navigation failed
+        selected_npc.use_schedule = original_use_schedule
+
+func _on_schedule_toggle_pressed():
+    if not selected_npc:
+        print("Debug: No NPC selected")
+        return
+    
+    # Toggle schedule
+    selected_npc.use_schedule = not selected_npc.use_schedule
+    print("Debug: Toggled ", selected_npc.npc_name, " schedule to: ", selected_npc.use_schedule)
+    
+    # Update button text
+    var schedule_button = get_node_or_null("ScrollContainer/VBoxContainer/ScheduleToggleButton")
+    if not schedule_button:
+        schedule_button = get_node_or_null("VBoxContainer/ScheduleToggleButton")
+    if schedule_button:
+        schedule_button.text = "Schedule: " + ("ON" if selected_npc.use_schedule else "OFF")
+    
+    # If enabled, trigger initial schedule check
+    if selected_npc.use_schedule:
+        selected_npc._initial_schedule_check()
+
+func _fix_positioning():
+    """Force proper positioning of all UI elements"""
+    # Ensure the main control is properly positioned
+    position = Vector2(50, 20)
+    size = Vector2(450, 600)
+    
+    # Fix VBox positioning
+    var vbox = get_node_or_null("ScrollContainer/VBoxContainer")
+    if not vbox:
+        vbox = get_node_or_null("VBoxContainer")
+    
+    if vbox:
+        # Force VBox to stay within bounds
+        if vbox.global_position.x < 50:
+            vbox.position.x = 0  # Reset local position
+            
+        # Ensure all children are properly sized
+        for child in vbox.get_children():
+            if child is Control:
+                child.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                if child is Button or child is OptionButton:
+                    child.custom_minimum_size.x = 100
 
 # func _on_movement_toggle_pressed():
 #     if not selected_npc:
