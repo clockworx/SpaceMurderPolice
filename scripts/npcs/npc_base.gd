@@ -403,11 +403,6 @@ func navigate_to_room(room_waypoint_name: String):
         print("  Available waypoints: ", waypoint_network_manager.waypoint_nodes.keys())
         return false
     
-    # Debug for Zara - show full path to diagnose wall collision
-    if npc_name == "Dr. Zara Okafor":
-        print("  Zara's path seems long (", path.size(), " waypoints) - may need optimization")
-        for i in range(path.size()):
-            print("    Waypoint ", i, ": ", path[i])
     
     # The waypoint network should now handle cafeteria to lab paths efficiently
     

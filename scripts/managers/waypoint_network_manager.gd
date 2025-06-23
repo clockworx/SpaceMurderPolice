@@ -39,9 +39,8 @@ var room_connections: Dictionary = {
     # Main hallway connections
     "Hallway_Central": ["Hallway_West", "Hallway_LabTurn", "Hallway_CafeteriaTurn", "Hallway_East", "Hallway_SecurityTurn"],
     "Hallway_LabTurn": ["Lab_Door_Green", "Hallway_Central", "Hallway_South", "Hallway_East", "Cafeteria_Center"],
-    "Hallway_South": ["Hallway_LabTurn", "Hallway_CrewBend"],
-    "Hallway_CrewBend": ["Hallway_South", "Hallway_CrewCorner"],
-    "Hallway_CrewCorner": ["Hallway_CrewApproach", "Hallway_CrewBend", "Hallway_DirectToCafe"],
+    "Hallway_South": ["Hallway_LabTurn", "Hallway_CrewCorner"],
+    "Hallway_CrewCorner": ["Hallway_CrewApproach", "Hallway_South", "Hallway_DirectToCafe"],
     "Hallway_CrewApproach": ["Crew_Door_Green", "Hallway_CrewCorner"],
     "Hallway_DirectToCafe": ["Hallway_CrewCorner", "Hallway_CafeteriaTurn"],
     "Hallway_CafeteriaTurn": ["Cafeteria_Door_Green", "Hallway_Central", "Hallway_DirectToCafe"],
@@ -114,9 +113,7 @@ func _initialize_waypoints():
     _create_debug_marker(Vector3(5.67, 0, 4), Color.YELLOW, "Hallway_LabTurn")
     
     # Don't create Hallway_South - it already exists in the scene at (5.49, 0, -2.8)
-    # Create intermediate waypoints for proper navigation
-    _create_corner_waypoint("Hallway_CrewBend", Vector3(5.5, 0, -15))
-    _create_debug_marker(Vector3(5.5, 0, -15), Color.YELLOW, "Hallway_CrewBend")
+    # No intermediate waypoint needed - direct path works fine
     
     # Crew quarters corner - must be west of door to prevent backtracking
     _create_corner_waypoint("Hallway_CrewCorner", Vector3(3, 0, -20))
@@ -211,9 +208,6 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
     var position_path: Array[Vector3] = []
     var previous_pos: Vector3 = from_position
     
-    # Debug path for Zara
-    if from_position.distance_to(Vector3(-5, 0, -28)) < 2.0:
-        print("  Path waypoint names: ", path)
     
     # print("Converting path to positions with diagonal fixes:")
     for i in range(path.size()):
