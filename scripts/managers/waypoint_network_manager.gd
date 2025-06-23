@@ -67,10 +67,16 @@ func _initialize_waypoints():
         if waypoint_parent:
             for child in waypoint_parent.get_children():
                 if child is Node3D:
+                    # Skip unused waypoints that cause navigation issues
+                    if child.name in ["Hallway_CrewMid", "Hallway_CrewTurn", "Hallway_SouthTurn"]:
+                        continue
                     waypoint_nodes[child.name] = child
     else:
         for waypoint in waypoints:
             if waypoint is Node3D:
+                # Skip unused waypoints that cause navigation issues
+                if waypoint.name in ["Hallway_CrewMid", "Hallway_CrewTurn", "Hallway_SouthTurn"]:
+                    continue
                 waypoint_nodes[waypoint.name] = waypoint
     
     # Also find room center waypoints which have special groups
@@ -88,6 +94,9 @@ func _initialize_waypoints():
         var room_nodes = get_tree().get_nodes_in_group(group_name)
         if not room_nodes.is_empty():
             var room_node = room_nodes[0]
+            # Skip if this is one of the problematic waypoints
+            if room_node.name in ["Hallway_CrewMid", "Hallway_CrewTurn", "Hallway_SouthTurn"]:
+                continue
             waypoint_nodes[room_name] = room_node
             # print("Found room center waypoint: ", room_name, " at ", room_node.global_position)
             pass
@@ -200,6 +209,9 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
     var position_path: Array[Vector3] = []
     var previous_pos: Vector3 = from_position
     
+    # Debug path for Zara
+    if from_position.distance_to(Vector3(-5, 0, -28)) < 2.0:
+        print("  Path waypoint names: ", path)
     
     # print("Converting path to positions with diagonal fixes:")
     for i in range(path.size()):
