@@ -171,15 +171,13 @@ func _initialize_waypoints():
     # Validate all waypoints are within bounds
     _validate_waypoint_bounds()
     
-    print("Waypoint Network Manager initialized with ", waypoint_nodes.size(), " waypoints")
-    print("Available waypoints: ", waypoint_nodes.keys())
-    print("Configured connections for: ", room_connections.keys())
+    # print("Waypoint Network Manager initialized with ", waypoint_nodes.size(), " waypoints")
 
 func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array[Vector3]:
     # Find nearest waypoint to start position
     var nearest_waypoint = _find_nearest_waypoint(from_position)
     if not nearest_waypoint:
-        # print("No nearest waypoint found")
+        # print("No nearest waypoint found from position ", from_position)
         return []
     
     # print("Planning path from '", nearest_waypoint, "' to '", to_room_waypoint, "'")
@@ -210,11 +208,16 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
     
     # Debug path for NPCs in rooms
     var in_room = false
-    for room_center in ["Engineering_Center", "Security_Center", "Laboratory_Center", "MedicalBay_Center"]:
+    for room_center in ["Engineering_Center", "Security_Center", "Laboratory_Center", "MedicalBay_Center", "CrewQuarters_Center"]:
         var room_node = waypoint_nodes.get(room_center)
         if room_node:
             var room_pos = room_node.position
-            if from_position.distance_to(room_pos) < 10.0:
+            # Use larger radius for Engineering
+            var room_radius = 10.0
+            if room_center == "Engineering_Center":
+                room_radius = 12.0
+            
+            if from_position.distance_to(room_pos) < room_radius:
                 in_room = true
                 if path.size() > 1 and path[0] == room_center:
                     # Map room centers to their actual door waypoint names
@@ -222,12 +225,13 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
                         "Laboratory_Center": "Lab_Door_Red",
                         "MedicalBay_Center": "Medical_Door_Red",
                         "Security_Center": "Security_Door_Red",
-                        "Engineering_Center": "Engineering_Door_Red"
+                        "Engineering_Center": "Engineering_Door_Red",
+                        "CrewQuarters_Center": "Crew_Door_Red"
                     }
                     var expected_door = door_map.get(room_center, "")
                     if expected_door != "" and path[1] != expected_door:
-                        print("  ERROR: NPC in ", room_center, " not using door! Path: ", path)
-                        print("  Expected next waypoint: ", expected_door, " but got: ", path[1])
+                        # print("  ERROR: NPC in ", room_center, " not using door! Path: ", path)
+                        # print("  Expected next waypoint: ", expected_door, " but got: ", path[1])
                 break
     
     # print("Converting path to positions with diagonal fixes:")
@@ -314,8 +318,13 @@ func _find_nearest_waypoint(position: Vector3) -> String:
         
         # Check if this is a room center waypoint
         if waypoint_name.ends_with("_Center"):
-            # For room centers, check if we're within the room (5 units)
-            if distance < 5.0 and distance < room_center_distance:
+            # For room centers, check if we're within the room
+            # Engineering is a larger room, so use a bigger radius
+            var room_radius = 5.0
+            if waypoint_name == "Engineering_Center":
+                room_radius = 12.0  # Larger radius for Engineering room
+            
+            if distance < room_radius and distance < room_center_distance:
                 room_center_distance = distance
                 room_center = waypoint_name
         
@@ -324,10 +333,16 @@ func _find_nearest_waypoint(position: Vector3) -> String:
             nearest_distance = distance
             nearest_name = waypoint_name
     
-    # If we're very close to a room center, we're inside that room
-    if room_center != "" and room_center_distance < 5.0:
-        # print("Inside room: ", room_center, " at distance: ", room_center_distance)
-        return room_center
+    # If we're close to a room center, we're inside that room
+    if room_center != "":
+        # Use the appropriate radius for each room
+        var room_radius = 5.0
+        if room_center == "Engineering_Center":
+            room_radius = 12.0  # Larger radius for Engineering room
+        
+        if room_center_distance < room_radius:
+            # print("Inside room: ", room_center, " at distance: ", room_center_distance)
+            return room_center
     
     # Special case: If we're at a door waypoint, return it instead of room center
     if nearest_name.contains("_Door_") and nearest_distance < 1.0:
@@ -714,6 +729,9 @@ func _create_debug_marker(position: Vector3, color: Color, label: String):
     label_3d.font_size = 16
     label_3d.position.y = 0.5
     marker.add_child(label_3d)
+    
+    # Start with debug markers hidden
+    marker.visible = false
 
 func _validate_waypoint_connections():
     # Remove any connections to waypoints that don't exist

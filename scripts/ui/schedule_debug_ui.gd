@@ -15,15 +15,20 @@ extends Control
 @onready var npc_status_label: Label = get_node_or_null("ScrollContainer/VBoxContainer/NPCStatusLabel") if get_node_or_null("ScrollContainer/VBoxContainer/NPCStatusLabel") else get_node_or_null("VBoxContainer/NPCStatusLabel")
 # @onready var movement_toggle_button: Button = $VBoxContainer/MovementToggleButton
 
+# Waypoint visualization controls
+var waypoint_viz_checkbox: CheckBox
+var waypoint_network_manager: WaypointNetworkManager
+var debug_markers_visible: bool = false
+
 var selected_npc: NPCBase
 var npc_dropdown: OptionButton
 var available_npcs: Array[NPCBase] = []
 
 func _ready():
-    print("Schedule Debug UI: Initializing...")
+    # print("Schedule Debug UI: Initializing...")
     
     if not schedule_manager:
-        print("Schedule Debug UI: ERROR - No schedule manager found!")
+        # print("Schedule Debug UI: ERROR - No schedule manager found!")
         queue_free()
         return
     
@@ -96,18 +101,18 @@ func _ready():
     if time_speed_slider:
         time_speed_slider.value_changed.connect(_on_time_speed_changed)
     else:
-        print("Schedule Debug UI: Warning - time_speed_slider not found")
+        # print("Schedule Debug UI: Warning - time_speed_slider not found")
         
     if pause_button:
         pause_button.pressed.connect(_on_pause_pressed)
     else:
-        print("Schedule Debug UI: Warning - pause_button not found")
+        # print("Schedule Debug UI: Warning - pause_button not found")
         
     if force_move_button:
         force_move_button.pressed.connect(_on_force_move_pressed)
-        print("Schedule Debug UI: Force move button connected")
+        # print("Schedule Debug UI: Force move button connected")
     else:
-        print("Schedule Debug UI: ERROR - force_move_button not found!")
+        # print("Schedule Debug UI: ERROR - force_move_button not found!")
     
     # Add movement toggle button if it doesn't exist
     # if not movement_toggle_button:
@@ -169,6 +174,21 @@ func _ready():
         vbox_for_button = get_node_or_null("VBoxContainer")
     if vbox_for_button:
         vbox_for_button.add_child(schedule_toggle)
+        
+        # Add separator
+        var sep = HSeparator.new()
+        vbox_for_button.add_child(sep)
+        
+        # Add waypoint visualization checkbox
+        waypoint_viz_checkbox = CheckBox.new()
+        waypoint_viz_checkbox.name = "WaypointVizCheckbox"
+        waypoint_viz_checkbox.text = "Show Waypoint Debug Visualization"
+        waypoint_viz_checkbox.set_pressed(false)  # Start with visualization off
+        waypoint_viz_checkbox.toggled.connect(_on_waypoint_viz_toggled)
+        vbox_for_button.add_child(waypoint_viz_checkbox)
+    
+    # Get waypoint network manager
+    waypoint_network_manager = get_tree().get_first_node_in_group("waypoint_network_manager")
 
 func _setup_npc_selector():
     # Get all NPCs
@@ -214,7 +234,7 @@ func _setup_npc_selector():
         vbox.add_child(separator2)
         vbox.move_child(separator2, 3)
         
-        print("Schedule Debug UI: Found ", available_npcs.size(), " NPCs")
+        # print("Schedule Debug UI: Found ", available_npcs.size(), " NPCs")
 
 func _setup_room_options():
     room_option_button.clear()
@@ -224,48 +244,48 @@ func _setup_room_options():
     # Select first room by default
     if room_option_button.get_item_count() > 0:
         room_option_button.select(0)
-        print("Schedule Debug UI: Room dropdown populated with ", room_option_button.get_item_count(), " rooms")
+        # print("Schedule Debug UI: Room dropdown populated with ", room_option_button.get_item_count(), " rooms")
 
 func _input(event):
     if event.is_action_pressed("toggle_schedule_debug"):
         visible = not visible
-        print("Schedule Debug UI: Toggled visibility to ", visible)
+        # print("Schedule Debug UI: Toggled visibility to ", visible)
         if visible:
             # Release mouse when showing debug UI
             Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-            print("Schedule Debug UI: Force move button exists: ", force_move_button != null)
+            # print("Schedule Debug UI: Force move button exists: ", force_move_button != null)
             if force_move_button:
-                print("  Button text: ", force_move_button.text)
-                print("  Button disabled: ", force_move_button.disabled)
+                # print("  Button text: ", force_move_button.text)
+                # print("  Button disabled: ", force_move_button.disabled)
             
             # Make sure the UI is visible
             z_index = 100
             
             # Print UI position and size
-            print("Schedule Debug UI position: ", position)
-            print("Schedule Debug UI size: ", size)
-            print("Schedule Debug UI global position: ", global_position)
+            # print("Schedule Debug UI position: ", position)
+            # print("Schedule Debug UI size: ", size)
+            # print("Schedule Debug UI global position: ", global_position)
             
             # Debug the button's actual position
             if force_move_button:
-                print("Force move button global position: ", force_move_button.global_position)
-                print("Force move button position: ", force_move_button.position)
-                print("Force move button size: ", force_move_button.size)
-                print("Force move button visible: ", force_move_button.visible)
+                # print("Force move button global position: ", force_move_button.global_position)
+                # print("Force move button position: ", force_move_button.position)
+                # print("Force move button size: ", force_move_button.size)
+                # print("Force move button visible: ", force_move_button.visible)
                 
             # Debug room dropdown
             if room_option_button:
-                print("Room dropdown selected: ", room_option_button.selected)
-                print("Room dropdown item count: ", room_option_button.get_item_count())
+                # print("Room dropdown selected: ", room_option_button.selected)
+                # print("Room dropdown item count: ", room_option_button.get_item_count())
                 
             # Debug VBox position
             var vbox_debug = get_node_or_null("ScrollContainer/VBoxContainer")
             if not vbox_debug:
                 vbox_debug = get_node_or_null("VBoxContainer")
             if vbox_debug:
-                print("VBox global position: ", vbox_debug.global_position)
-                print("VBox position: ", vbox_debug.position)
-                print("VBox size: ", vbox_debug.size)
+                # print("VBox global position: ", vbox_debug.global_position)
+                # print("VBox position: ", vbox_debug.position)
+                # print("VBox size: ", vbox_debug.size)
         else:
             # Capture mouse when hiding debug UI
             Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -329,36 +349,36 @@ func _on_time_period_button_pressed(period: int):
         schedule_manager.force_time_period(period)
 
 func _on_force_move_pressed():
-    print("Debug: Force move button pressed")
+    # print("Debug: Force move button pressed")
     
     if not selected_npc:
-        print("Debug: No NPC selected")
+        # print("Debug: No NPC selected")
         return
     
     if not schedule_manager:
-        print("Debug: No schedule manager found")
+        # print("Debug: No schedule manager found")
         return
         
     var room_index = room_option_button.selected
-    print("Debug: Selected room index: ", room_index)
+    # print("Debug: Selected room index: ", room_index)
     
     if room_index < 0:
-        print("Debug: No room selected in dropdown")
+        # print("Debug: No room selected in dropdown")
         return
     
     var waypoint_name = schedule_manager.get_room_waypoint_name(room_index)
-    print("Debug: Waypoint name from schedule manager: ", waypoint_name)
+    # print("Debug: Waypoint name from schedule manager: ", waypoint_name)
     
     if waypoint_name.is_empty():
-        print("Debug: Empty waypoint name returned")
+        # print("Debug: Empty waypoint name returned")
         return
     
     # Use the waypoint name with _Center suffix for room centers
     var room_center_waypoint = waypoint_name.replace("_Waypoint", "_Center")
     
-    print("Debug: Force moving ", selected_npc.npc_name, " to ", schedule_manager.get_room_name(room_index), " (", room_center_waypoint, ")")
-    print("  Current NPC state: ", selected_npc.current_state)
-    print("  Is moving: ", selected_npc.is_moving)
+    # print("Debug: Force moving ", selected_npc.npc_name, " to ", schedule_manager.get_room_name(room_index), " (", room_center_waypoint, ")")
+    # print("  Current NPC state: ", selected_npc.current_state)
+    # print("  Is moving: ", selected_npc.is_moving)
     
     # Temporarily disable schedule to allow manual override
     var original_use_schedule = selected_npc.use_schedule
@@ -375,20 +395,20 @@ func _on_force_move_pressed():
     
     # Force immediate movement using navigation
     if selected_npc.navigate_to_room(room_center_waypoint):
-        print("Debug: Navigation started successfully")
+        # print("Debug: Navigation started successfully")
         selected_npc.assigned_room = schedule_manager.get_room_name(room_index)
         
         # Don't re-enable schedule for force move - let user control it
-        print("Debug: Force move initiated, schedule disabled for manual control")
+        # print("Debug: Force move initiated, schedule disabled for manual control")
     else:
-        print("Debug: Navigation failed - check if waypoint exists: ", room_center_waypoint)
+        # print("Debug: Navigation failed - check if waypoint exists: ", room_center_waypoint)
         # Restore schedule state if navigation failed
         selected_npc.use_schedule = original_use_schedule
 
 func _on_npc_selected(index: int):
     if index >= 0 and index < available_npcs.size():
         selected_npc = available_npcs[index]
-        print("Debug: Selected NPC: ", selected_npc.npc_name)
+        # print("Debug: Selected NPC: ", selected_npc.npc_name)
         
         # Update schedule toggle button text
         var schedule_button = get_node_or_null("ScrollContainer/VBoxContainer/ScheduleToggleButton")
@@ -402,12 +422,12 @@ func _on_npc_selected(index: int):
 
 func _on_schedule_toggle_pressed():
     if not selected_npc:
-        print("Debug: No NPC selected")
+        # print("Debug: No NPC selected")
         return
     
     # Toggle schedule
     selected_npc.use_schedule = not selected_npc.use_schedule
-    print("Debug: Toggled ", selected_npc.npc_name, " schedule to: ", selected_npc.use_schedule)
+    # print("Debug: Toggled ", selected_npc.npc_name, " schedule to: ", selected_npc.use_schedule)
     
     # Update button text
     var schedule_button = get_node_or_null("ScrollContainer/VBoxContainer/ScheduleToggleButton")
@@ -419,6 +439,33 @@ func _on_schedule_toggle_pressed():
     # If enabled, trigger initial schedule check
     if selected_npc.use_schedule:
         selected_npc._initial_schedule_check()
+
+func _on_waypoint_viz_toggled(button_pressed: bool):
+    debug_markers_visible = button_pressed
+    
+    # Toggle debug markers in waypoint network manager
+    if waypoint_network_manager:
+        var scene_root = get_tree().current_scene
+        
+        # Find all debug markers (they have labels)
+        for child in scene_root.get_children():
+            if child is MeshInstance3D and child.has_node("Label3D"):
+                child.visible = debug_markers_visible
+    
+    # Toggle waypoint path visualization for all NPCs
+    var npcs = get_tree().get_nodes_in_group("npcs")
+    for npc in npcs:
+        if npc is NPCBase:
+            # Update the flag on each NPC
+            npc.show_waypoint_path = debug_markers_visible
+            
+            # Show/hide current path visualization
+            if debug_markers_visible and npc.is_moving:
+                npc._visualize_waypoint_path()
+            else:
+                npc._clear_path_visualization()
+    
+    # print("Waypoint visualization: ", "ON" if debug_markers_visible else "OFF")
 
 func _fix_positioning():
     """Force proper positioning of all UI elements"""

@@ -108,39 +108,37 @@ func _initialize_default_schedules():
     # Dr. Sarah Chen - Medical Officer schedule
     var chen_schedule = [
         ScheduleEntry.new(TimePeriod.EARLY_MORNING, Room.CREW_QUARTERS, "Morning routine"),
-        ScheduleEntry.new(TimePeriod.MORNING, Room.MEDICAL_BAY, "Patient rounds", 240),
+        ScheduleEntry.new(TimePeriod.MORNING, Room.MEDICAL_BAY, "Patient rounds and medical duties", 240),
         ScheduleEntry.new(TimePeriod.LUNCH, Room.CAFETERIA, "Lunch break"),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.MEDICAL_BAY, "Medical research", 120),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.LABORATORY_3, "Checking on experiments", 60),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.MEDICAL_BAY, "Medical research and documentation", 240),
         ScheduleEntry.new(TimePeriod.EVENING, Room.CAFETERIA, "Dinner"),
-        ScheduleEntry.new(TimePeriod.NIGHT, Room.MEDICAL_BAY, "Evening rounds", 90),
+        ScheduleEntry.new(TimePeriod.NIGHT, Room.MEDICAL_BAY, "Evening rounds and equipment check", 180),
         ScheduleEntry.new(TimePeriod.LATE_NIGHT, Room.CREW_QUARTERS, "Sleeping")
     ]
     npc_schedules["Dr. Sarah Chen"] = chen_schedule
     
     # Alex Chen - Station Engineer schedule (potential saboteur)
     var engineer_schedule = [
-        ScheduleEntry.new(TimePeriod.EARLY_MORNING, Room.ENGINEERING, "Early maintenance", 120),
-        ScheduleEntry.new(TimePeriod.MORNING, Room.ENGINEERING, "System diagnostics", 180),
-        ScheduleEntry.new(TimePeriod.LUNCH, Room.CAFETERIA, "Quick lunch", 30),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.LABORATORY_3, "Equipment maintenance", 120),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.SECURITY_OFFICE, "Security system check", 60),
+        ScheduleEntry.new(TimePeriod.EARLY_MORNING, Room.ENGINEERING, "Early maintenance and system checks", 120),
+        ScheduleEntry.new(TimePeriod.MORNING, Room.ENGINEERING, "Primary engineering duties", 240),
+        ScheduleEntry.new(TimePeriod.LUNCH, Room.CAFETERIA, "Lunch break"),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.ENGINEERING, "Repairs and diagnostics", 240),
         ScheduleEntry.new(TimePeriod.EVENING, Room.CAFETERIA, "Dinner"),
-        ScheduleEntry.new(TimePeriod.NIGHT, Room.ENGINEERING, "Night shift", 180),
+        ScheduleEntry.new(TimePeriod.NIGHT, Room.ENGINEERING, "Night shift monitoring", 180),
         ScheduleEntry.new(TimePeriod.LATE_NIGHT, Room.CREW_QUARTERS, "Resting")
     ]
     npc_schedules["Alex Chen"] = engineer_schedule
     
     # Jake Torres - Security Chief schedule
     var torres_schedule = [
-        ScheduleEntry.new(TimePeriod.EARLY_MORNING, Room.SECURITY_OFFICE, "Security briefing", 120),
-        ScheduleEntry.new(TimePeriod.MORNING, Room.SECURITY_OFFICE, "Monitoring stations", 120),
-        ScheduleEntry.new(TimePeriod.MORNING, Room.LABORATORY_3, "Lab security check", 60),
+        ScheduleEntry.new(TimePeriod.EARLY_MORNING, Room.SECURITY_OFFICE, "Morning briefing and reports", 120),
+        ScheduleEntry.new(TimePeriod.MORNING, Room.SECURITY_OFFICE, "Security monitoring", 180),
+        ScheduleEntry.new(TimePeriod.MORNING, Room.LABORATORY_3, "Quick security check", 60),
         ScheduleEntry.new(TimePeriod.LUNCH, Room.CAFETERIA, "Lunch"),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.SECURITY_OFFICE, "Incident reports", 120),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.ENGINEERING, "Security rounds", 60),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.SECURITY_OFFICE, "Surveillance and reports", 180),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.ENGINEERING, "Engineering security check", 60),
         ScheduleEntry.new(TimePeriod.EVENING, Room.CAFETERIA, "Dinner"),
-        ScheduleEntry.new(TimePeriod.NIGHT, Room.SECURITY_OFFICE, "Evening patrol", 120),
+        ScheduleEntry.new(TimePeriod.NIGHT, Room.SECURITY_OFFICE, "Night watch duties", 180),
         ScheduleEntry.new(TimePeriod.LATE_NIGHT, Room.CREW_QUARTERS, "Off duty")
     ]
     npc_schedules["Jake Torres"] = torres_schedule
@@ -148,26 +146,29 @@ func _initialize_default_schedules():
     # Dr. Zara Okafor - AI Specialist schedule
     var okafor_schedule = [
         ScheduleEntry.new(TimePeriod.EARLY_MORNING, Room.CREW_QUARTERS, "Morning prep"),
-        ScheduleEntry.new(TimePeriod.MORNING, Room.ENGINEERING, "AI system maintenance", 180),
-        ScheduleEntry.new(TimePeriod.LUNCH, Room.CAFETERIA, "Working lunch", 45),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.LABORATORY_3, "Data analysis", 120),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.SECURITY_OFFICE, "Security AI check", 60),
+        ScheduleEntry.new(TimePeriod.MORNING, Room.ENGINEERING, "AI system maintenance", 240),
+        ScheduleEntry.new(TimePeriod.LUNCH, Room.CAFETERIA, "Lunch break"),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.ENGINEERING, "AI research and optimization", 180),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.LABORATORY_3, "Data collaboration", 60),
         ScheduleEntry.new(TimePeriod.EVENING, Room.CAFETERIA, "Dinner"),
-        ScheduleEntry.new(TimePeriod.NIGHT, Room.ENGINEERING, "System optimization", 120),
+        ScheduleEntry.new(TimePeriod.NIGHT, Room.ENGINEERING, "System monitoring", 180),
         ScheduleEntry.new(TimePeriod.LATE_NIGHT, Room.CREW_QUARTERS, "Sleep")
     ]
     npc_schedules["Dr. Zara Okafor"] = okafor_schedule
     
-    # Security Officer schedule
+    # Security Officer schedule - patrols but with longer stays
     var security_schedule = [
-        ScheduleEntry.new(TimePeriod.EARLY_MORNING, Room.SECURITY_OFFICE, "Morning briefing"),
-        ScheduleEntry.new(TimePeriod.MORNING, Room.MEDICAL_BAY, "Medical area patrol", 120),
-        ScheduleEntry.new(TimePeriod.MORNING, Room.CAFETERIA, "Cafeteria patrol", 60),
+        ScheduleEntry.new(TimePeriod.EARLY_MORNING, Room.SECURITY_OFFICE, "Morning briefing", 120),
+        ScheduleEntry.new(TimePeriod.MORNING, Room.SECURITY_OFFICE, "Security desk duty", 120),
+        ScheduleEntry.new(TimePeriod.MORNING, Room.MEDICAL_BAY, "Medical area patrol", 60),
+        ScheduleEntry.new(TimePeriod.MORNING, Room.CAFETERIA, "Cafeteria check", 60),
         ScheduleEntry.new(TimePeriod.LUNCH, Room.CAFETERIA, "Lunch break"),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.CREW_QUARTERS, "Quarters patrol", 120),
-        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.LABORATORY_3, "Lab patrol", 60),
-        ScheduleEntry.new(TimePeriod.EVENING, Room.SECURITY_OFFICE, "Report filing", 60),
-        ScheduleEntry.new(TimePeriod.NIGHT, Room.ENGINEERING, "Engineering patrol", 120),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.SECURITY_OFFICE, "Monitoring station", 120),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.LABORATORY_3, "Lab security patrol", 60),
+        ScheduleEntry.new(TimePeriod.AFTERNOON, Room.CREW_QUARTERS, "Quarters check", 60),
+        ScheduleEntry.new(TimePeriod.EVENING, Room.CAFETERIA, "Dinner"),
+        ScheduleEntry.new(TimePeriod.NIGHT, Room.SECURITY_OFFICE, "Night desk duty", 120),
+        ScheduleEntry.new(TimePeriod.NIGHT, Room.ENGINEERING, "Engineering patrol", 60),
         ScheduleEntry.new(TimePeriod.LATE_NIGHT, Room.SECURITY_OFFICE, "Night watch")
     ]
     npc_schedules["Security Officer"] = security_schedule
@@ -309,4 +310,4 @@ func _enable_all_npc_schedules():
         if npc is NPCBase:
             npc.use_schedule = true
             if debug_mode:
-                print("Enabled schedule for: ", npc.npc_name)
+                # print("Enabled schedule for: ", npc.npc_name)

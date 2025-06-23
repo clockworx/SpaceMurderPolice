@@ -3,8 +3,8 @@ extends Node
 func _ready():
     add_to_group("game_manager")
     
-    print("\n=== AURORA GAME MANAGER STARTING ===")
-    print("Scene root: ", get_tree().current_scene.name)
+    # print("\n=== AURORA GAME MANAGER STARTING ===")
+    # print("Scene root: ", get_tree().current_scene.name)
     
     # Connect player interaction signals if needed
     var player = get_tree().get_first_node_in_group("player")

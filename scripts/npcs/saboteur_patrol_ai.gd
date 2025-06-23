@@ -119,7 +119,7 @@ func _physics_process(delta):
         return
         
     if not npc_base:
-        print("SaboteurPatrolAI: ERROR - npc_base is null!")
+        # print("SaboteurPatrolAI: ERROR - npc_base is null!")
         return
     
     # Update state indicators position
@@ -138,7 +138,7 @@ func _physics_process(delta):
         # Extra check for very close range (touching)
         var touch_distance = npc_base.global_position.distance_to(player.global_position)
         if touch_distance < 1.2 and current_state != State.CHASING:
-            print("SaboteurPatrolAI: Player touched Saboteur! Immediate detection!")
+            # print("SaboteurPatrolAI: Player touched Saboteur! Immediate detection!")
             _on_player_spotted()
     
     # Handle current state
@@ -408,7 +408,7 @@ func _handle_searching(delta):
         wait_timer += delta
         if wait_timer >= patrol_wait_time * 2:
             wait_timer = 0.0
-            print("Saboteur: They got away... for now.")
+            # print("Saboteur: They got away... for now.")
             _change_state(State.PATROLLING)
             _set_next_patrol_target()
     else:
@@ -428,7 +428,7 @@ func _handle_sabotage(delta):
             # Reached sabotage location, perform sabotage
             sabotage_complete = true
             wait_timer = 0.0
-            print("SaboteurPatrolAI: Reached sabotage location, performing sabotage...")
+            # print("SaboteurPatrolAI: Reached sabotage location, performing sabotage...")
             return
         
         # Move toward sabotage target (slower, more stealthy)
@@ -454,7 +454,7 @@ func _handle_sabotage(delta):
         # Sabotage complete, wait briefly then return to normal patrol
         wait_timer += delta
         if wait_timer >= 3.0:  # Wait 3 seconds after completing sabotage
-            print("SaboteurPatrolAI: Sabotage complete, returning to patrol")
+            # print("SaboteurPatrolAI: Sabotage complete, returning to patrol")
             sabotage_complete = false
             _change_state(State.PATROLLING)
             _set_next_patrol_target()

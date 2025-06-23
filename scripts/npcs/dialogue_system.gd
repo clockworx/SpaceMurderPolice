@@ -505,7 +505,7 @@ func select_option(option_index: int):
         # Apply relationship change
         if selected.relationship_change != 0 and relationship_manager:
             relationship_manager.modify_relationship(current_npc.npc_name, selected.relationship_change)
-            print("Relationship with ", current_npc.npc_name, " changed by ", selected.relationship_change)
+            # print("Relationship with ", current_npc.npc_name, " changed by ", selected.relationship_change)
             relationship_changed.emit(current_npc.npc_name, selected.relationship_change)
         
         # Record important decision

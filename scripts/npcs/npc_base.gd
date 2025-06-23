@@ -13,6 +13,9 @@ enum MovementState {
     RETURN_TO_PATROL  # Go back to waypoint route after investigation
 }
 
+# Global tracking for NPC interactions
+static var npc_currently_talking: NPCBase = null
+
 @export_group("NPC Properties")
 @export var npc_name: String = "Unknown"
 @export var role: String = "Crew Member"
@@ -81,6 +84,7 @@ enum MovementState {
 @export var pause_at_waypoints: bool = true
 @export var pause_duration_min: float = 2.0
 @export var pause_duration_max: float = 5.0
+@export var show_waypoint_path: bool = false  # Debug visualization for waypoint paths
 @export var show_current_waypoint_index: int = -1:  # Read-only display of current waypoint
     get:
         return current_waypoint_index
@@ -97,6 +101,19 @@ enum MovementState {
 
 @export_group("Movement System")
 @export var use_waypoint_movement: bool = true  # Use pure waypoint-based movement
+
+@export_group("Collision Avoidance")
+@export var enable_npc_avoidance: bool = true  # Enable avoidance of other NPCs
+@export var avoidance_radius: float = 2.0  # Detection radius for other NPCs
+@export var avoidance_force: float = 3.0  # How strong the avoidance push is
+@export var personal_space_radius: float = 1.5  # Minimum distance to keep from other NPCs when stopped
+@export var debug_avoidance: bool = false  # Show debug info for avoidance
+@export var show_avoidance_radius: bool = false:  # Show visual indicator of avoidance radius
+    set(value):
+        show_avoidance_radius = value
+        if Engine.is_editor_hint():
+            return
+        _update_avoidance_visualization()
 
 @export_group("Interaction")
 @export var interaction_distance: float = 3.0
@@ -192,6 +209,9 @@ var sound_detected: bool = false
 var is_investigating_sound: bool = false
 var sound_waypoint_debug: MeshInstance3D  # Debug sphere for sound investigation point
 
+# Collision avoidance visualization
+var avoidance_sphere: MeshInstance3D
+
 # Simple waypoint movement system
 var is_moving: bool = false
 var movement_speed: float = 3.0
@@ -214,6 +234,11 @@ var was_navigating_before_interrupt: bool = false
 func _ready():
     if Engine.is_editor_hint():
         return
+
+func _exit_tree():
+    # Clean up static reference if this NPC was talking
+    if npc_currently_talking == self:
+        npc_currently_talking = null
         
     collision_layer = 2  # Interactable layer
     collision_mask = 1   # Collide with environment
@@ -289,6 +314,9 @@ func _ready():
     
     # Create sound detection visualization
     _create_sound_detection_visualization()
+    
+    # Initialize avoidance visualization
+    _update_avoidance_visualization()
     
     # Initialize waypoint system if enabled
     if use_waypoints and waypoint_nodes.size() > 0:
@@ -399,8 +427,8 @@ func navigate_to_room(room_waypoint_name: String):
     # Get path from current position to target room
     var path = waypoint_network_manager.get_path_to_room(global_position, room_waypoint_name)
     if path.is_empty():
-        print("  ERROR: No path found to ", room_waypoint_name)
-        print("  Available waypoints: ", waypoint_network_manager.waypoint_nodes.keys())
+        # print("  ERROR: No path found to ", room_waypoint_name)
+        # print("  Available waypoints: ", waypoint_network_manager.waypoint_nodes.keys())
         return false
     
     # Debug: Check if NPCs are using doors when leaving rooms
@@ -418,8 +446,8 @@ func navigate_to_room(room_waypoint_name: String):
     is_moving = true
     
     # Path visualization will show the route
-    
-    _visualize_waypoint_path()
+    if show_waypoint_path:
+        _visualize_waypoint_path()
     
     return true
 
@@ -449,9 +477,24 @@ func _handle_waypoint_movement(delta):
         direction = (current_waypoint - global_position).normalized()
         _update_current_target_visualization(current_waypoint)
     
-    # Move towards target
-    velocity.x = direction.x * movement_speed
-    velocity.z = direction.z * movement_speed
+    # Calculate base movement
+    var base_velocity = Vector3(direction.x * movement_speed, 0, direction.z * movement_speed)
+    
+    # Apply avoidance if enabled
+    if enable_npc_avoidance:
+        var avoidance_vector = _calculate_avoidance_vector()
+        base_velocity += avoidance_vector * avoidance_force
+        
+        # Clamp to max speed
+        var horizontal_velocity = Vector2(base_velocity.x, base_velocity.z)
+        if horizontal_velocity.length() > movement_speed:
+            horizontal_velocity = horizontal_velocity.normalized() * movement_speed
+            base_velocity.x = horizontal_velocity.x
+            base_velocity.z = horizontal_velocity.y
+    
+    # Apply movement
+    velocity.x = base_velocity.x
+    velocity.z = base_velocity.z
     
     # Apply gravity
     if not is_on_floor():
@@ -461,14 +504,12 @@ func _handle_waypoint_movement(delta):
     
     move_and_slide()
     
-    # Debug stuck detection for Alex Chen
-    if npc_name == "Alex Chen" and velocity.length() < 0.1 and is_moving:
-        print("Alex Chen: Stuck? Velocity near zero while moving. Position: ", global_position)
-    
     # Rotate to face movement direction
-    if direction.length() > 0.1:
-        var target_rotation = atan2(-direction.x, -direction.z)
-        rotation.y = lerp_angle(rotation.y, target_rotation, 5.0 * delta)
+    if velocity.length() > 0.1:
+        var move_direction = Vector3(velocity.x, 0, velocity.z).normalized()
+        if move_direction.length() > 0.1:
+            var target_rotation = atan2(-move_direction.x, -move_direction.z)
+            rotation.y = lerp_angle(rotation.y, target_rotation, 5.0 * delta)
 
 func _on_waypoint_navigation_finished():
     # print(npc_name, ": Waypoint navigation completed!")
@@ -476,9 +517,10 @@ func _on_waypoint_navigation_finished():
     velocity = Vector3.ZERO
     _clear_path_visualization()
     
-    # Debug: Check if we arrived at Engineering
-    if global_position.distance_to(Vector3(-45.271, 0, 11.2007)) < 5.0:
-        print(npc_name, ": Arrived at Engineering Center")
+    
+    # Apply personal space when stopped
+    if enable_npc_avoidance:
+        _apply_personal_space()
     
     # If using schedule, pause in the room before moving to next location
     if use_schedule and schedule_manager:
@@ -488,6 +530,86 @@ func _on_waypoint_navigation_finished():
         # After pause, pick a new room to visit
         if use_schedule:  # Double-check in case it was disabled during wait
             _pick_random_room_to_visit()
+
+func _calculate_avoidance_vector() -> Vector3:
+    var avoidance = Vector3.ZERO
+    var nearby_npcs = _get_nearby_npcs()
+    
+    for other_npc in nearby_npcs:
+        var distance = global_position.distance_to(other_npc.global_position)
+        if distance < avoidance_radius and distance > 0.1:
+            # Calculate repulsion vector
+            var away_direction = (global_position - other_npc.global_position).normalized()
+            var strength = 1.0 - (distance / avoidance_radius)  # Stronger when closer
+            avoidance += away_direction * strength
+            
+            if debug_avoidance:
+                # print(npc_name, ": Avoiding ", other_npc.npc_name, " at distance ", distance)
+    
+    # Normalize but preserve some magnitude based on number of NPCs to avoid
+    if avoidance.length() > 0:
+        avoidance = avoidance.normalized() * min(avoidance.length(), 1.0)
+    
+    return avoidance
+
+func _get_nearby_npcs() -> Array:
+    var nearby = []
+    var all_npcs = get_tree().get_nodes_in_group("npcs")
+    
+    for npc in all_npcs:
+        if npc != self and npc is NPCBase:
+            var distance = global_position.distance_to(npc.global_position)
+            if distance < avoidance_radius:
+                nearby.append(npc)
+    
+    return nearby
+
+func _apply_personal_space():
+    var nearby_npcs = _get_nearby_npcs()
+    
+    for other_npc in nearby_npcs:
+        var distance = global_position.distance_to(other_npc.global_position)
+        if distance < personal_space_radius and distance > 0.1:
+            # Push away from other NPC
+            var push_direction = (global_position - other_npc.global_position).normalized()
+            var push_distance = personal_space_radius - distance
+            global_position += push_direction * push_distance * 0.5  # Move halfway
+            
+            if debug_avoidance:
+                # print(npc_name, ": Adjusting position away from ", other_npc.npc_name)
+
+func _update_avoidance_visualization():
+    if show_avoidance_radius:
+        if not avoidance_sphere:
+            _create_avoidance_sphere()
+        avoidance_sphere.visible = true
+    elif avoidance_sphere:
+        avoidance_sphere.visible = false
+
+func _create_avoidance_sphere():
+    avoidance_sphere = MeshInstance3D.new()
+    avoidance_sphere.name = "AvoidanceSphere"
+    
+    # Create a torus mesh to show the radius
+    var torus = TorusMesh.new()
+    torus.inner_radius = avoidance_radius * 0.9
+    torus.outer_radius = avoidance_radius
+    torus.ring_segments = 32
+    torus.rings = 8
+    avoidance_sphere.mesh = torus
+    
+    # Create transparent material
+    var material = StandardMaterial3D.new()
+    material.albedo_color = Color(0.5, 0.5, 1.0, 0.3)
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    avoidance_sphere.material_override = material
+    
+    # Position at ground level
+    avoidance_sphere.position = Vector3(0, 0.1, 0)
+    avoidance_sphere.rotation_degrees = Vector3(90, 0, 0)  # Rotate to be horizontal
+    
+    add_child(avoidance_sphere)
+
 
 func _visualize_waypoint_path():
     # Clear existing visualization
@@ -602,6 +724,17 @@ func _clear_path_visualization():
 func _update_current_target_visualization(target_pos: Vector3):
     # Ensure we're in the scene tree
     if not is_inside_tree():
+        return
+    
+    # Only create visualization if debug is enabled
+    if not show_waypoint_path:
+        # Clean up any existing visualization
+        if current_target_indicator and is_instance_valid(current_target_indicator):
+            current_target_indicator.queue_free()
+            current_target_indicator = null
+        if current_path_line and is_instance_valid(current_path_line):
+            current_path_line.queue_free()
+            current_path_line = null
         return
     
     # Only update if target has changed significantly
@@ -972,11 +1105,19 @@ func set_state(new_state: MovementState, target_position: Vector3 = Vector3.ZERO
     if current_state == new_state:
         return
     
+    # Track when leaving TALK state
+    if current_state == MovementState.TALK and npc_currently_talking == self:
+        npc_currently_talking = null
+    
     # Store previous state for resuming
     if current_state != MovementState.IDLE and current_state != MovementState.TALK:
         previous_state = current_state
     
     current_state = new_state
+    
+    # Track when entering TALK state
+    if new_state == MovementState.TALK:
+        npc_currently_talking = self
     
     if debug_state_changes:
         # print(npc_name + " state changed to: ", MovementState.keys()[new_state])
@@ -1092,22 +1233,31 @@ func _check_player_proximity():
     
     var distance = global_position.distance_to(player.global_position)
     
+    # Check if another NPC is already talking
+    var another_npc_talking = npc_currently_talking != null and npc_currently_talking != self and is_instance_valid(npc_currently_talking)
+    
     if distance <= talk_trigger_distance:
-        # Track if we were navigating
-        if is_moving and not was_navigating_before_interrupt:
-            was_navigating_before_interrupt = true
-        # Stop any ongoing movement
-        is_moving = false
-        velocity = Vector3.ZERO
-        set_talk_state(player.global_position)
+        # Only enter talk state if no other NPC is talking
+        if not another_npc_talking:
+            # Track if we were navigating
+            if is_moving and not was_navigating_before_interrupt:
+                was_navigating_before_interrupt = true
+            # Stop any ongoing movement
+            is_moving = false
+            velocity = Vector3.ZERO
+            set_talk_state(player.global_position)
+        # If another NPC is talking, keep moving (ignore the player)
     elif distance <= idle_trigger_distance:
-        # Track if we were navigating
-        if is_moving and not was_navigating_before_interrupt:
-            was_navigating_before_interrupt = true
-        # Stop any ongoing movement
-        is_moving = false
-        velocity = Vector3.ZERO
-        set_idle_state()
+        # Only idle if no other NPC is talking
+        if not another_npc_talking:
+            # Track if we were navigating
+            if is_moving and not was_navigating_before_interrupt:
+                was_navigating_before_interrupt = true
+            # Stop any ongoing movement
+            is_moving = false
+            velocity = Vector3.ZERO
+            set_idle_state()
+        # If another NPC is talking, keep moving
     else:
         # Player is out of range
         if was_navigating_before_interrupt and not is_moving:
