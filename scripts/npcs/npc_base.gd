@@ -472,6 +472,10 @@ func _on_waypoint_navigation_finished():
     velocity = Vector3.ZERO
     _clear_path_visualization()
     
+    # Debug: Check if we arrived at Engineering
+    if global_position.distance_to(Vector3(-45.271, 0, 11.2007)) < 5.0:
+        print(npc_name, ": Arrived at Engineering Center")
+    
     # If using schedule, pause in the room before moving to next location
     if use_schedule and schedule_manager:
         # Wait 5 seconds before checking schedule again
@@ -1662,7 +1666,8 @@ func _pick_random_room_to_visit():
     if available_rooms.size() > 0:
         var random_room = available_rooms[randi() % available_rooms.size()]
         print(npc_name + ": Deciding to visit " + random_room)
-        navigate_to_room(random_room)
+        if not navigate_to_room(random_room):
+            print(npc_name + ": Failed to navigate to " + random_room)
 
 # Getters for external systems
 

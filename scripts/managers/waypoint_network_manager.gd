@@ -217,8 +217,15 @@ func get_path_to_room(from_position: Vector3, to_room_waypoint: String) -> Array
             if from_position.distance_to(room_pos) < 10.0:
                 in_room = true
                 if path.size() > 1 and path[0] == room_center:
-                    var expected_door = room_center.replace("_Center", "_Door_Red")
-                    if path[1] != expected_door:
+                    # Map room centers to their actual door waypoint names
+                    var door_map = {
+                        "Laboratory_Center": "Lab_Door_Red",
+                        "MedicalBay_Center": "Medical_Door_Red",
+                        "Security_Center": "Security_Door_Red",
+                        "Engineering_Center": "Engineering_Door_Red"
+                    }
+                    var expected_door = door_map.get(room_center, "")
+                    if expected_door != "" and path[1] != expected_door:
                         print("  ERROR: NPC in ", room_center, " not using door! Path: ", path)
                         print("  Expected next waypoint: ", expected_door, " but got: ", path[1])
                 break
