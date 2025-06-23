@@ -209,6 +209,7 @@ var path_spheres: Array[MeshInstance3D] = []
 # Waypoint navigation variables
 var waypoint_path: Array[Vector3] = []
 var waypoint_path_index: int = 0
+var was_navigating_before_interrupt: bool = false
 
 func _ready():
     if Engine.is_editor_hint():
@@ -348,6 +349,22 @@ func _physics_process(delta):
                 rotation.z = 0
         return
     
+    # Check player proximity for state changes
+    if react_to_player_proximity:
+        _check_player_proximity()
+    
+    # Handle state-specific behavior
+    match current_state:
+        MovementState.TALK:
+            # Face the talk target position
+            if talk_target_position != Vector3.ZERO:
+                var look_pos = talk_target_position
+                look_pos.y = global_position.y
+                var direction = (look_pos - global_position).normalized()
+                if direction.length() > 0.1:
+                    var target_rotation = atan2(-direction.x, -direction.z)
+                    rotation.y = lerp_angle(rotation.y, target_rotation, 5.0 * delta)
+    
     # Handle movement
     if is_moving:
         _handle_waypoint_movement(delta)
@@ -433,7 +450,7 @@ func _handle_waypoint_movement(delta):
     
     # Rotate to face movement direction
     if direction.length() > 0.1:
-        var target_rotation = atan2(direction.x, direction.z)
+        var target_rotation = atan2(-direction.x, -direction.z)
         rotation.y = lerp_angle(rotation.y, target_rotation, 5.0 * delta)
 
 func _on_waypoint_navigation_finished():
@@ -747,7 +764,9 @@ func _on_relationship_changed(character_name: String, new_level: int):
 
 func interact():
     # This is called when the player interacts with the NPC
+    print(npc_name + ": interact() called")
     if is_talking:
+        print(npc_name + ": Already talking, ignoring interact")
         return
     
     # Switch to TALK state and face the player
@@ -761,7 +780,10 @@ func interact():
     # Open dialogue UI
     var dialogue_ui = get_tree().get_first_node_in_group("dialogue_ui")
     if dialogue_ui:
-        dialogue_ui.start_dialogue(self, initial_dialogue_id)
+        print(npc_name + ": Starting dialogue with UI")
+        dialogue_ui.start_dialogue(self)
+    else:
+        print("Warning: No dialogue UI found in 'dialogue_ui' group")
 
 func end_dialogue():
     is_talking = false
@@ -1044,9 +1066,29 @@ func _check_player_proximity():
     var distance = global_position.distance_to(player.global_position)
     
     if distance <= talk_trigger_distance:
+        # Track if we were navigating
+        if is_moving and not was_navigating_before_interrupt:
+            was_navigating_before_interrupt = true
+        # Stop any ongoing movement
+        is_moving = false
+        velocity = Vector3.ZERO
         set_talk_state(player.global_position)
     elif distance <= idle_trigger_distance:
+        # Track if we were navigating
+        if is_moving and not was_navigating_before_interrupt:
+            was_navigating_before_interrupt = true
+        # Stop any ongoing movement
+        is_moving = false
+        velocity = Vector3.ZERO
         set_idle_state()
+    else:
+        # Player is out of range
+        if was_navigating_before_interrupt and not is_moving:
+            # Resume navigation
+            was_navigating_before_interrupt = false
+            if waypoint_path.size() > 0 and waypoint_path_index < waypoint_path.size():
+                is_moving = true
+                set_patrol_state()  # Return to patrol state
 
 # Waypoint functions
 func _update_waypoint_target():
