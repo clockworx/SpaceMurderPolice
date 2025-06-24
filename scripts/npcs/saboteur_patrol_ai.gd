@@ -709,11 +709,11 @@ func _create_state_indicators():
     state_label = Label3D.new()
     state_label.text = "PATROLLING\nDetect: " + str(detection_range) + "m\nHear: " + str(hearing_range) + "m"
     state_label.modulate = Color.GREEN
-    state_label.font_size = 14
+    state_label.font_size = 10  # Smaller
     state_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
     state_label.no_depth_test = true
     state_label.fixed_size = true
-    state_label.pixel_size = 0.004
+    state_label.pixel_size = 0.002  # Much smaller
     get_tree().current_scene.add_child(state_label)
 
 func on_sound_heard(position: Vector3):
@@ -842,26 +842,27 @@ func _create_awareness_visualization():
         detection_ring = MeshInstance3D.new()
         detection_ring.name = "DetectionIndicator"
         
-        # Small sphere mesh
+        # Larger sphere mesh so it's visible
         var sphere_mesh = SphereMesh.new()
-        sphere_mesh.radius = 0.3  # Small radius
-        sphere_mesh.height = 0.6
+        sphere_mesh.radius = 0.5  # Larger radius
+        sphere_mesh.height = 1.0
         sphere_mesh.radial_segments = 16
         sphere_mesh.rings = 8
         detection_ring.mesh = sphere_mesh
         
         # Create glowing material
         var sphere_material = StandardMaterial3D.new()
-        sphere_material.albedo_color = Color(0, 1, 0, 0.8)
+        sphere_material.albedo_color = Color(0, 1, 0, 1.0)
         sphere_material.emission_enabled = true
-        sphere_material.emission = Color(0, 1, 0, 0.5)
-        sphere_material.emission_energy = 0.5
+        sphere_material.emission = Color(0, 1, 0, 1.0)
+        sphere_material.emission_energy = 2.0  # Brighter
         sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
         sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        sphere_material.cull_mode = BaseMaterial3D.CULL_DISABLED
         
         detection_ring.material_override = sphere_material
         detection_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        detection_ring.position.y = 0.3  # At feet level
+        detection_ring.position.y = -0.5  # Below feet to ensure visibility
         
         npc_base.add_child(detection_ring)
     
@@ -908,24 +909,25 @@ func _create_sound_detection_visualization():
         sound_detection_sphere = MeshInstance3D.new()
         sound_detection_sphere.name = "SoundIndicator"
         
-        # Small box mesh
+        # Larger box mesh
         var box_mesh = BoxMesh.new()
-        box_mesh.size = Vector3(0.2, 0.2, 0.2)  # Small cube
+        box_mesh.size = Vector3(0.4, 0.4, 0.4)  # Larger cube
         sound_detection_sphere.mesh = box_mesh
         
         # Create material for sound detection (blue/cyan)
         var sound_material = StandardMaterial3D.new()
-        sound_material.albedo_color = Color(0, 0.7, 1, 0.8)  # Cyan for sound
+        sound_material.albedo_color = Color(0, 0.7, 1, 1.0)  # Cyan for sound
         sound_material.emission_enabled = true
-        sound_material.emission = Color(0, 0.7, 1, 0.4)
-        sound_material.emission_energy = 0.4
+        sound_material.emission = Color(0, 0.7, 1, 1.0)
+        sound_material.emission_energy = 2.0  # Brighter
         sound_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
         sound_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        sound_material.cull_mode = BaseMaterial3D.CULL_DISABLED
         
         sound_detection_sphere.material_override = sound_material
         sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        sound_detection_sphere.position.y = 0.5  # Slightly higher than detection sphere
-        sound_detection_sphere.position.x = 0.5  # Offset to the side
+        sound_detection_sphere.position.y = 0.0  # At ground level
+        sound_detection_sphere.position.x = 1.0  # Further offset to the side
         
         npc_base.add_child(sound_detection_sphere)
 
@@ -933,11 +935,16 @@ func _create_patrol_path_visualization():
     """Create lines showing the patrol path"""
     patrol_path_line = MeshInstance3D.new()
     patrol_path_line.name = "PatrolPathLine"
+    patrol_path_line.position = Vector3.ZERO  # Ensure it's at world origin
     
     # Update the patrol path when the route changes
     _update_patrol_path_visualization()
     
-    get_tree().current_scene.add_child(patrol_path_line)
+    # Add to root scene, not current scene
+    if get_tree().root:
+        get_tree().root.add_child(patrol_path_line)
+    else:
+        get_tree().current_scene.add_child(patrol_path_line)
 
 func _update_patrol_path_visualization():
     """Update the patrol path lines"""
@@ -987,17 +994,21 @@ func _update_patrol_path_visualization():
     
     patrol_path_line.mesh = array_mesh
     
-    # Create material for the path
+    # Create material for the path with thicker line rendering
     var path_material = StandardMaterial3D.new()
     path_material.albedo_color = Color(1, 0, 1, 1.0)  # Magenta for path
     path_material.emission_enabled = true
-    path_material.emission = Color(1, 0, 1, 0.5)
-    path_material.emission_energy = 0.5
+    path_material.emission = Color(1, 0, 1, 1.0)
+    path_material.emission_energy = 3.0  # Very bright
     path_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     path_material.vertex_color_use_as_albedo = false  # Don't use vertex colors
+    path_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED  # Opaque
     
     patrol_path_line.material_override = path_material
     patrol_path_line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    
+    # Position at ground level
+    patrol_path_line.position.y = 0.1
 
 func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: bool, sound: bool):
     """Update debug visualization settings"""
