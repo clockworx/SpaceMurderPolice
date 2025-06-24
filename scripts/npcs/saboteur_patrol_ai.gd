@@ -1,8 +1,8 @@
 extends Node
 class_name SaboteurPatrolAI
 
-@export var patrol_speed: float = 4.0
-@export var chase_speed: float = 6.0
+@export var patrol_speed: float = 2.0
+@export var chase_speed: float = 4.0
 @export var detection_range: float = 15.0
 @export var vision_angle: float = 60.0  # Degrees
 @export var hearing_range: float = 10.0
@@ -55,6 +55,9 @@ var awareness_sphere: MeshInstance3D
 var vision_cone_mesh: MeshInstance3D
 var sound_detection_sphere: MeshInstance3D
 var patrol_path_line: MeshInstance3D
+var detection_ring: MeshInstance3D  # Floor ring for detection range
+var vision_arc: MeshInstance3D  # Floor arc for vision cone
+var detection_particles: GPUParticles3D  # Particles at detection edge
 
 # States
 enum State {
@@ -775,10 +778,10 @@ func set_active(active: bool):
             state_light.visible = false
         if state_label:
             state_label.visible = false
-        if awareness_sphere:
-            awareness_sphere.visible = false
-        if vision_cone_mesh:
-            vision_cone_mesh.visible = false
+        if detection_ring:
+            detection_ring.visible = false
+        if vision_arc:
+            vision_arc.visible = false
         if sound_detection_sphere:
             sound_detection_sphere.visible = false
         if patrol_path_line:
@@ -787,7 +790,7 @@ func set_active(active: bool):
         # Always create visualizations when activating (they will be shown/hidden based on settings)
         if not state_light:
             _create_state_indicators()
-        if not awareness_sphere:
+        if not detection_ring:
             _create_awareness_visualization()
         if not sound_detection_sphere:
             _create_sound_detection_visualization()
@@ -799,10 +802,10 @@ func set_active(active: bool):
             state_light.visible = show_state_indicators
         if state_label:
             state_label.visible = show_state_indicators
-        if awareness_sphere:
-            awareness_sphere.visible = show_awareness_sphere
-        if vision_cone_mesh:
-            vision_cone_mesh.visible = show_vision_cone
+        if detection_ring:
+            detection_ring.visible = show_awareness_sphere
+        if vision_arc:
+            vision_arc.visible = show_vision_cone
         if sound_detection_sphere:
             sound_detection_sphere.visible = show_sound_detection
         if patrol_path_line:
@@ -826,144 +829,212 @@ func end_sabotage_mission():
     sabotage_complete = false
 
 func _create_awareness_visualization():
-    # Create awareness sphere if enabled
+    # Create floor detection ring instead of sphere
     if show_awareness_sphere:
-        awareness_sphere = MeshInstance3D.new()
-        awareness_sphere.name = "AwarenessSphere"
+        detection_ring = MeshInstance3D.new()
+        detection_ring.name = "DetectionRing"
         
-        var sphere_mesh = SphereMesh.new()
-        sphere_mesh.radial_segments = 16
-        sphere_mesh.rings = 8
-        sphere_mesh.radius = detection_range
-        sphere_mesh.height = detection_range * 2
-        awareness_sphere.mesh = sphere_mesh
+        # Create a torus (ring) mesh for floor visualization
+        var torus_mesh = TorusMesh.new()
+        torus_mesh.inner_radius = detection_range - 0.2
+        torus_mesh.outer_radius = detection_range
+        torus_mesh.ring_segments = 64
+        torus_mesh.rings = 4
+        detection_ring.mesh = torus_mesh
         
-        # Create wireframe material
-        var sphere_material = StandardMaterial3D.new()
-        sphere_material.albedo_color = Color(0, 1, 0, 0.2)
-        sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        sphere_material.vertex_color_use_as_albedo = true
-        sphere_material.no_depth_test = true
-        sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-        sphere_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+        # Create glowing ring material
+        var ring_material = StandardMaterial3D.new()
+        ring_material.albedo_color = Color(0, 1, 0, 0.8)
+        ring_material.emission_enabled = true
+        ring_material.emission = Color(0, 1, 0, 0.5)
+        ring_material.emission_energy = 0.5
+        ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
         
-        awareness_sphere.material_override = sphere_material
-        awareness_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        detection_ring.material_override = ring_material
+        detection_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        detection_ring.position.y = 0.1  # Slightly above floor
+        detection_ring.rotation.x = PI/2  # Lay flat on floor
         
-        npc_base.add_child(awareness_sphere)
+        npc_base.add_child(detection_ring)
     
-    # Create vision cone if enabled
+    # Create floor-based vision arc if enabled
     if show_vision_cone:
-        vision_cone_mesh = MeshInstance3D.new()
-        vision_cone_mesh.name = "VisionCone"
+        vision_arc = MeshInstance3D.new()
+        vision_arc.name = "VisionArc"
         
-        # Create a simple pyramid mesh for vision cone
+        # Create arc mesh for vision cone on floor
         var arrays = []
         arrays.resize(Mesh.ARRAY_MAX)
         
         var vertices = PackedVector3Array()
+        var colors = PackedColorArray()
         
-        # Vision cone vertices
-        var cone_length = detection_range * 0.8
-        var cone_width = tan(deg_to_rad(vision_angle / 2)) * cone_length
+        # Vision arc parameters
+        var arc_length = detection_range * 0.8
+        var arc_angle = deg_to_rad(vision_angle)
+        var segments = 20
         
-        vertices.push_back(Vector3.ZERO)  # Origin
-        vertices.push_back(Vector3(-cone_width, 0, -cone_length))  # Left
-        vertices.push_back(Vector3(cone_width, 0, -cone_length))   # Right
-        vertices.push_back(Vector3(0, cone_width, -cone_length))    # Top
-        vertices.push_back(Vector3(0, -cone_width, -cone_length))   # Bottom
+        # Add center vertex
+        vertices.push_back(Vector3.ZERO)
+        colors.push_back(Color(1, 1, 0, 0.6))
         
-        # Create triangles for the cone
-        var indices = PackedInt32Array([
-            0, 1, 2,  # Horizontal plane
-            0, 3, 4,  # Vertical plane
-            0, 1, 3,  # Left-top
-            0, 3, 2,  # Right-top
-            0, 2, 4,  # Right-bottom
-            0, 4, 1   # Left-bottom
-        ])
+        # Create arc vertices
+        for i in range(segments + 1):
+            var angle = -arc_angle/2 + (arc_angle * i / segments)
+            var x = sin(angle) * arc_length
+            var z = -cos(angle) * arc_length
+            vertices.push_back(Vector3(x, 0, z))
+            # Fade out at edges
+            var fade = 1.0 - (abs(i - segments/2.0) / (segments/2.0)) * 0.5
+            colors.push_back(Color(1, 1, 0, 0.3 * fade))
+        
+        # Create triangles
+        var indices = PackedInt32Array()
+        for i in range(segments):
+            indices.push_back(0)  # Center
+            indices.push_back(i + 1)
+            indices.push_back(i + 2)
         
         arrays[Mesh.ARRAY_VERTEX] = vertices
+        arrays[Mesh.ARRAY_COLOR] = colors
         arrays[Mesh.ARRAY_INDEX] = indices
         
         var array_mesh = ArrayMesh.new()
         array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
         
-        vision_cone_mesh.mesh = array_mesh
+        vision_arc.mesh = array_mesh
         
-        # Create vision cone material
-        var cone_material = StandardMaterial3D.new()
-        cone_material.albedo_color = Color(1, 1, 0, 0.15)
-        cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-        cone_material.no_depth_test = true
-        cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+        # Create vision arc material
+        var arc_material = StandardMaterial3D.new()
+        arc_material.vertex_color_use_as_albedo = true
+        arc_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        arc_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        arc_material.no_depth_test = true
+        arc_material.cull_mode = BaseMaterial3D.CULL_DISABLED
         
-        vision_cone_mesh.material_override = cone_material
-        vision_cone_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        vision_cone_mesh.position.y = 1.5  # Eye level
+        vision_arc.material_override = arc_material
+        vision_arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        vision_arc.position.y = 0.15  # Slightly above floor
         
-        npc_base.add_child(vision_cone_mesh)
+        npc_base.add_child(vision_arc)
 
 func _update_awareness_visualization():
-    if not awareness_sphere or not vision_cone_mesh:
-        return
+    # Update detection ring color based on state
+    if detection_ring:
+        var ring_material = detection_ring.material_override as StandardMaterial3D
+        if ring_material:
+            match current_state:
+                State.CHASING:
+                    ring_material.albedo_color = Color(1, 0, 0, 0.8)
+                    ring_material.emission = Color(1, 0, 0, 0.8)
+                    ring_material.emission_energy = 1.0
+                State.INVESTIGATING:
+                    ring_material.albedo_color = Color(1, 1, 0, 0.8)
+                    ring_material.emission = Color(1, 1, 0, 0.6)
+                    ring_material.emission_energy = 0.7
+                State.SEARCHING:
+                    ring_material.albedo_color = Color(1, 0.5, 0, 0.8)
+                    ring_material.emission = Color(1, 0.5, 0, 0.6)
+                    ring_material.emission_energy = 0.7
+                State.SABOTAGE:
+                    ring_material.albedo_color = Color(1, 0, 1, 0.6)
+                    ring_material.emission = Color(1, 0, 1, 0.4)
+                    ring_material.emission_energy = 0.5
+                _:  # PATROLLING or WAITING
+                    ring_material.albedo_color = Color(0, 1, 0, 0.6)
+                    ring_material.emission = Color(0, 1, 0, 0.3)
+                    ring_material.emission_energy = 0.5
     
-    # Update colors based on state
-    var sphere_material = awareness_sphere.material_override as StandardMaterial3D
-    var cone_material = vision_cone_mesh.material_override as StandardMaterial3D
-    
-    if not sphere_material or not cone_material:
-        return
-    
-    match current_state:
-        State.CHASING:
-            sphere_material.albedo_color = Color(1, 0, 0, 0.3)
-            cone_material.albedo_color = Color(1, 0, 0, 0.3)
-        State.INVESTIGATING:
-            sphere_material.albedo_color = Color(1, 1, 0, 0.25)
-            cone_material.albedo_color = Color(1, 1, 0, 0.25)
-        State.SEARCHING:
-            sphere_material.albedo_color = Color(1, 0.5, 0, 0.25)
-            cone_material.albedo_color = Color(1, 0.5, 0, 0.25)
-        State.SABOTAGE:
-            sphere_material.albedo_color = Color(1, 0, 1, 0.2)
-            cone_material.albedo_color = Color(1, 0, 1, 0.2)
-        _:  # PATROLLING or WAITING
-            sphere_material.albedo_color = Color(0, 1, 0, 0.2)
-            cone_material.albedo_color = Color(1, 1, 0, 0.15)
-    
-    # Show vision cone based on state and debug settings
-    if show_vision_cone:
-        vision_cone_mesh.visible = current_state != State.WAITING
-    else:
-        vision_cone_mesh.visible = false
+    # Update vision arc
+    if vision_arc and show_vision_cone:
+        vision_arc.visible = current_state != State.WAITING
+        # Recreate arc mesh with updated colors if state changed
+        if current_state == State.CHASING:
+            _update_vision_arc_color(Color(1, 0, 0, 0.6))
+        elif current_state == State.INVESTIGATING:
+            _update_vision_arc_color(Color(1, 1, 0, 0.5))
+        elif current_state == State.SEARCHING:
+            _update_vision_arc_color(Color(1, 0.5, 0, 0.5))
+    elif vision_arc:
+        vision_arc.visible = false
 
 func get_current_state_name() -> String:
     return State.keys()[current_state]
 
+func _update_vision_arc_color(new_color: Color):
+    """Update the vision arc mesh with new color"""
+    if not vision_arc or not vision_arc.mesh:
+        return
+    
+    var arrays = []
+    arrays.resize(Mesh.ARRAY_MAX)
+    
+    var vertices = PackedVector3Array()
+    var colors = PackedColorArray()
+    
+    # Vision arc parameters
+    var arc_length = detection_range * 0.8
+    var arc_angle = deg_to_rad(vision_angle)
+    var segments = 20
+    
+    # Add center vertex
+    vertices.push_back(Vector3.ZERO)
+    colors.push_back(new_color)
+    
+    # Create arc vertices
+    for i in range(segments + 1):
+        var angle = -arc_angle/2 + (arc_angle * i / segments)
+        var x = sin(angle) * arc_length
+        var z = -cos(angle) * arc_length
+        vertices.push_back(Vector3(x, 0, z))
+        # Fade out at edges
+        var fade = 1.0 - (abs(i - segments/2.0) / (segments/2.0)) * 0.5
+        var faded_color = new_color
+        faded_color.a *= fade
+        colors.push_back(faded_color)
+    
+    # Create triangles
+    var indices = PackedInt32Array()
+    for i in range(segments):
+        indices.push_back(0)  # Center
+        indices.push_back(i + 1)
+        indices.push_back(i + 2)
+    
+    arrays[Mesh.ARRAY_VERTEX] = vertices
+    arrays[Mesh.ARRAY_COLOR] = colors
+    arrays[Mesh.ARRAY_INDEX] = indices
+    
+    # Update the mesh
+    vision_arc.mesh.clear_surfaces()
+    vision_arc.mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
 func _create_sound_detection_visualization():
-    """Create a sphere to show sound detection radius"""
+    """Create a floor ring to show sound detection radius"""
     sound_detection_sphere = MeshInstance3D.new()
-    sound_detection_sphere.name = "SoundDetectionSphere"
+    sound_detection_sphere.name = "SoundDetectionRing"
     
-    var sphere_mesh = SphereMesh.new()
-    sphere_mesh.radial_segments = 16
-    sphere_mesh.rings = 8
-    sphere_mesh.radius = hearing_range
-    sphere_mesh.height = hearing_range * 2
-    sound_detection_sphere.mesh = sphere_mesh
+    # Create a torus (ring) mesh for floor visualization
+    var torus_mesh = TorusMesh.new()
+    torus_mesh.inner_radius = hearing_range - 0.15
+    torus_mesh.outer_radius = hearing_range
+    torus_mesh.ring_segments = 48
+    torus_mesh.rings = 3
+    sound_detection_sphere.mesh = torus_mesh
     
-    # Create material for sound detection
+    # Create material for sound detection (blue/cyan)
     var sound_material = StandardMaterial3D.new()
-    sound_material.albedo_color = Color(0, 0.5, 1, 0.15)  # Blue for sound
+    sound_material.albedo_color = Color(0, 0.7, 1, 0.6)  # Cyan for sound
+    sound_material.emission_enabled = true
+    sound_material.emission = Color(0, 0.7, 1, 0.3)
+    sound_material.emission_energy = 0.3
     sound_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     sound_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    sound_material.no_depth_test = true
-    sound_material.cull_mode = BaseMaterial3D.CULL_DISABLED
     
     sound_detection_sphere.material_override = sound_material
     sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    sound_detection_sphere.position.y = 0.05  # Just above floor, below detection ring
+    sound_detection_sphere.rotation.x = PI/2  # Lay flat on floor
     
     npc_base.add_child(sound_detection_sphere)
 
@@ -1049,7 +1120,7 @@ func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: b
         if not state_light and (state or not (awareness or vision or path or sound)):
             print("  Creating state indicators")
             _create_state_indicators()
-        if not awareness_sphere and (awareness or vision):
+        if not detection_ring and (awareness or vision):
             print("  Creating awareness visualization")
             _create_awareness_visualization()
         if not sound_detection_sphere and sound:
@@ -1060,12 +1131,12 @@ func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: b
             _create_patrol_path_visualization()
     
     # Update visibility of existing visualizations
-    if awareness_sphere:
-        awareness_sphere.visible = show_awareness_sphere and is_active
-        print("  Awareness sphere visible:", awareness_sphere.visible)
-    if vision_cone_mesh:
-        vision_cone_mesh.visible = show_vision_cone and is_active
-        print("  Vision cone visible:", vision_cone_mesh.visible)
+    if detection_ring:
+        detection_ring.visible = show_awareness_sphere and is_active
+        print("  Detection ring visible:", detection_ring.visible)
+    if vision_arc:
+        vision_arc.visible = show_vision_cone and is_active
+        print("  Vision arc visible:", vision_arc.visible)
     if state_light:
         state_light.visible = show_state_indicators and is_active
         print("  State light visible:", state_light.visible)
