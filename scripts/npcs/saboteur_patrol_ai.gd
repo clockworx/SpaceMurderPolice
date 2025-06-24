@@ -54,7 +54,7 @@ var state_label: Label3D
 var awareness_sphere: MeshInstance3D
 var vision_cone_mesh: MeshInstance3D
 var sound_detection_sphere: MeshInstance3D
-var patrol_path_line: MeshInstance3D
+var patrol_path_line: Node3D
 var detection_ring: MeshInstance3D  # Floor ring for detection range
 var vision_arc: MeshInstance3D  # Floor arc for vision cone
 var detection_particles: GPUParticles3D  # Particles at detection edge
@@ -837,32 +837,33 @@ func end_sabotage_mission():
     sabotage_complete = false
 
 func _create_awareness_visualization():
-    # Create a small sphere at the character's feet to show detection is active
+    # Create a solid sphere at feet showing detection range (scaled down)
     if show_awareness_sphere:
         detection_ring = MeshInstance3D.new()
         detection_ring.name = "DetectionIndicator"
         
-        # Larger sphere mesh so it's visible
+        # Create sphere representing detection range (scaled down for visibility)
         var sphere_mesh = SphereMesh.new()
-        sphere_mesh.radius = 0.5  # Larger radius
-        sphere_mesh.height = 1.0
-        sphere_mesh.radial_segments = 16
-        sphere_mesh.rings = 8
+        # Scale down the actual detection range to 1/10th for visualization
+        sphere_mesh.radius = detection_range / 10.0  # 15m -> 1.5m visual
+        sphere_mesh.height = (detection_range / 10.0) * 2
+        sphere_mesh.radial_segments = 32
+        sphere_mesh.rings = 16
         detection_ring.mesh = sphere_mesh
         
-        # Create glowing material
+        # Create solid glowing material - no transparency
         var sphere_material = StandardMaterial3D.new()
         sphere_material.albedo_color = Color(0, 1, 0, 1.0)
         sphere_material.emission_enabled = true
-        sphere_material.emission = Color(0, 1, 0, 1.0)
-        sphere_material.emission_energy = 2.0  # Brighter
+        sphere_material.emission = Color(0, 1, 0, 0.5)
+        sphere_material.emission_energy = 1.0
         sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-        sphere_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+        sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED  # Solid
+        sphere_material.cull_mode = BaseMaterial3D.CULL_BACK  # Normal culling
         
         detection_ring.material_override = sphere_material
         detection_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        detection_ring.position.y = -0.5  # Below feet to ensure visibility
+        detection_ring.position.y = 0.0  # At ground level
         
         npc_base.add_child(detection_ring)
     
@@ -904,111 +905,110 @@ func get_current_state_name() -> String:
     return State.keys()[current_state]
 
 func _create_sound_detection_visualization():
-    """Create a small cube to show sound detection is active"""
+    """Create a solid sphere to show sound detection range"""
     if show_sound_detection:
         sound_detection_sphere = MeshInstance3D.new()
         sound_detection_sphere.name = "SoundIndicator"
         
-        # Larger box mesh
-        var box_mesh = BoxMesh.new()
-        box_mesh.size = Vector3(0.4, 0.4, 0.4)  # Larger cube
-        sound_detection_sphere.mesh = box_mesh
+        # Create sphere representing hearing range (scaled down)
+        var sphere_mesh = SphereMesh.new()
+        # Scale down the hearing range to 1/10th for visualization
+        sphere_mesh.radius = hearing_range / 10.0  # 10m -> 1m visual
+        sphere_mesh.height = (hearing_range / 10.0) * 2
+        sphere_mesh.radial_segments = 24
+        sphere_mesh.rings = 12
+        sound_detection_sphere.mesh = sphere_mesh
         
-        # Create material for sound detection (blue/cyan)
+        # Create solid material for sound detection (blue/cyan)
         var sound_material = StandardMaterial3D.new()
         sound_material.albedo_color = Color(0, 0.7, 1, 1.0)  # Cyan for sound
         sound_material.emission_enabled = true
-        sound_material.emission = Color(0, 0.7, 1, 1.0)
-        sound_material.emission_energy = 2.0  # Brighter
+        sound_material.emission = Color(0, 0.7, 1, 0.5)
+        sound_material.emission_energy = 1.0
         sound_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        sound_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-        sound_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+        sound_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED  # Solid
+        sound_material.cull_mode = BaseMaterial3D.CULL_BACK  # Normal culling
         
         sound_detection_sphere.material_override = sound_material
         sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         sound_detection_sphere.position.y = 0.0  # At ground level
-        sound_detection_sphere.position.x = 1.0  # Further offset to the side
         
         npc_base.add_child(sound_detection_sphere)
 
 func _create_patrol_path_visualization():
-    """Create lines showing the patrol path"""
-    patrol_path_line = MeshInstance3D.new()
-    patrol_path_line.name = "PatrolPathLine"
-    patrol_path_line.position = Vector3.ZERO  # Ensure it's at world origin
+    """Create spheres showing the patrol waypoints"""
+    # Create a parent node to hold all waypoint markers
+    patrol_path_line = Node3D.new()
+    patrol_path_line.name = "PatrolPathMarkers"
     
-    # Update the patrol path when the route changes
+    # Create the waypoint markers
     _update_patrol_path_visualization()
     
-    # Add to root scene, not current scene
-    if get_tree().root:
-        get_tree().root.add_child(patrol_path_line)
-    else:
-        get_tree().current_scene.add_child(patrol_path_line)
+    # Add to current scene
+    get_tree().current_scene.add_child(patrol_path_line)
 
 func _update_patrol_path_visualization():
-    """Update the patrol path lines"""
+    """Create spheres at each patrol waypoint"""
     if not patrol_path_line or not show_patrol_path:
         return
     
-    # Create line mesh for patrol route
-    var vertices = PackedVector3Array()
+    # Clear existing markers
+    for child in patrol_path_line.get_children():
+        child.queue_free()
     
-    # Add all patrol points
+    # Create sphere mesh for waypoints
+    var sphere_mesh = SphereMesh.new()
+    sphere_mesh.radius = 0.3
+    sphere_mesh.height = 0.6
+    sphere_mesh.radial_segments = 16
+    sphere_mesh.rings = 8
+    
+    # Create magenta material
+    var marker_material = StandardMaterial3D.new()
+    marker_material.albedo_color = Color(1, 0, 1, 1.0)  # Magenta
+    marker_material.emission_enabled = true
+    marker_material.emission = Color(1, 0, 1, 0.8)
+    marker_material.emission_energy = 2.0
+    marker_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    marker_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+    
+    # Add markers for each patrol point
+    var marker_index = 0
     for location in patrol_route:
-        var pos: Vector3
         if location == "start":
-            pos = Vector3(0, 1.0, 15)
+            _create_waypoint_marker(Vector3(0, 0.3, 15), sphere_mesh, marker_material, "Start", marker_index)
+            marker_index += 1
         elif location == "end":
-            pos = Vector3(0, 1.0, -25)
+            _create_waypoint_marker(Vector3(0, 0.3, -25), sphere_mesh, marker_material, "End", marker_index)
+            marker_index += 1
         elif rooms.has(location):
-            # Show path through room (hallway -> door -> inside -> door -> hallway)
             var room = rooms[location]
-            vertices.append(room["hallway"])
-            vertices.append(room["door"])
-            vertices.append(room["inside"])
-            vertices.append(room["door"])
-            vertices.append(room["hallway"])
-        else:
-            pos = Vector3(0, 1.0, 0)
-        
-        if location == "start" or location == "end":
-            vertices.append(pos)
+            # Create markers for room waypoints
+            _create_waypoint_marker(room["hallway"] + Vector3(0, 0.3, 0), sphere_mesh, marker_material, location + "_hall", marker_index)
+            marker_index += 1
+            _create_waypoint_marker(room["door"] + Vector3(0, 0.3, 0), sphere_mesh, marker_material, location + "_door", marker_index)
+            marker_index += 1
+            _create_waypoint_marker(room["inside"] + Vector3(0, 0.3, 0), sphere_mesh, marker_material, location + "_in", marker_index)
+            marker_index += 1
+
+func _create_waypoint_marker(position: Vector3, mesh: Mesh, material: Material, label: String, index: int):
+    """Helper to create a single waypoint marker"""
+    var marker = MeshInstance3D.new()
+    marker.mesh = mesh
+    marker.material_override = material
+    marker.position = position
+    marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    patrol_path_line.add_child(marker)
     
-    if vertices.size() < 2:
-        return
-    
-    # Create line segments
-    var arrays = []
-    arrays.resize(Mesh.ARRAY_MAX)
-    
-    var line_vertices = PackedVector3Array()
-    for i in range(vertices.size() - 1):
-        line_vertices.append(vertices[i])
-        line_vertices.append(vertices[i + 1])
-    
-    arrays[Mesh.ARRAY_VERTEX] = line_vertices
-    
-    var array_mesh = ArrayMesh.new()
-    array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_LINES, arrays)
-    
-    patrol_path_line.mesh = array_mesh
-    
-    # Create material for the path with thicker line rendering
-    var path_material = StandardMaterial3D.new()
-    path_material.albedo_color = Color(1, 0, 1, 1.0)  # Magenta for path
-    path_material.emission_enabled = true
-    path_material.emission = Color(1, 0, 1, 1.0)
-    path_material.emission_energy = 3.0  # Very bright
-    path_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    path_material.vertex_color_use_as_albedo = false  # Don't use vertex colors
-    path_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED  # Opaque
-    
-    patrol_path_line.material_override = path_material
-    patrol_path_line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-    
-    # Position at ground level
-    patrol_path_line.position.y = 0.1
+    # Add label
+    var label_3d = Label3D.new()
+    label_3d.text = str(index) + ": " + label
+    label_3d.font_size = 8
+    label_3d.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+    label_3d.no_depth_test = true
+    label_3d.modulate = Color(1, 0, 1, 1)
+    label_3d.position.y = 0.5
+    marker.add_child(label_3d)
 
 func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: bool, sound: bool):
     """Update debug visualization settings"""
