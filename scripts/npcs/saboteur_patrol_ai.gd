@@ -334,6 +334,15 @@ func _handle_chasing(_delta):
         _on_player_caught()
         return
     
+    # Stop moving if too close to prevent clipping
+    if distance < 2.0:
+        npc_base.velocity = Vector3.ZERO
+        # Just look at player when very close
+        var look_pos = player.global_position
+        look_pos.y = npc_base.global_position.y
+        npc_base.look_at(look_pos, Vector3.UP)
+        return
+    
     # Use parent's navigation system if available
     var nav_system = npc_base.get_node_or_null("NavigationSystem")
     if nav_system:
@@ -780,8 +789,7 @@ func set_active(active: bool):
             state_label.visible = false
         if detection_ring:
             detection_ring.visible = false
-        if vision_arc:
-            vision_arc.visible = false
+        # Vision arc disabled
         if sound_detection_sphere:
             sound_detection_sphere.visible = false
         if patrol_path_line:
@@ -804,8 +812,7 @@ func set_active(active: bool):
             state_label.visible = show_state_indicators
         if detection_ring:
             detection_ring.visible = show_awareness_sphere
-        if vision_arc:
-            vision_arc.visible = show_vision_cone
+        # Vision arc disabled for now
         if sound_detection_sphere:
             sound_detection_sphere.visible = show_sound_detection
         if patrol_path_line:
@@ -858,43 +865,9 @@ func _create_awareness_visualization():
         
         npc_base.add_child(detection_ring)
     
-    # Create floor-based vision cone using a cylinder segment
-    if show_vision_cone:
-        vision_arc = MeshInstance3D.new()
-        vision_arc.name = "VisionArc"
-        
-        # Use a cylinder mesh and scale it to create a cone shape
-        var cylinder_mesh = CylinderMesh.new()
-        cylinder_mesh.height = 0.05  # Very flat
-        cylinder_mesh.top_radius = detection_range * 0.8
-        cylinder_mesh.bottom_radius = 0.1  # Small at origin
-        cylinder_mesh.radial_segments = 32
-        cylinder_mesh.rings = 1
-        
-        vision_arc.mesh = cylinder_mesh
-        
-        # Create vision cone material
-        var arc_material = StandardMaterial3D.new()
-        arc_material.albedo_color = Color(1, 1, 0, 0.4)
-        arc_material.emission_enabled = true
-        arc_material.emission = Color(1, 1, 0, 0.2)
-        arc_material.emission_energy = 0.3
-        arc_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        arc_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-        arc_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-        
-        vision_arc.material_override = arc_material
-        vision_arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        vision_arc.position.y = 0.1  # On floor
-        vision_arc.position.z = -detection_range * 0.4  # Offset forward
-        vision_arc.rotation.x = PI/2  # Lay flat
-        
-        # Scale to create cone shape - narrow width for the vision angle
-        var angle_ratio = vision_angle / 180.0  # Convert to 0-1 range
-        vision_arc.scale.x = angle_ratio * 0.8  # Width based on vision angle
-        vision_arc.scale.z = 1.0  # Full length
-        
-        npc_base.add_child(vision_arc)
+    # For now, disable vision cone visualization as it's problematic
+    # We still have the detection ring which is more useful
+    vision_arc = null
 
 func _update_awareness_visualization():
     # Update detection ring color based on state
@@ -923,31 +896,8 @@ func _update_awareness_visualization():
                     ring_material.emission = Color(0, 1, 0, 0.3)
                     ring_material.emission_energy = 0.5
     
-    # Update vision arc
-    if vision_arc:
-        if show_vision_cone and current_state != State.WAITING:
-            vision_arc.visible = true
-            var arc_material = vision_arc.material_override as StandardMaterial3D
-            if arc_material:
-                match current_state:
-                    State.CHASING:
-                        arc_material.albedo_color = Color(1, 0, 0, 0.5)
-                        arc_material.emission = Color(1, 0, 0, 0.3)
-                        arc_material.emission_energy = 0.5
-                    State.INVESTIGATING:
-                        arc_material.albedo_color = Color(1, 1, 0, 0.4)
-                        arc_material.emission = Color(1, 1, 0, 0.2)
-                        arc_material.emission_energy = 0.3
-                    State.SEARCHING:
-                        arc_material.albedo_color = Color(1, 0.5, 0, 0.4)
-                        arc_material.emission = Color(1, 0.5, 0, 0.2)
-                        arc_material.emission_energy = 0.3
-                    _:
-                        arc_material.albedo_color = Color(1, 1, 0, 0.4)
-                        arc_material.emission = Color(1, 1, 0, 0.2)
-                        arc_material.emission_energy = 0.3
-        else:
-            vision_arc.visible = false
+    # Vision arc disabled for now
+    pass
 
 func get_current_state_name() -> String:
     return State.keys()[current_state]
@@ -1077,9 +1027,8 @@ func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: b
     if detection_ring:
         detection_ring.visible = show_awareness_sphere and is_active
         print("  Detection ring visible:", detection_ring.visible)
-    if vision_arc:
-        vision_arc.visible = show_vision_cone and is_active
-        print("  Vision arc visible:", vision_arc.visible)
+    # Vision arc disabled
+    pass
     if state_light:
         state_light.visible = show_state_indicators and is_active
         print("  State light visible:", state_light.visible)

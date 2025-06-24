@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7ba0bc43-672e-4562-8a9f-5141d0b59474" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/npcs/saboteur_patrol_ai.gd" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/npcs/saboteur_patrol_ai.gd" afterDir="false" />
-    </list>
+    <list default="true" id="7ba0bc43-672e-4562-8a9f-5141d0b59474" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -85,7 +82,7 @@
       <workItem from="1748916272950" duration="13967000" />
       <workItem from="1750553180689" duration="140000" />
       <workItem from="1750619584768" duration="13436000" />
-      <workItem from="1750647781127" duration="30523000" />
+      <workItem from="1750647781127" duration="31561000" />
     </task>
     <servers />
   </component>
