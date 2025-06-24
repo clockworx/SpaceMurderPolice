@@ -3,9 +3,9 @@ class_name SaboteurPatrolAI
 
 @export var patrol_speed: float = 2.0
 @export var chase_speed: float = 4.0
-@export var detection_range: float = 15.0
+@export var detection_range: float = 6.0  # More reasonable for close quarters horror
 @export var vision_angle: float = 60.0  # Degrees
-@export var hearing_range: float = 10.0
+@export var hearing_range: float = 4.0  # Sound travels less far
 @export var patrol_wait_time: float = 3.0
 
 @export_group("Debug Visualization")
@@ -842,24 +842,23 @@ func _create_awareness_visualization():
         detection_ring = MeshInstance3D.new()
         detection_ring.name = "DetectionIndicator"
         
-        # Create sphere representing detection range (scaled down for visibility)
+        # Create sphere showing ACTUAL detection range
         var sphere_mesh = SphereMesh.new()
-        # Scale down the actual detection range to 1/10th for visualization
-        sphere_mesh.radius = detection_range / 10.0  # 15m -> 1.5m visual
-        sphere_mesh.height = (detection_range / 10.0) * 2
+        sphere_mesh.radius = detection_range  # Show actual range
+        sphere_mesh.height = detection_range * 2
         sphere_mesh.radial_segments = 32
         sphere_mesh.rings = 16
         detection_ring.mesh = sphere_mesh
         
-        # Create solid glowing material - no transparency
+        # Create semi-transparent material to see through
         var sphere_material = StandardMaterial3D.new()
-        sphere_material.albedo_color = Color(0, 1, 0, 1.0)
+        sphere_material.albedo_color = Color(0, 1, 0, 0.3)  # Semi-transparent
         sphere_material.emission_enabled = true
-        sphere_material.emission = Color(0, 1, 0, 0.5)
-        sphere_material.emission_energy = 1.0
+        sphere_material.emission = Color(0, 1, 0, 0.2)
+        sphere_material.emission_energy = 0.5
         sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED  # Solid
-        sphere_material.cull_mode = BaseMaterial3D.CULL_BACK  # Normal culling
+        sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        sphere_material.cull_mode = BaseMaterial3D.CULL_DISABLED  # See from inside
         
         detection_ring.material_override = sphere_material
         detection_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -878,9 +877,9 @@ func _update_awareness_visualization():
         if sphere_material:
             match current_state:
                 State.CHASING:
-                    sphere_material.albedo_color = Color(1, 0, 0, 0.8)
-                    sphere_material.emission = Color(1, 0, 0, 0.8)
-                    sphere_material.emission_energy = 1.0
+                    sphere_material.albedo_color = Color(1, 0, 0, 0.3)
+                    sphere_material.emission = Color(1, 0, 0, 0.3)
+                    sphere_material.emission_energy = 0.8
                 State.INVESTIGATING:
                     sphere_material.albedo_color = Color(1, 1, 0, 0.8)
                     sphere_material.emission = Color(1, 1, 0, 0.6)
@@ -910,24 +909,23 @@ func _create_sound_detection_visualization():
         sound_detection_sphere = MeshInstance3D.new()
         sound_detection_sphere.name = "SoundIndicator"
         
-        # Create sphere representing hearing range (scaled down)
+        # Create sphere showing ACTUAL hearing range
         var sphere_mesh = SphereMesh.new()
-        # Scale down the hearing range to 1/10th for visualization
-        sphere_mesh.radius = hearing_range / 10.0  # 10m -> 1m visual
-        sphere_mesh.height = (hearing_range / 10.0) * 2
+        sphere_mesh.radius = hearing_range  # Show actual range
+        sphere_mesh.height = hearing_range * 2
         sphere_mesh.radial_segments = 24
         sphere_mesh.rings = 12
         sound_detection_sphere.mesh = sphere_mesh
         
-        # Create solid material for sound detection (blue/cyan)
+        # Create semi-transparent material for sound detection
         var sound_material = StandardMaterial3D.new()
-        sound_material.albedo_color = Color(0, 0.7, 1, 1.0)  # Cyan for sound
+        sound_material.albedo_color = Color(0, 0.7, 1, 0.3)  # Semi-transparent cyan
         sound_material.emission_enabled = true
-        sound_material.emission = Color(0, 0.7, 1, 0.5)
-        sound_material.emission_energy = 1.0
+        sound_material.emission = Color(0, 0.7, 1, 0.2)
+        sound_material.emission_energy = 0.5
         sound_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        sound_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED  # Solid
-        sound_material.cull_mode = BaseMaterial3D.CULL_BACK  # Normal culling
+        sound_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        sound_material.cull_mode = BaseMaterial3D.CULL_DISABLED  # See from inside
         
         sound_detection_sphere.material_override = sound_material
         sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
