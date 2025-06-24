@@ -143,6 +143,12 @@ func _physics_process(delta):
     # Update awareness visualization
     _update_awareness_visualization()
     
+    # Update vision cone rotation to match character facing
+    if vision_arc:
+        # The cone is a child of npc_base, so it automatically rotates with the character
+        # But we can add additional adjustments if needed
+        pass
+    
     # Check for player detection
     if player:
         _check_player_detection()
@@ -818,48 +824,75 @@ func end_sabotage_mission():
     sabotage_complete = false
 
 func _create_awareness_visualization():
-    # Create a vision cone mesh to show what saboteur can see
+    # Create a 3D vision cone mesh to show what saboteur can see
     if show_awareness_sphere:
         vision_arc = MeshInstance3D.new()
         vision_arc.name = "VisionCone"
         
-        # Create a wedge/cone shape for vision
+        # Create a proper 3D cone
         var arrays = []
         arrays.resize(Mesh.ARRAY_MAX)
         
         var vertices = PackedVector3Array()
         var normals = PackedVector3Array()
-        var uvs = PackedVector2Array()
         
-        # Create vision cone vertices
-        var segments = 20
-        var angle_step = deg_to_rad(vision_angle) / segments
-        var start_angle = -deg_to_rad(vision_angle) / 2.0
+        # Cone parameters
+        var cone_height = detection_range
+        var cone_radius = tan(deg_to_rad(vision_angle / 2.0)) * cone_height
+        var segments = 24
+        var height_segments = 8
         
-        # Add origin vertex
+        # Add tip vertex (at eye position)
         vertices.append(Vector3.ZERO)
-        normals.append(Vector3.UP)
-        uvs.append(Vector2(0.5, 0.5))
+        normals.append(Vector3.BACK)
         
-        # Add arc vertices
-        for i in range(segments + 1):
-            var angle = start_angle + angle_step * i
-            var x = sin(angle) * detection_range
-            var z = cos(angle) * detection_range
-            vertices.append(Vector3(x, 0, z))
-            normals.append(Vector3.UP)
-            uvs.append(Vector2(0.5 + sin(angle) * 0.5, 0.5 + cos(angle) * 0.5))
+        # Create cone vertices in layers
+        for h in range(height_segments + 1):
+            var height_factor = float(h) / float(height_segments)
+            var current_radius = cone_radius * height_factor
+            var current_height = -cone_height * height_factor  # Negative Z is forward
+            
+            for i in range(segments):
+                var angle = (PI * 2.0 * i) / segments - PI/2  # Start from front
+                var x = sin(angle) * current_radius
+                var y = cos(angle) * current_radius * 0.5  # Flatten vertically
+                var z = current_height
+                
+                vertices.append(Vector3(x, y, z))
+                
+                # Calculate normal
+                var normal = Vector3(x, y, 0).normalized()
+                normals.append(normal)
         
         # Create triangles
         var indices = PackedInt32Array()
+        
+        # Connect tip to first ring
         for i in range(segments):
-            indices.append(0)  # Origin
-            indices.append(i + 1)
-            indices.append(i + 2)
+            var next_i = (i + 1) % segments
+            indices.append(0)
+            indices.append(1 + i)
+            indices.append(1 + next_i)
+        
+        # Connect rings
+        for h in range(height_segments):
+            var ring_start = 1 + h * segments
+            var next_ring_start = ring_start + segments
+            
+            for i in range(segments):
+                var next_i = (i + 1) % segments
+                
+                # Two triangles per quad
+                indices.append(ring_start + i)
+                indices.append(next_ring_start + i)
+                indices.append(ring_start + next_i)
+                
+                indices.append(ring_start + next_i)
+                indices.append(next_ring_start + i)
+                indices.append(next_ring_start + next_i)
         
         arrays[Mesh.ARRAY_VERTEX] = vertices
         arrays[Mesh.ARRAY_NORMAL] = normals
-        arrays[Mesh.ARRAY_TEX_UV] = uvs
         arrays[Mesh.ARRAY_INDEX] = indices
         
         var array_mesh = ArrayMesh.new()
@@ -868,18 +901,17 @@ func _create_awareness_visualization():
         
         # Create semi-transparent material for vision cone
         var cone_material = StandardMaterial3D.new()
-        cone_material.albedo_color = Color(1, 1, 0, 0.3)  # Yellow semi-transparent
+        cone_material.albedo_color = Color(1, 1, 0, 0.2)  # Yellow semi-transparent
         cone_material.emission_enabled = true
-        cone_material.emission = Color(1, 1, 0, 0.2)
-        cone_material.emission_energy = 0.5
+        cone_material.emission = Color(1, 1, 0, 0.1)
+        cone_material.emission_energy = 0.3
         cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
         cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
         cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
         
         vision_arc.material_override = cone_material
         vision_arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        vision_arc.position.y = 1.5  # Eye level
-        vision_arc.rotation.y = 0  # Facing forward
+        vision_arc.position.y = 1.6  # Eye level
         
         npc_base.add_child(vision_arc)
     
