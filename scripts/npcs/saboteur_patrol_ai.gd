@@ -570,48 +570,49 @@ func _change_state(new_state: State):
         caught_player = false
     
     # Update state indicators
+    var range_info = "\nDetect: " + str(detection_range) + "m\nHear: " + str(hearing_range) + "m"
     match new_state:
         State.CHASING:
             if state_light:
                 state_light.light_color = Color.RED
                 state_light.light_energy = 3.0
             if state_label:
-                state_label.text = "CHASING"
+                state_label.text = "CHASING" + range_info
                 state_label.modulate = Color.RED
         State.INVESTIGATING:
             if state_light:
                 state_light.light_color = Color.YELLOW
                 state_light.light_energy = 2.5
             if state_label:
-                state_label.text = "INVESTIGATING"
+                state_label.text = "INVESTIGATING" + range_info
                 state_label.modulate = Color.YELLOW
         State.SEARCHING:
             if state_light:
                 state_light.light_color = Color.ORANGE
                 state_light.light_energy = 2.5
             if state_label:
-                state_label.text = "SEARCHING"
+                state_label.text = "SEARCHING" + range_info
                 state_label.modulate = Color.ORANGE
         State.WAITING:
             if state_light:
                 state_light.light_color = Color.CYAN
                 state_light.light_energy = 1.5
             if state_label:
-                state_label.text = "WAITING"
+                state_label.text = "WAITING" + range_info
                 state_label.modulate = Color.CYAN
         State.SABOTAGE:
             if state_light:
                 state_light.light_color = Color.MAGENTA
                 state_light.light_energy = 1.0
             if state_label:
-                state_label.text = "SABOTAGE"
+                state_label.text = "SABOTAGE" + range_info
                 state_label.modulate = Color.MAGENTA
         _:  # PATROLLING
             if state_light:
                 state_light.light_color = Color.GREEN
                 state_light.light_energy = 2.0
             if state_label:
-                state_label.text = "PATROLLING"
+                state_label.text = "PATROLLING" + range_info
                 state_label.modulate = Color.GREEN
 
 func _set_next_patrol_target():
@@ -704,15 +705,15 @@ func _create_state_indicators():
     state_light.omni_range = 5.0
     get_tree().current_scene.add_child(state_light)
     
-    # Create debug label
+    # Create debug label with more info
     state_label = Label3D.new()
-    state_label.text = "PATROLLING"
+    state_label.text = "PATROLLING\nDetect: " + str(detection_range) + "m\nHear: " + str(hearing_range) + "m"
     state_label.modulate = Color.GREEN
-    state_label.font_size = 16  # Much smaller
+    state_label.font_size = 14
     state_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
     state_label.no_depth_test = true
     state_label.fixed_size = true
-    state_label.pixel_size = 0.005  # Smaller pixel size
+    state_label.pixel_size = 0.004
     get_tree().current_scene.add_child(state_label)
 
 func on_sound_heard(position: Vector3):
@@ -836,34 +837,9 @@ func end_sabotage_mission():
     sabotage_complete = false
 
 func _create_awareness_visualization():
-    # Create floor detection ring instead of sphere
-    if show_awareness_sphere:
-        detection_ring = MeshInstance3D.new()
-        detection_ring.name = "DetectionRing"
-        
-        # Create a torus (ring) mesh for floor visualization
-        var torus_mesh = TorusMesh.new()
-        torus_mesh.inner_radius = detection_range - 0.2
-        torus_mesh.outer_radius = detection_range
-        torus_mesh.ring_segments = 64
-        torus_mesh.rings = 4
-        detection_ring.mesh = torus_mesh
-        
-        # Create glowing ring material
-        var ring_material = StandardMaterial3D.new()
-        ring_material.albedo_color = Color(0, 1, 0, 0.8)
-        ring_material.emission_enabled = true
-        ring_material.emission = Color(0, 1, 0, 0.5)
-        ring_material.emission_energy = 0.5
-        ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-        
-        detection_ring.material_override = ring_material
-        detection_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        detection_ring.position.y = 0.1  # Slightly above floor
-        detection_ring.rotation.x = PI/2  # Lay flat on floor
-        
-        npc_base.add_child(detection_ring)
+    # For now, just use the state indicator light color to show detection state
+    # The large ring visualizations are problematic
+    detection_ring = null
     
     # For now, disable vision cone visualization as it's problematic
     # We still have the detection ring which is more useful
@@ -903,33 +879,8 @@ func get_current_state_name() -> String:
     return State.keys()[current_state]
 
 func _create_sound_detection_visualization():
-    """Create a floor ring to show sound detection radius"""
-    sound_detection_sphere = MeshInstance3D.new()
-    sound_detection_sphere.name = "SoundDetectionRing"
-    
-    # Create a torus (ring) mesh for floor visualization
-    var torus_mesh = TorusMesh.new()
-    torus_mesh.inner_radius = hearing_range - 0.15
-    torus_mesh.outer_radius = hearing_range
-    torus_mesh.ring_segments = 48
-    torus_mesh.rings = 3
-    sound_detection_sphere.mesh = torus_mesh
-    
-    # Create material for sound detection (blue/cyan)
-    var sound_material = StandardMaterial3D.new()
-    sound_material.albedo_color = Color(0, 0.7, 1, 0.6)  # Cyan for sound
-    sound_material.emission_enabled = true
-    sound_material.emission = Color(0, 0.7, 1, 0.3)
-    sound_material.emission_energy = 0.3
-    sound_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    sound_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    
-    sound_detection_sphere.material_override = sound_material
-    sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-    sound_detection_sphere.position.y = 0.05  # Just above floor, below detection ring
-    sound_detection_sphere.rotation.x = PI/2  # Lay flat on floor
-    
-    npc_base.add_child(sound_detection_sphere)
+    """Sound detection also disabled due to scale issues"""
+    sound_detection_sphere = null
 
 func _create_patrol_path_visualization():
     """Create lines showing the patrol path"""
