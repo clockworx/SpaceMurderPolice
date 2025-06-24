@@ -858,64 +858,41 @@ func _create_awareness_visualization():
         
         npc_base.add_child(detection_ring)
     
-    # Create floor-based vision arc if enabled
+    # Create floor-based vision cone using a cylinder segment
     if show_vision_cone:
         vision_arc = MeshInstance3D.new()
         vision_arc.name = "VisionArc"
         
-        # Create arc mesh for vision cone on floor
-        var arrays = []
-        arrays.resize(Mesh.ARRAY_MAX)
+        # Use a cylinder mesh and scale it to create a cone shape
+        var cylinder_mesh = CylinderMesh.new()
+        cylinder_mesh.height = 0.05  # Very flat
+        cylinder_mesh.top_radius = detection_range * 0.8
+        cylinder_mesh.bottom_radius = 0.1  # Small at origin
+        cylinder_mesh.radial_segments = 32
+        cylinder_mesh.rings = 1
         
-        var vertices = PackedVector3Array()
-        var colors = PackedColorArray()
+        vision_arc.mesh = cylinder_mesh
         
-        # Vision arc parameters
-        var arc_length = detection_range * 0.8
-        var arc_angle = deg_to_rad(vision_angle)
-        var segments = 20
-        
-        # Add center vertex
-        vertices.push_back(Vector3.ZERO)
-        colors.push_back(Color(1, 1, 0, 0.6))
-        
-        # Create arc vertices
-        for i in range(segments + 1):
-            var angle = -arc_angle/2 + (arc_angle * i / segments)
-            var x = sin(angle) * arc_length
-            var z = -cos(angle) * arc_length
-            vertices.push_back(Vector3(x, 0, z))
-            # Fade out at edges
-            var fade = 1.0 - (abs(i - segments/2.0) / (segments/2.0)) * 0.5
-            colors.push_back(Color(1, 1, 0, 0.3 * fade))
-        
-        # Create triangles
-        var indices = PackedInt32Array()
-        for i in range(segments):
-            indices.push_back(0)  # Center
-            indices.push_back(i + 1)
-            indices.push_back(i + 2)
-        
-        arrays[Mesh.ARRAY_VERTEX] = vertices
-        arrays[Mesh.ARRAY_COLOR] = colors
-        arrays[Mesh.ARRAY_INDEX] = indices
-        
-        var array_mesh = ArrayMesh.new()
-        array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-        
-        vision_arc.mesh = array_mesh
-        
-        # Create vision arc material
+        # Create vision cone material
         var arc_material = StandardMaterial3D.new()
-        arc_material.vertex_color_use_as_albedo = true
+        arc_material.albedo_color = Color(1, 1, 0, 0.4)
+        arc_material.emission_enabled = true
+        arc_material.emission = Color(1, 1, 0, 0.2)
+        arc_material.emission_energy = 0.3
         arc_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
         arc_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-        arc_material.no_depth_test = true
         arc_material.cull_mode = BaseMaterial3D.CULL_DISABLED
         
         vision_arc.material_override = arc_material
         vision_arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        vision_arc.position.y = 0.15  # Slightly above floor
+        vision_arc.position.y = 0.1  # On floor
+        vision_arc.position.z = -detection_range * 0.4  # Offset forward
+        vision_arc.rotation.x = PI/2  # Lay flat
+        
+        # Scale to create cone shape - narrow width for the vision angle
+        var angle_ratio = vision_angle / 180.0  # Convert to 0-1 range
+        vision_arc.scale.x = angle_ratio * 0.8  # Width based on vision angle
+        vision_arc.scale.z = 1.0  # Full length
         
         npc_base.add_child(vision_arc)
 
@@ -947,67 +924,33 @@ func _update_awareness_visualization():
                     ring_material.emission_energy = 0.5
     
     # Update vision arc
-    if vision_arc and show_vision_cone:
-        vision_arc.visible = current_state != State.WAITING
-        # Recreate arc mesh with updated colors if state changed
-        if current_state == State.CHASING:
-            _update_vision_arc_color(Color(1, 0, 0, 0.6))
-        elif current_state == State.INVESTIGATING:
-            _update_vision_arc_color(Color(1, 1, 0, 0.5))
-        elif current_state == State.SEARCHING:
-            _update_vision_arc_color(Color(1, 0.5, 0, 0.5))
-    elif vision_arc:
-        vision_arc.visible = false
+    if vision_arc:
+        if show_vision_cone and current_state != State.WAITING:
+            vision_arc.visible = true
+            var arc_material = vision_arc.material_override as StandardMaterial3D
+            if arc_material:
+                match current_state:
+                    State.CHASING:
+                        arc_material.albedo_color = Color(1, 0, 0, 0.5)
+                        arc_material.emission = Color(1, 0, 0, 0.3)
+                        arc_material.emission_energy = 0.5
+                    State.INVESTIGATING:
+                        arc_material.albedo_color = Color(1, 1, 0, 0.4)
+                        arc_material.emission = Color(1, 1, 0, 0.2)
+                        arc_material.emission_energy = 0.3
+                    State.SEARCHING:
+                        arc_material.albedo_color = Color(1, 0.5, 0, 0.4)
+                        arc_material.emission = Color(1, 0.5, 0, 0.2)
+                        arc_material.emission_energy = 0.3
+                    _:
+                        arc_material.albedo_color = Color(1, 1, 0, 0.4)
+                        arc_material.emission = Color(1, 1, 0, 0.2)
+                        arc_material.emission_energy = 0.3
+        else:
+            vision_arc.visible = false
 
 func get_current_state_name() -> String:
     return State.keys()[current_state]
-
-func _update_vision_arc_color(new_color: Color):
-    """Update the vision arc mesh with new color"""
-    if not vision_arc or not vision_arc.mesh:
-        return
-    
-    var arrays = []
-    arrays.resize(Mesh.ARRAY_MAX)
-    
-    var vertices = PackedVector3Array()
-    var colors = PackedColorArray()
-    
-    # Vision arc parameters
-    var arc_length = detection_range * 0.8
-    var arc_angle = deg_to_rad(vision_angle)
-    var segments = 20
-    
-    # Add center vertex
-    vertices.push_back(Vector3.ZERO)
-    colors.push_back(new_color)
-    
-    # Create arc vertices
-    for i in range(segments + 1):
-        var angle = -arc_angle/2 + (arc_angle * i / segments)
-        var x = sin(angle) * arc_length
-        var z = -cos(angle) * arc_length
-        vertices.push_back(Vector3(x, 0, z))
-        # Fade out at edges
-        var fade = 1.0 - (abs(i - segments/2.0) / (segments/2.0)) * 0.5
-        var faded_color = new_color
-        faded_color.a *= fade
-        colors.push_back(faded_color)
-    
-    # Create triangles
-    var indices = PackedInt32Array()
-    for i in range(segments):
-        indices.push_back(0)  # Center
-        indices.push_back(i + 1)
-        indices.push_back(i + 2)
-    
-    arrays[Mesh.ARRAY_VERTEX] = vertices
-    arrays[Mesh.ARRAY_COLOR] = colors
-    arrays[Mesh.ARRAY_INDEX] = indices
-    
-    # Update the mesh
-    vision_arc.mesh.clear_surfaces()
-    vision_arc.mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
 func _create_sound_detection_visualization():
     """Create a floor ring to show sound detection radius"""
