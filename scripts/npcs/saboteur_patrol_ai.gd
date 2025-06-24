@@ -3,9 +3,9 @@ class_name SaboteurPatrolAI
 
 @export var patrol_speed: float = 2.0
 @export var chase_speed: float = 4.0
-@export var detection_range: float = 6.0  # More reasonable for close quarters horror
-@export var vision_angle: float = 60.0  # Degrees
-@export var hearing_range: float = 4.0  # Sound travels less far
+@export var detection_range: float = 6.0  # Vision range forward only
+@export var vision_angle: float = 90.0  # Wider field of view
+@export var hearing_range: float = 8.0  # Can hear further than see
 @export var patrol_wait_time: float = 3.0
 
 @export_group("Debug Visualization")
@@ -169,64 +169,41 @@ func _physics_process(delta):
             _handle_sabotage(delta)
 
 func _handle_patrolling(_delta):
-    # Get current target based on route
-    _update_patrol_target()
-    
-    var distance = npc_base.global_position.distance_to(target_position)
-    
-    if distance < 1.0:
-        # Reached current target, advance to next phase
+    # Use the NPC's waypoint navigation system
+    if not npc_base.is_moving:
+        # Get next patrol destination
         _advance_patrol_phase()
-        return
-    
-    # Check for obstacles and walls
-    var space_state = npc_base.get_world_3d().direct_space_state
-    var from = npc_base.global_position + Vector3.UP * 0.9
-    var direction = (target_position - npc_base.global_position).normalized()
-    direction.y = 0
-    
-    # Cast ray to check for obstacles
-    var to = from + direction * 2.0
-    var query = PhysicsRayQueryParameters3D.create(from, to)
-    query.exclude = [npc_base]
-    query.collision_mask = 1  # Environment layer
-    
-    var result = space_state.intersect_ray(query)
-    if result:
-        # Wall detected, try alternate path
-        var left_dir = direction.rotated(Vector3.UP, PI/3)
-        var right_dir = direction.rotated(Vector3.UP, -PI/3)
         
-        # Test left
-        query.to = from + left_dir * 2.0
-        var left_result = space_state.intersect_ray(query)
-        
-        # Test right
-        query.to = from + right_dir * 2.0
-        var right_result = space_state.intersect_ray(query)
-        
-        if not left_result:
-            direction = left_dir
-        elif not right_result:
-            direction = right_dir
+        var current_location = patrol_route[current_route_index]
+        if current_location != "start" and current_location != "end" and rooms.has(current_location):
+            var room = rooms[current_location]
+            var target_waypoint = ""
+            
+            match current_room_phase:
+                "hallway":
+                    # Just wait in hallway
+                    _change_state(State.WAITING)
+                    return
+                "door":
+                    # Move to room center
+                    target_waypoint = current_location.capitalize() + "_Center"
+                "inside":
+                    # In room, wait
+                    _change_state(State.WAITING)
+                    return
+                "exiting":
+                    # Exit to hallway
+                    target_waypoint = "Hallway_" + str(randi() % 6)  # Random hallway position
+            
+            if target_waypoint != "":
+                # Use NPC's navigation system
+                if npc_base.navigate_to_room(target_waypoint):
+                    print("SaboteurPatrolAI: Navigating to ", target_waypoint)
+                else:
+                    print("SaboteurPatrolAI: Failed to navigate to ", target_waypoint)
+                    _change_state(State.WAITING)
         else:
-            # Both blocked, back up
-            direction = -direction
-    
-    # Always check for doors when moving
-    _check_for_doors()
-    
-    # Apply movement with delta for smooth motion
-    npc_base.velocity = direction * patrol_speed
-    npc_base.move_and_slide()
-    
-    # Rotate to face movement direction
-    if npc_base.velocity.length() > 0.1:
-        var look_pos = npc_base.global_position + npc_base.velocity.normalized()
-        look_pos.y = npc_base.global_position.y
-        npc_base.look_at(look_pos, Vector3.UP)
-        npc_base.rotation.x = 0
-        npc_base.rotation.z = 0
+            _change_state(State.WAITING)
 
 func _handle_waiting(delta):
     wait_timer += delta
@@ -336,7 +313,11 @@ func _handle_chasing(_delta):
     
     # Stop moving if too close to prevent clipping
     if distance < 2.0:
+        # Stop any waypoint navigation
+        npc_base.is_moving = false
+        npc_base.waypoint_path.clear()
         npc_base.velocity = Vector3.ZERO
+        
         # Just look at player when very close
         var look_pos = player.global_position
         look_pos.y = npc_base.global_position.y
@@ -788,8 +769,8 @@ func set_active(active: bool):
             state_light.visible = false
         if state_label:
             state_label.visible = false
-        if detection_ring:
-            detection_ring.visible = false
+        if vision_arc:
+            vision_arc.visible = false
         # Vision arc disabled
         if sound_detection_sphere:
             sound_detection_sphere.visible = false
@@ -799,7 +780,7 @@ func set_active(active: bool):
         # Always create visualizations when activating (they will be shown/hidden based on settings)
         if not state_light:
             _create_state_indicators()
-        if not detection_ring:
+        if not vision_arc:
             _create_awareness_visualization()
         if not sound_detection_sphere:
             _create_sound_detection_visualization()
@@ -811,8 +792,8 @@ func set_active(active: bool):
             state_light.visible = show_state_indicators
         if state_label:
             state_label.visible = show_state_indicators
-        if detection_ring:
-            detection_ring.visible = show_awareness_sphere
+        if vision_arc:
+            vision_arc.visible = show_awareness_sphere
         # Vision arc disabled for now
         if sound_detection_sphere:
             sound_detection_sphere.visible = show_sound_detection
@@ -837,68 +818,99 @@ func end_sabotage_mission():
     sabotage_complete = false
 
 func _create_awareness_visualization():
-    # Create a solid sphere at feet showing detection range (scaled down)
+    # Create a vision cone mesh to show what saboteur can see
     if show_awareness_sphere:
-        detection_ring = MeshInstance3D.new()
-        detection_ring.name = "DetectionIndicator"
+        vision_arc = MeshInstance3D.new()
+        vision_arc.name = "VisionCone"
         
-        # Create sphere showing ACTUAL detection range
-        var sphere_mesh = SphereMesh.new()
-        sphere_mesh.radius = detection_range  # Show actual range
-        sphere_mesh.height = detection_range * 2
-        sphere_mesh.radial_segments = 32
-        sphere_mesh.rings = 16
-        detection_ring.mesh = sphere_mesh
+        # Create a wedge/cone shape for vision
+        var arrays = []
+        arrays.resize(Mesh.ARRAY_MAX)
         
-        # Create semi-transparent material to see through
-        var sphere_material = StandardMaterial3D.new()
-        sphere_material.albedo_color = Color(0, 1, 0, 0.3)  # Semi-transparent
-        sphere_material.emission_enabled = true
-        sphere_material.emission = Color(0, 1, 0, 0.2)
-        sphere_material.emission_energy = 0.5
-        sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-        sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-        sphere_material.cull_mode = BaseMaterial3D.CULL_DISABLED  # See from inside
+        var vertices = PackedVector3Array()
+        var normals = PackedVector3Array()
+        var uvs = PackedVector2Array()
         
-        detection_ring.material_override = sphere_material
-        detection_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        detection_ring.position.y = 0.0  # At ground level
+        # Create vision cone vertices
+        var segments = 20
+        var angle_step = deg_to_rad(vision_angle) / segments
+        var start_angle = -deg_to_rad(vision_angle) / 2.0
         
-        npc_base.add_child(detection_ring)
+        # Add origin vertex
+        vertices.append(Vector3.ZERO)
+        normals.append(Vector3.UP)
+        uvs.append(Vector2(0.5, 0.5))
+        
+        # Add arc vertices
+        for i in range(segments + 1):
+            var angle = start_angle + angle_step * i
+            var x = sin(angle) * detection_range
+            var z = cos(angle) * detection_range
+            vertices.append(Vector3(x, 0, z))
+            normals.append(Vector3.UP)
+            uvs.append(Vector2(0.5 + sin(angle) * 0.5, 0.5 + cos(angle) * 0.5))
+        
+        # Create triangles
+        var indices = PackedInt32Array()
+        for i in range(segments):
+            indices.append(0)  # Origin
+            indices.append(i + 1)
+            indices.append(i + 2)
+        
+        arrays[Mesh.ARRAY_VERTEX] = vertices
+        arrays[Mesh.ARRAY_NORMAL] = normals
+        arrays[Mesh.ARRAY_TEX_UV] = uvs
+        arrays[Mesh.ARRAY_INDEX] = indices
+        
+        var array_mesh = ArrayMesh.new()
+        array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+        vision_arc.mesh = array_mesh
+        
+        # Create semi-transparent material for vision cone
+        var cone_material = StandardMaterial3D.new()
+        cone_material.albedo_color = Color(1, 1, 0, 0.3)  # Yellow semi-transparent
+        cone_material.emission_enabled = true
+        cone_material.emission = Color(1, 1, 0, 0.2)
+        cone_material.emission_energy = 0.5
+        cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+        
+        vision_arc.material_override = cone_material
+        vision_arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        vision_arc.position.y = 1.5  # Eye level
+        vision_arc.rotation.y = 0  # Facing forward
+        
+        npc_base.add_child(vision_arc)
     
-    # For now, disable vision cone visualization as it's problematic
-    # We still have the detection ring which is more useful
-    vision_arc = null
+    detection_ring = null  # Not used anymore
 
 func _update_awareness_visualization():
-    # Update detection indicator color based on state
-    if detection_ring:
-        var sphere_material = detection_ring.material_override as StandardMaterial3D
-        if sphere_material:
+    # Update vision cone color based on state
+    if vision_arc:
+        var cone_material = vision_arc.material_override as StandardMaterial3D
+        if cone_material:
             match current_state:
                 State.CHASING:
-                    sphere_material.albedo_color = Color(1, 0, 0, 0.3)
-                    sphere_material.emission = Color(1, 0, 0, 0.3)
-                    sphere_material.emission_energy = 0.8
+                    cone_material.albedo_color = Color(1, 0, 0, 0.3)
+                    cone_material.emission = Color(1, 0, 0, 0.3)
+                    cone_material.emission_energy = 0.8
                 State.INVESTIGATING:
-                    sphere_material.albedo_color = Color(1, 1, 0, 0.8)
-                    sphere_material.emission = Color(1, 1, 0, 0.6)
-                    sphere_material.emission_energy = 0.7
+                    cone_material.albedo_color = Color(1, 1, 0, 0.3)
+                    cone_material.emission = Color(1, 1, 0, 0.2)
+                    cone_material.emission_energy = 0.6
                 State.SEARCHING:
-                    sphere_material.albedo_color = Color(1, 0.5, 0, 0.8)
-                    sphere_material.emission = Color(1, 0.5, 0, 0.6)
-                    sphere_material.emission_energy = 0.7
+                    cone_material.albedo_color = Color(1, 0.5, 0, 0.3)
+                    cone_material.emission = Color(1, 0.5, 0, 0.2)
+                    cone_material.emission_energy = 0.6
                 State.SABOTAGE:
-                    sphere_material.albedo_color = Color(1, 0, 1, 0.6)
-                    sphere_material.emission = Color(1, 0, 1, 0.4)
-                    sphere_material.emission_energy = 0.5
+                    cone_material.albedo_color = Color(1, 0, 1, 0.3)
+                    cone_material.emission = Color(1, 0, 1, 0.2)
+                    cone_material.emission_energy = 0.4
                 _:  # PATROLLING or WAITING
-                    sphere_material.albedo_color = Color(0, 1, 0, 0.6)
-                    sphere_material.emission = Color(0, 1, 0, 0.3)
-                    sphere_material.emission_energy = 0.5
-    
-    # Vision arc disabled for now
-    pass
+                    cone_material.albedo_color = Color(0, 1, 0, 0.3)
+                    cone_material.emission = Color(0, 1, 0, 0.2)
+                    cone_material.emission_energy = 0.5
 
 func get_current_state_name() -> String:
     return State.keys()[current_state]
@@ -1024,7 +1036,7 @@ func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: b
         if not state_light and (state or not (awareness or vision or path or sound)):
             print("  Creating state indicators")
             _create_state_indicators()
-        if not detection_ring and (awareness or vision):
+        if not vision_arc and (awareness or vision):
             print("  Creating awareness visualization")
             _create_awareness_visualization()
         if not sound_detection_sphere and sound:
@@ -1035,11 +1047,9 @@ func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: b
             _create_patrol_path_visualization()
     
     # Update visibility of existing visualizations
-    if detection_ring:
-        detection_ring.visible = show_awareness_sphere and is_active
-        print("  Detection ring visible:", detection_ring.visible)
-    # Vision arc disabled
-    pass
+    if vision_arc:
+        vision_arc.visible = show_awareness_sphere and is_active
+        print("  Vision cone visible:", vision_arc.visible)
     if state_light:
         state_light.visible = show_state_indicators and is_active
         print("  State light visible:", state_light.visible)
