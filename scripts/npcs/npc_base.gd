@@ -361,6 +361,11 @@ func _physics_process(delta):
     if Engine.is_editor_hint():
         return
     
+    # Skip processing if saboteur patrol AI is active
+    var patrol_ai = get_node_or_null("SaboteurPatrolAI")
+    if patrol_ai and "is_active" in patrol_ai and patrol_ai.is_active:
+        return
+    
     # Handle dialogue facing
     if is_talking:
         if face_player_when_talking:
@@ -443,6 +448,9 @@ func navigate_to_room(room_waypoint_name: String):
     # Set up waypoint path
     waypoint_path = path
     waypoint_path_index = 0
+    
+    # Don't skip waypoints here - let specific AI scripts handle their own path adjustments
+    
     is_moving = true
     
     # Path visualization will show the route
@@ -508,8 +516,18 @@ func _handle_waypoint_movement(delta):
     if velocity.length() > 0.1:
         var move_direction = Vector3(velocity.x, 0, velocity.z).normalized()
         if move_direction.length() > 0.1:
-            var target_rotation = atan2(-move_direction.x, -move_direction.z)
-            rotation.y = lerp_angle(rotation.y, target_rotation, 5.0 * delta)
+            # Look ahead to next waypoint for smoother rotation
+            var look_ahead_target = current_waypoint
+            if waypoint_path_index + 1 < waypoint_path.size():
+                # If close to current waypoint, start looking at next one
+                if distance_to_waypoint < waypoint_reach_distance * 2.0:
+                    look_ahead_target = waypoint_path[waypoint_path_index + 1]
+            
+            var look_direction = (look_ahead_target - global_position).normalized()
+            var target_rotation = atan2(-look_direction.x, -look_direction.z)
+            
+            # Slower rotation for smoother movement
+            rotation.y = lerp_angle(rotation.y, target_rotation, 3.0 * delta)
 
 func _on_waypoint_navigation_finished():
     # print(npc_name, ": Waypoint navigation completed!")
@@ -1842,6 +1860,18 @@ func _pick_random_room_to_visit():
 
 func get_waypoint_path() -> Array[Vector3]:
     return waypoint_path
+
+func clear_waypoint_path():
+    # Clear navigation state when switching modes
+    waypoint_path.clear()
+    waypoint_path_index = 0
+    is_moving = false
+    was_navigating_before_interrupt = false
+    # Clear any movement visualization
+    if current_target_indicator:
+        current_target_indicator.visible = false
+    if current_path_line:
+        current_path_line.visible = false
 
 func _initial_schedule_check():
     if not schedule_manager or not use_schedule:

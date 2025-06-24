@@ -603,9 +603,21 @@ func _update_saboteur_status():
     
     var saboteur = phase_manager.get_current_saboteur()
     if saboteur:
+        var saboteur_override = saboteur.get_node_or_null("SaboteurOverride")
         var saboteur_ai = saboteur.get_node_or_null("SaboteurPatrolAI")
-        var is_active = saboteur_ai != null and saboteur_ai.is_active
-        status_label.text = "Saboteur: " + saboteur.npc_name + " (" + ("Active" if is_active else "Inactive") + ")"
+        
+        var status_text = "Saboteur: " + saboteur.npc_name
+        
+        if saboteur_override:
+            status_text += " (Override Active)"
+            if saboteur_override.player_detected:
+                status_text += "\nPLAYER DETECTED!"
+        elif saboteur_ai and saboteur_ai.is_active:
+            status_text += " (AI Active)"
+        else:
+            status_text += " (Inactive)"
+        
+        status_label.text = status_text
     else:
         status_label.text = "Saboteur: Not Selected"
 
@@ -634,6 +646,31 @@ func _update_saboteur_visualization():
     if not saboteur:
         return
     
+    # Check for new saboteur override first
+    var saboteur_override = saboteur.get_node_or_null("SaboteurOverride")
+    if saboteur_override:
+        # Get checkbox states
+        var vision_cb = get_node_or_null("ScrollContainer/VBoxContainer/VisionCheckbox")
+        if not vision_cb:
+            vision_cb = get_node_or_null("VBoxContainer/VisionCheckbox")
+        
+        var sound_cb = get_node_or_null("ScrollContainer/VBoxContainer/SoundCheckbox")
+        if not sound_cb:
+            sound_cb = get_node_or_null("VBoxContainer/SoundCheckbox")
+        
+        # Update vision cone visibility
+        if vision_cb and "show_vision_cone" in saboteur_override:
+            saboteur_override.show_vision_cone = vision_cb.button_pressed
+            if saboteur_override.vision_cone_container:
+                saboteur_override.vision_cone_container.visible = vision_cb.button_pressed
+        
+        # Update sound detection visibility
+        if sound_cb and saboteur_override.has_method("set_debug_visualization"):
+            saboteur_override.set_debug_visualization(sound_cb.button_pressed)
+        
+        return
+    
+    # Fall back to old system if no override
     var saboteur_ai = saboteur.get_node_or_null("SaboteurPatrolAI")
     if not saboteur_ai:
         return

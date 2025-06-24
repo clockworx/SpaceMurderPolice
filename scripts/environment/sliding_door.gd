@@ -106,9 +106,17 @@ func _ready():
     else:
         print("Door ", door_name, " WARNING: No sabotage manager found!")
     
-    # Clear any NPCs that might have spawned in detection range
+    # Check for any NPCs that might have spawned in detection range
     await get_tree().create_timer(0.5).timeout
-    bodies_in_range.clear()
+    # Don't clear bodies_in_range - instead check who's actually in the area
+    if detection_area:
+        var overlapping_bodies = detection_area.get_overlapping_bodies()
+        bodies_in_range.clear()
+        for body in overlapping_bodies:
+            if body.is_in_group("player") or body.is_in_group("npcs"):
+                bodies_in_range.append(body)
+                print("Door ", door_name, " detected ", body.name, " already in range on startup")
+    
     if is_open:
         close_door()
 

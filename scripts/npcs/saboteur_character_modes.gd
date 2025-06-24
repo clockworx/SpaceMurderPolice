@@ -47,6 +47,9 @@ func _ready():
     # Debug: Found parent NPC
     #print("SaboteurCharacterModes: Found parent NPC: ", npc_base.npc_name)
     
+    # Disable physics processing by default
+    set_physics_process(false)
+    
     # Find components
     patrol_ai = npc_base.get_node_or_null("SaboteurPatrolAI")
     mesh_instance = npc_base.get_node_or_null("MeshInstance3D")
@@ -171,6 +174,12 @@ func _apply_normal_mode():
     # Reset movement speed
     if npc_base:
         npc_base.walk_speed = 2.0
+        npc_base.movement_speed = 2.0  # Also reset waypoint movement speed
+        # Re-enable NPCBase physics processing for normal waypoint movement
+        npc_base.set_physics_process(true)
+        # Clear any navigation state from saboteur mode
+        if npc_base.has_method("clear_waypoint_path"):
+            npc_base.clear_waypoint_path()
     
     # Disable patrol behavior in normal mode (Saboteur is helpful, not patrolling)
     if patrol_ai:
@@ -201,13 +210,18 @@ func _apply_saboteur_mode():
     # Adjust movement speed
     if npc_base:
         npc_base.walk_speed = 3.0  # Faster movement
+        npc_base.movement_speed = 3.0  # Also set the waypoint movement speed
+        # DON'T re-enable NPCBase physics processing - let patrol AI handle movement
+        # npc_base.set_physics_process(true)  # REMOVED - causes conflict
     
-    # Activate patrol AI and switch to sabotage mode
+    # Activate patrol AI - it will handle disabling NPC base physics
     if patrol_ai:
         if patrol_ai.has_method("set_active"):
             patrol_ai.set_active(true)
-        patrol_ai.set_physics_process(true)
-        if patrol_ai.has_method("start_sabotage_mission"):
+        # Don't manually set physics process - let set_active handle it
+        # patrol_ai.set_physics_process(true)  # REMOVED - redundant
+        # Don't start sabotage mission if target is (0,0,0)
+        if sabotage_target != Vector3.ZERO and patrol_ai.has_method("start_sabotage_mission"):
             patrol_ai.start_sabotage_mission(sabotage_target)
     
     # Disable interaction (can't talk to unknown figure)
@@ -218,45 +232,46 @@ func move_to_sabotage_target(target_position: Vector3):
     sabotage_target = target_position
     sabotage_movement_started.emit(target_position)
     
-    # Override physics process for custom movement
-    set_physics_process(true)
+    # Don't use custom physics process - let NPCBase handle movement
+    # set_physics_process(true)
 
-func _physics_process(_delta):
-    if current_mode != Mode.SABOTEUR:
-        set_physics_process(false)
-        return
-    
-    # Move toward sabotage target
-    var distance = npc_base.global_position.distance_to(sabotage_target)
-    
-    if distance < 1.5:
-        # Reached target
-        sabotage_movement_completed.emit()
-        set_physics_process(false)
-        return
-    
-    # Calculate movement
-    var direction = (sabotage_target - npc_base.global_position).normalized()
-    direction.y = 0
-    
-    # Use stealth movement if player is nearby
-    var player = get_tree().get_first_node_in_group("player")
-    var speed = npc_base.walk_speed * saboteur_speed_multiplier
-    
-    if player:
-        var player_distance = npc_base.global_position.distance_to(player.global_position)
-        if player_distance < 10.0:
-            speed = saboteur_sneak_speed  # Slow down near player
-    
-    # Move
-    npc_base.velocity = direction * speed
-    npc_base.move_and_slide()
-    
-    # Rotate to face movement direction
-    if direction.length() > 0.1:
-        var look_pos = npc_base.global_position + direction
-        look_pos.y = npc_base.global_position.y
-        npc_base.look_at(look_pos, Vector3.UP)
+# DISABLED - Let SaboteurPatrolAI handle all movement
+#func _physics_process(_delta):
+#    if current_mode != Mode.SABOTEUR:
+#        set_physics_process(false)
+#        return
+#    
+#    # Move toward sabotage target
+#    var distance = npc_base.global_position.distance_to(sabotage_target)
+#    
+#    if distance < 1.5:
+#        # Reached target
+#        sabotage_movement_completed.emit()
+#        set_physics_process(false)
+#        return
+#    
+#    # Calculate movement
+#    var direction = (sabotage_target - npc_base.global_position).normalized()
+#    direction.y = 0
+#    
+#    # Use stealth movement if player is nearby
+#    var player = get_tree().get_first_node_in_group("player")
+#    var speed = npc_base.walk_speed * saboteur_speed_multiplier
+#    
+#    if player:
+#        var player_distance = npc_base.global_position.distance_to(player.global_position)
+#        if player_distance < 10.0:
+#            speed = saboteur_sneak_speed  # Slow down near player
+#    
+#    # Move
+#    npc_base.velocity = direction * speed
+#    npc_base.move_and_slide()
+#    
+#    # Rotate to face movement direction
+#    if direction.length() > 0.1:
+#        var look_pos = npc_base.global_position + direction
+#        look_pos.y = npc_base.global_position.y
+#        npc_base.look_at(look_pos, Vector3.UP)
 
 func _on_sabotage_started(location: String, position: Vector3):
     print("SaboteurCharacterModes: Sabotage started signal received - Location: ", location, ", Position: ", position)

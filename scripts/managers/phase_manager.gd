@@ -216,19 +216,18 @@ func _activate_saboteur():
         push_warning("PhaseManager: Cannot activate - no saboteur available")
         return
     
-    var saboteur_ai = selected_saboteur.get_node_or_null("SaboteurPatrolAI")
-    if saboteur_ai and saboteur_ai.has_method("set_active"):
-        saboteur_ai.set_active(true)
-        print("PhaseManager: Saboteur AI activated for ", selected_saboteur.npc_name)
+    # Override is active once attached
+    print("PhaseManager: Saboteur override is active")
 
 func _deactivate_saboteur():
     if selected_saboteur == null:
         return
-        
-    var saboteur_ai = selected_saboteur.get_node_or_null("SaboteurPatrolAI")
-    if saboteur_ai and saboteur_ai.has_method("set_active"):
-        saboteur_ai.set_active(false)
-        print("PhaseManager: Saboteur AI deactivated")
+    
+    # Remove override to return to normal NPC
+    var override = selected_saboteur.get_node_or_null("SaboteurOverride")
+    if override:
+        override.queue_free()
+        print("PhaseManager: Removed saboteur override")
 
 func _update_npc_paranoia(level: float):
     var npcs = get_tree().get_nodes_in_group("npcs")
@@ -354,23 +353,17 @@ func _select_random_saboteur():
     _attach_saboteur_components(selected_saboteur)
 
 func _attach_saboteur_components(npc: NPCBase):
-    """Attach saboteur AI and character mode components to the selected NPC"""
+    """Attach saboteur AI override to existing NPC"""
     # Check if components already exist
-    if npc.has_node("SaboteurPatrolAI"):
+    if npc.has_node("SaboteurOverride"):
         return
     
-    # Create and attach SaboteurPatrolAI
-    var patrol_ai = preload("res://scripts/npcs/saboteur_patrol_ai.gd").new()
-    patrol_ai.name = "SaboteurPatrolAI"
-    npc.add_child(patrol_ai)
-    patrol_ai.add_to_group("saboteur_ai")
+    # Create and attach simple override script
+    var override = preload("res://scripts/npcs/saboteur_override.gd").new()
+    override.name = "SaboteurOverride"
+    npc.add_child(override)
     
-    # Create and attach SaboteurCharacterModes
-    var char_modes = preload("res://scripts/npcs/saboteur_character_modes.gd").new()
-    char_modes.name = "SaboteurCharacterModes"
-    npc.add_child(char_modes)
-    
-    print("PhaseManager: Attached saboteur components to ", npc.npc_name)
+    print("PhaseManager: Attached saboteur override to ", npc.npc_name)
 
 func activate_saboteur_manually():
     """Manually activate the saboteur (for debug purposes)"""
@@ -381,21 +374,8 @@ func activate_saboteur_manually():
         push_warning("PhaseManager: Cannot activate - no saboteur selected")
         return
     
-    # Activate the saboteur AI
-    var saboteur_ai = selected_saboteur.get_node_or_null("SaboteurPatrolAI")
-    if saboteur_ai and saboteur_ai.has_method("set_active"):
-        saboteur_ai.set_active(true)
-        print("PhaseManager: Manually activated saboteur - ", selected_saboteur.npc_name)
-        
-        # Update debug visualizations based on current UI settings
-        var debug_ui = get_tree().get_first_node_in_group("schedule_debug_ui")
-        if debug_ui and debug_ui.has_method("_update_saboteur_visualization"):
-            debug_ui._update_saboteur_visualization()
-    
-    # Transform to saboteur mode
-    var char_modes = selected_saboteur.get_node_or_null("SaboteurCharacterModes")
-    if char_modes and char_modes.has_method("switch_to_saboteur_mode"):
-        char_modes.switch_to_saboteur_mode()
+    # Override is active once attached
+    print("PhaseManager: Saboteur override is active on ", selected_saboteur.npc_name)
 
 func deactivate_saboteur_manually():
     """Manually deactivate the saboteur (for debug purposes)"""

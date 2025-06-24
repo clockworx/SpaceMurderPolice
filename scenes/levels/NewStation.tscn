@@ -389,7 +389,7 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 43.1768, 0.144, -2.79754)
 show_current_waypoint_index = 0
 
 [node name="Engineer" parent="NPCs" instance=ExtResource("22_engineer")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -36, 0.144, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45.271, 0.144, 11.2007)
 show_current_waypoint_index = 0
 
 [node name="SecurityChief" parent="NPCs" instance=ExtResource("23_security_chief")]
