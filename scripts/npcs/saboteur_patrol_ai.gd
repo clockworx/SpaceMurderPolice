@@ -837,40 +837,64 @@ func end_sabotage_mission():
     sabotage_complete = false
 
 func _create_awareness_visualization():
-    # For now, just use the state indicator light color to show detection state
-    # The large ring visualizations are problematic
-    detection_ring = null
+    # Create a small sphere at the character's feet to show detection is active
+    if show_awareness_sphere:
+        detection_ring = MeshInstance3D.new()
+        detection_ring.name = "DetectionIndicator"
+        
+        # Small sphere mesh
+        var sphere_mesh = SphereMesh.new()
+        sphere_mesh.radius = 0.3  # Small radius
+        sphere_mesh.height = 0.6
+        sphere_mesh.radial_segments = 16
+        sphere_mesh.rings = 8
+        detection_ring.mesh = sphere_mesh
+        
+        # Create glowing material
+        var sphere_material = StandardMaterial3D.new()
+        sphere_material.albedo_color = Color(0, 1, 0, 0.8)
+        sphere_material.emission_enabled = true
+        sphere_material.emission = Color(0, 1, 0, 0.5)
+        sphere_material.emission_energy = 0.5
+        sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        sphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        
+        detection_ring.material_override = sphere_material
+        detection_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        detection_ring.position.y = 0.3  # At feet level
+        
+        npc_base.add_child(detection_ring)
     
     # For now, disable vision cone visualization as it's problematic
     # We still have the detection ring which is more useful
     vision_arc = null
 
 func _update_awareness_visualization():
-    # Update detection ring color based on state
+    # Update detection indicator color based on state
     if detection_ring:
-        var ring_material = detection_ring.material_override as StandardMaterial3D
-        if ring_material:
+        var sphere_material = detection_ring.material_override as StandardMaterial3D
+        if sphere_material:
             match current_state:
                 State.CHASING:
-                    ring_material.albedo_color = Color(1, 0, 0, 0.8)
-                    ring_material.emission = Color(1, 0, 0, 0.8)
-                    ring_material.emission_energy = 1.0
+                    sphere_material.albedo_color = Color(1, 0, 0, 0.8)
+                    sphere_material.emission = Color(1, 0, 0, 0.8)
+                    sphere_material.emission_energy = 1.0
                 State.INVESTIGATING:
-                    ring_material.albedo_color = Color(1, 1, 0, 0.8)
-                    ring_material.emission = Color(1, 1, 0, 0.6)
-                    ring_material.emission_energy = 0.7
+                    sphere_material.albedo_color = Color(1, 1, 0, 0.8)
+                    sphere_material.emission = Color(1, 1, 0, 0.6)
+                    sphere_material.emission_energy = 0.7
                 State.SEARCHING:
-                    ring_material.albedo_color = Color(1, 0.5, 0, 0.8)
-                    ring_material.emission = Color(1, 0.5, 0, 0.6)
-                    ring_material.emission_energy = 0.7
+                    sphere_material.albedo_color = Color(1, 0.5, 0, 0.8)
+                    sphere_material.emission = Color(1, 0.5, 0, 0.6)
+                    sphere_material.emission_energy = 0.7
                 State.SABOTAGE:
-                    ring_material.albedo_color = Color(1, 0, 1, 0.6)
-                    ring_material.emission = Color(1, 0, 1, 0.4)
-                    ring_material.emission_energy = 0.5
+                    sphere_material.albedo_color = Color(1, 0, 1, 0.6)
+                    sphere_material.emission = Color(1, 0, 1, 0.4)
+                    sphere_material.emission_energy = 0.5
                 _:  # PATROLLING or WAITING
-                    ring_material.albedo_color = Color(0, 1, 0, 0.6)
-                    ring_material.emission = Color(0, 1, 0, 0.3)
-                    ring_material.emission_energy = 0.5
+                    sphere_material.albedo_color = Color(0, 1, 0, 0.6)
+                    sphere_material.emission = Color(0, 1, 0, 0.3)
+                    sphere_material.emission_energy = 0.5
     
     # Vision arc disabled for now
     pass
@@ -879,8 +903,31 @@ func get_current_state_name() -> String:
     return State.keys()[current_state]
 
 func _create_sound_detection_visualization():
-    """Sound detection also disabled due to scale issues"""
-    sound_detection_sphere = null
+    """Create a small cube to show sound detection is active"""
+    if show_sound_detection:
+        sound_detection_sphere = MeshInstance3D.new()
+        sound_detection_sphere.name = "SoundIndicator"
+        
+        # Small box mesh
+        var box_mesh = BoxMesh.new()
+        box_mesh.size = Vector3(0.2, 0.2, 0.2)  # Small cube
+        sound_detection_sphere.mesh = box_mesh
+        
+        # Create material for sound detection (blue/cyan)
+        var sound_material = StandardMaterial3D.new()
+        sound_material.albedo_color = Color(0, 0.7, 1, 0.8)  # Cyan for sound
+        sound_material.emission_enabled = true
+        sound_material.emission = Color(0, 0.7, 1, 0.4)
+        sound_material.emission_energy = 0.4
+        sound_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        sound_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        
+        sound_detection_sphere.material_override = sound_material
+        sound_detection_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        sound_detection_sphere.position.y = 0.5  # Slightly higher than detection sphere
+        sound_detection_sphere.position.x = 0.5  # Offset to the side
+        
+        npc_base.add_child(sound_detection_sphere)
 
 func _create_patrol_path_visualization():
     """Create lines showing the patrol path"""
@@ -942,11 +989,15 @@ func _update_patrol_path_visualization():
     
     # Create material for the path
     var path_material = StandardMaterial3D.new()
-    path_material.albedo_color = Color(1, 0, 1, 0.8)  # Magenta for path
+    path_material.albedo_color = Color(1, 0, 1, 1.0)  # Magenta for path
+    path_material.emission_enabled = true
+    path_material.emission = Color(1, 0, 1, 0.5)
+    path_material.emission_energy = 0.5
     path_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    path_material.vertex_color_use_as_albedo = true
+    path_material.vertex_color_use_as_albedo = false  # Don't use vertex colors
     
     patrol_path_line.material_override = path_material
+    patrol_path_line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 func set_debug_visualization(awareness: bool, vision: bool, state: bool, path: bool, sound: bool):
     """Update debug visualization settings"""
