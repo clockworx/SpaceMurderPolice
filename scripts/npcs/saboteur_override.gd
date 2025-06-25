@@ -24,13 +24,15 @@ class_name SaboteurOverride
 
 @export_group("Debug Settings")
 @export var show_debug_overlay: bool = true  # Show debug info on player screen
-@export var debug_sound_detection: bool = true  # Print detailed sound detection info
-@export var debug_state_changes: bool = true  # Print state change info
+@export var debug_sound_detection: bool = false  # Print detailed sound detection info
+@export var debug_state_changes: bool = false  # Print state change info
 
 var npc_base: NPCBase
 var wait_time: float = 5.0
 var wait_timer: float = 0.0
 var debug_sound_timer: float = 0.0  # Timer for periodic debug prints
+var debug_vision_timer: float = 0.0  # Timer for vision debug prints
+var last_vision_blocked_by: String = ""  # Track what last blocked vision
 var is_waiting: bool = true  # Start waiting
 var current_room: String = ""
 
@@ -702,7 +704,14 @@ func _check_player_detection():
                         break
                     node = node.get_parent()
                 var obstacle_type = "CSG" if is_csg else collider.get_class()
-                print("SaboteurOverride: Vision blocked by ", obstacle_type, " (", collider.name, ")")
+                var obstacle_name = obstacle_type + " (" + collider.name + ")"
+                
+                # Only print if it's a different obstacle or enough time has passed
+                debug_vision_timer += get_process_delta_time()
+                if last_vision_blocked_by != obstacle_name or debug_vision_timer > 2.0:
+                    print("SaboteurOverride: Vision blocked by ", obstacle_name)
+                    last_vision_blocked_by = obstacle_name
+                    debug_vision_timer = 0.0
             
             player_detected = false
             return
@@ -1294,11 +1303,13 @@ func _handle_chase_state(delta):
             var player_pos = player.global_position + Vector3.UP * 0.9
             
             var query = PhysicsRayQueryParameters3D.create(eye_pos, player_pos)
-            query.collision_mask = 1  # Environment layer only
+            query.collision_mask = 0b11111111111111111111111111111111  # Check all collision layers
             query.exclude = [npc_base]
+            query.collide_with_areas = true
+            query.collide_with_bodies = true
             
             var result = space_state.intersect_ray(query)
-            if not result:  # Clear line of sight
+            if result.is_empty() or result.collider == player:  # Clear line of sight or hit player directly
                 # Player is too close to hide effectively
                 if not has_warned_too_close:
                     print("SaboteurOverride: Player too close to hide! (", distance, "m)")
@@ -1340,34 +1351,52 @@ func _chase_to_position(position: Vector3):
     
     # If we have clear line of sight and are close, use direct movement
     var has_clear_path = _has_clear_path_to(position)
-    print("SaboteurOverride: Chase Debug - Distance: ", dist, "m, Clear path: ", has_clear_path, ", Player detected: ", player_detected)
+    
+    # Only print chase debug occasionally to avoid spam
+    if debug_state_changes:
+        print("SaboteurOverride: Chase Debug - Distance: ", dist, "m, Clear path: ", has_clear_path, ", Player detected: ", player_detected)
     
     if player_detected and has_clear_path and dist < 10.0:
-        # Direct chase when we can see the player clearly
+        # Direct chase when we can see the player clearly AND no obstacles
         npc_base.stop_movement()  # Clear waypoint path
         npc_base.move_to_position(position)
         _update_path_debug_line(position)
         _update_state_label("CHASING [DIRECT] [" + str(snappedf(dist, 0.1)) + "m]")
-        print("SaboteurOverride: Using DIRECT chase")
-    elif player_detected and dist < 15.0:
-        # Force direct movement for close targets even if path check fails
-        print("SaboteurOverride: Forcing DIRECT chase for close target")
+        if debug_state_changes:
+            print("SaboteurOverride: Using DIRECT chase - clear path")
+    elif player_detected and has_clear_path and dist < 20.0:
+        # Direct chase for medium distances if path is clear
         npc_base.stop_movement()  # Clear waypoint path
         npc_base.move_to_position(position)
         _update_path_debug_line(position)
-        _update_state_label("CHASING [FORCED DIRECT] [" + str(snappedf(dist, 0.1)) + "m]")
+        _update_state_label("CHASING [DIRECT] [" + str(snappedf(dist, 0.1)) + "m]")
+        if debug_state_changes:
+            print("SaboteurOverride: Using DIRECT chase - medium range, clear path")
     else:
-        # Use waypoints for longer distances or when path is blocked
-        print("SaboteurOverride: Using WAYPOINT navigation")
+        # Use waypoints when path is blocked or for longer distances
+        if debug_state_changes:
+            if has_clear_path:
+                print("SaboteurOverride: Using WAYPOINT navigation - long distance")
+            else:
+                print("SaboteurOverride: Using WAYPOINT navigation - path blocked by obstacle")
+        
         if _navigate_to_position_with_waypoints(position):
             _update_path_debug_line(position)
             _update_state_label("CHASING [WAYPOINT] [" + str(snappedf(dist, 0.1)) + "m]")
         else:
-            # Fallback to direct movement if waypoint navigation fails
-            print("SaboteurOverride: WARNING - No waypoint path found, using direct movement")
-            npc_base.move_to_position(position)
-            _update_path_debug_line(position)
-            _update_state_label("CHASING [FALLBACK] [" + str(snappedf(dist, 0.1)) + "m]")
+            # Only fallback to direct if we're very close and waypoints fail
+            if dist < 5.0:
+                if debug_state_changes:
+                    print("SaboteurOverride: FALLBACK - Very close, using direct movement despite obstacles")
+                npc_base.move_to_position(position)
+                _update_path_debug_line(position)
+                _update_state_label("CHASING [FALLBACK] [" + str(snappedf(dist, 0.1)) + "m]")
+            else:
+                print("SaboteurOverride: WARNING - No waypoint path found and target too far for direct fallback")
+                # Try to get closer using the last known position
+                var closer_position = npc_base.global_position + (position - npc_base.global_position).normalized() * 5.0
+                npc_base.move_to_position(closer_position)
+                _update_state_label("CHASING [APPROACH] [" + str(snappedf(dist, 0.1)) + "m]")
 
 func _end_chase():
     """End the chase and return to patrol"""
