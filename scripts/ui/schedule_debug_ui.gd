@@ -240,12 +240,14 @@ func _ready():
         var vision_checkbox = CheckBox.new()
         vision_checkbox.name = "VisionCheckbox"
         vision_checkbox.text = "Show Vision Cone"
+        vision_checkbox.set_pressed(true)  # Start with vision cone ON
         vision_checkbox.toggled.connect(_on_vision_toggled)
         vbox_for_button.add_child(vision_checkbox)
         
         var sound_checkbox = CheckBox.new()
         sound_checkbox.name = "SoundCheckbox"
         sound_checkbox.text = "Show Sound Detection"
+        sound_checkbox.set_pressed(true)  # Start with sound detection ON
         sound_checkbox.toggled.connect(_on_sound_toggled)
         vbox_for_button.add_child(sound_checkbox)
         
@@ -659,10 +661,8 @@ func _update_saboteur_visualization():
             sound_cb = get_node_or_null("VBoxContainer/SoundCheckbox")
         
         # Update vision cone visibility
-        if vision_cb and "show_vision_cone" in saboteur_override:
-            saboteur_override.show_vision_cone = vision_cb.button_pressed
-            if saboteur_override.vision_cone_container:
-                saboteur_override.vision_cone_container.visible = vision_cb.button_pressed
+        if vision_cb and saboteur_override.has_method("set_vision_cone_visibility"):
+            saboteur_override.set_vision_cone_visibility(vision_cb.button_pressed)
         
         # Update sound detection visibility
         if sound_cb and saboteur_override.has_method("set_debug_visualization"):
